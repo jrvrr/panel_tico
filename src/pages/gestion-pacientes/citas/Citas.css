@@ -1,0 +1,536 @@
+/* ═══════════════════════════════════════════════════════
+   Citas – estilos (misma línea visual que Pacientes)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Variables reutilizadas de Pacientes ── */
+:root {
+    --cita-primary: #3971b8;
+    --cita-text: #1e293b;
+    --cita-text-muted: #64748b;
+    --cita-border: #e2e8f0;
+    --cita-selected-bg: rgba(57, 113, 184, 0.06);
+}
+
+/* ── Container ── */
+.cita-container {
+    background: transparent;
+    padding-bottom: 2rem;
+}
+
+/* ── Header ── */
+.cita-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.cita-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--cita-text);
+}
+
+.cita-subtitle {
+    font-size: 0.82rem;
+    color: var(--cita-text-muted);
+    margin-top: 2px;
+}
+
+/* ── Botón Nuevo ── */
+.cita-btn-nuevo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 1.1rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: white;
+    background: linear-gradient(135deg, var(--cita-primary) 0%, #5b97d5 100%);
+    box-shadow: 0 3px 12px rgba(57, 113, 184, 0.25);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.cita-btn-nuevo:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(57, 113, 184, 0.32);
+}
+
+/* ── Toolbar ── */
+.cita-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    background: white;
+    border: 1px solid var(--cita-border);
+    border-radius: 10px;
+}
+
+.cita-search {
+    flex: 1;
+    min-width: 140px;
+    padding: 0.42rem 0.9rem;
+    border: 1px solid var(--cita-border);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.cita-search:focus {
+    border-color: var(--cita-primary);
+}
+
+.cita-filter-select {
+    padding: 0.42rem 0.7rem;
+    border: 1px solid var(--cita-border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--cita-text);
+    background: white;
+    outline: none;
+    cursor: pointer;
+}
+
+/* ── Acciones del toolbar (selección) ── */
+.cita-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    animation: fadeSlide 0.2s ease;
+}
+
+.cita-selection-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--cita-primary);
+    margin-right: 0.3rem;
+}
+
+@keyframes fadeSlide {
+    from {
+        opacity: 0;
+        transform: translateX(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ── Tabla ── */
+.cita-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border: 1px solid var(--cita-border);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 0.82rem;
+}
+
+.cita-table thead th {
+    background: #f8fafc;
+    color: var(--cita-text-muted);
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 0.9rem;
+    text-align: left;
+    border-bottom: 2px solid var(--cita-border);
+    user-select: none;
+}
+
+.cita-table thead th.sortable {
+    cursor: pointer;
+}
+
+.cita-table thead th.sortable:hover {
+    color: var(--cita-primary);
+}
+
+.cita-table tbody td {
+    padding: 0.65rem 0.9rem;
+    color: var(--cita-text);
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.cita-table tbody tr {
+    transition: background 0.12s;
+    cursor: pointer;
+}
+
+.cita-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.cita-table tbody tr.selected td {
+    background: var(--cita-selected-bg);
+}
+
+.cita-table tbody tr.cancelada td {
+    opacity: 0.45;
+}
+
+/* ── Checkbox ── */
+.cita-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--cita-primary);
+    cursor: pointer;
+}
+
+/* ── Badge estado ── */
+.cita-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.cita-badge-confirmado,
+.cita-badge-confirmada {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.cita-badge-programada {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.cita-badge-cancelada {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.cita-badge-completada {
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.cita-badge-sin.confirmar {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+/* ── Botones dentro del toolbar ── */
+.cita-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.35rem 0.75rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.cita-btn:active {
+    transform: scale(0.97);
+}
+
+.cita-btn-ver {
+    background: #e0edfa;
+    color: var(--cita-primary);
+}
+
+.cita-btn-ver:hover {
+    background: #c5daf5;
+}
+
+.cita-btn-edit {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.cita-btn-edit:hover {
+    background: #fde68a;
+}
+
+.cita-btn-cancel {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.cita-btn-cancel:hover {
+    background: #fecaca;
+}
+
+.cita-btn-confirm {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.cita-btn-confirm:hover {
+    background: #bbf7d0;
+}
+
+/* ── Modal ── */
+.cita-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: citaFadeIn 0.17s ease;
+}
+
+@keyframes citaFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.cita-modal {
+    background: white;
+    border-radius: 0;
+    padding: 1.75rem 2rem;
+    width: min(560px, 95vw);
+    box-shadow: 0 20px 60px rgba(57, 113, 184, 0.18);
+    position: relative;
+    animation: citaScaleIn 0.2s ease;
+}
+
+@keyframes citaScaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.cita-modal-close {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    background: none;
+    border: none;
+    color: var(--cita-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.cita-modal-close:hover {
+    background: #f1f5f9;
+}
+
+.cita-modal-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--cita-text);
+    margin-bottom: 0.6rem;
+    text-align: center;
+}
+
+.cita-modal-section {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: white;
+    background: var(--cita-primary);
+    padding: 0.45rem 1rem;
+    margin: 1rem 0 0.75rem;
+    border-radius: 0;
+}
+
+/* ── Form (dentro del modal) ── */
+.cita-form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.cita-form-stack label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cita-text-muted);
+    gap: 3px;
+}
+
+.cita-form-row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+
+.cita-form-row2 label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cita-text-muted);
+    gap: 3px;
+}
+
+.cita-edit-input {
+    width: 100%;
+    padding: 0.42rem 0.65rem;
+    border: 1px solid var(--cita-border);
+    border-radius: 4px;
+    font-size: 0.83rem;
+    font-family: inherit;
+    color: var(--cita-text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cita-edit-input:focus {
+    outline: none;
+    border-color: var(--cita-primary);
+    box-shadow: 0 0 0 3px rgba(57, 113, 184, 0.1);
+}
+
+.cita-input-error {
+    border-color: #dc2626 !important;
+    background-color: #fff5f5;
+}
+
+.cita-field-error {
+    font-size: 0.72rem;
+    color: #dc2626;
+    margin-top: 2px;
+    display: block;
+    font-weight: 500;
+}
+
+.cita-form-hint {
+    font-size: 0.75rem;
+    color: #b91c1c;
+    margin: 0 0 0.3rem;
+    text-align: left;
+}
+
+.cita-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+}
+
+.cita-btn-primary {
+    background: var(--cita-primary);
+    color: white;
+    border: none;
+    padding: 0.45rem 1.1rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.cita-btn-primary:hover {
+    background: #2d5a94;
+}
+
+.cita-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cita-btn-outline {
+    background: white;
+    color: var(--cita-text-muted);
+    border: 1px solid var(--cita-border);
+    padding: 0.45rem 1.1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.cita-btn-outline:hover {
+    background: #f8fafc;
+}
+
+/* ── Modal detalle ── */
+.cita-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin: 0.5rem 0 0;
+}
+
+.cita-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0.5rem;
+    border-radius: 6px;
+    background: #f8fafc;
+}
+
+.cita-modal-field span {
+    font-size: 0.68rem;
+    color: var(--cita-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cita-modal-field strong {
+    font-size: 0.85rem;
+    color: var(--cita-text);
+}
+
+/* ── Progreso bar ── */
+.cita-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cita-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 100px;
+    overflow: hidden;
+}
+
+.cita-progress-fill {
+    height: 100%;
+    background: var(--cita-primary);
+    border-radius: 100px;
+    transition: width 0.3s ease;
+}
+
+.cita-progress-text {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--cita-primary);
+    min-width: 32px;
+    text-align: right;
+}
