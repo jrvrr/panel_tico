@@ -1,0 +1,749 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TICO Métricas IA — Estilos del módulo de evaluación terapéutica
+   Sigue el design system tico- existente
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Cards de resumen ────────────────────────────────────────────────────── */
+.metricas-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+}
+
+.metricas-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.35rem 1.5rem;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.metricas-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+}
+
+.metricas-card--rojo {
+    border-left-color: #ef4444;
+}
+
+.metricas-card--amarillo {
+    border-left-color: #f59e0b;
+}
+
+.metricas-card--azul {
+    border-left-color: var(--tico-primary);
+}
+
+.metricas-card__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.metricas-card__icon--rojo {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    color: #ef4444;
+}
+
+.metricas-card__icon--amarillo {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    color: #f59e0b;
+}
+
+.metricas-card__icon--azul {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    color: var(--tico-primary);
+}
+
+.metricas-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.metricas-card__value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--tico-text);
+    line-height: 1;
+}
+
+.metricas-card__label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--tico-text-muted);
+}
+
+/* ── Tabla de métricas ───────────────────────────────────────────────────── */
+.metricas-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.metricas-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.metricas-table th {
+    text-align: left;
+    padding: 0.85rem 1rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: #555;
+    font-weight: 700;
+    border-bottom: 2px solid var(--tico-secondary);
+    background-color: rgba(200, 214, 155, 0.18);
+    user-select: none;
+    letter-spacing: 0.04em;
+}
+
+.metricas-table th.sortable {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.metricas-table th.sortable:hover {
+    color: var(--tico-primary);
+}
+
+.metricas-table tbody tr {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.metricas-table tbody tr:hover td {
+    background-color: #f8fbff;
+}
+
+.metricas-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.9rem;
+    color: var(--tico-text);
+    background-color: white;
+    transition: background-color 0.15s;
+    vertical-align: middle;
+}
+
+/* ── Badge de riesgo ─────────────────────────────────────────────────────── */
+.riesgo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.riesgo-badge--green {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.riesgo-badge--yellow {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.riesgo-badge--red {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.riesgo-badge__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.riesgo-badge__dot--green {
+    background-color: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
+
+.riesgo-badge__dot--yellow {
+    background-color: #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+.riesgo-badge__dot--red {
+    background-color: #ef4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+    animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ── Estado terapéutico ──────────────────────────────────────────────────── */
+.estado-terapeutico {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.estado-terapeutico__icono {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.estado-terapeutico__icono--up {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.estado-terapeutico__icono--stable {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.estado-terapeutico__icono--down {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.estado-terapeutico__cambio {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--tico-text-muted);
+}
+
+/* ── Paciente info en tabla ──────────────────────────────────────────────── */
+.paciente-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.paciente-info__nombre {
+    font-weight: 600;
+    color: var(--tico-text);
+}
+
+.paciente-info__edad {
+    font-size: 0.75rem;
+    color: var(--tico-text-muted);
+}
+
+/* ── Adherencia visual ───────────────────────────────────────────────────── */
+.adherencia-visual {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.adherencia-bar {
+    width: 60px;
+    height: 6px;
+    background: #f3f4f6;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.adherencia-bar__fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.adherencia-bar__fill--high {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.adherencia-bar__fill--mid {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.adherencia-bar__fill--low {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.adherencia-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--tico-text-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MODAL DE DESGLOSE (Transparencia IA)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.desglose-modal {
+    width: min(720px, 95vw);
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 2rem 2.25rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(57, 113, 184, 0.18);
+    position: relative;
+    animation: scaleIn 0.2s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.desglose-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.desglose-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: linear-gradient(135deg, var(--tico-primary), #5c93c9);
+    color: white;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.desglose-patient-info {
+    flex: 1;
+}
+
+.desglose-patient-info h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--tico-text);
+    margin: 0 0 2px;
+}
+
+.desglose-patient-info span {
+    font-size: 0.8rem;
+    color: var(--tico-text-muted);
+}
+
+/* ── Gauge de riesgo ─────────────────────────────────────────────────────── */
+.desglose-gauge-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.75rem;
+    padding: 1.25rem;
+    background: #fafbfc;
+    border-radius: 14px;
+}
+
+.gauge-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gauge-circle__bg {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(var(--gauge-color) calc(var(--gauge-pct) * 3.6deg),
+            #e5e7eb calc(var(--gauge-pct) * 3.6deg));
+    mask: radial-gradient(circle, transparent 60%, black 61%);
+    -webkit-mask: radial-gradient(circle, transparent 60%, black 61%);
+}
+
+.gauge-circle__inner {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.gauge-circle__score {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.gauge-circle__label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--tico-text-muted);
+    margin-top: 2px;
+}
+
+.gauge-info {
+    flex: 1;
+}
+
+.gauge-info__level {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.gauge-info__desc {
+    font-size: 0.8rem;
+    color: var(--tico-text-muted);
+    line-height: 1.45;
+}
+
+/* ── Factores desglose ───────────────────────────────────────────────────── */
+.desglose-section-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: white;
+    background: var(--tico-primary);
+    padding: 0.45rem 1rem;
+    margin: 0 0 1rem;
+}
+
+.desglose-factors {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-bottom: 1.75rem;
+}
+
+.desglose-factor {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: #fafbfc;
+    border-radius: 10px;
+    border-left: 3px solid;
+    transition: transform 0.15s;
+}
+
+.desglose-factor:hover {
+    transform: translateX(4px);
+}
+
+.desglose-factor__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.desglose-factor__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.desglose-factor__name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--tico-text);
+}
+
+.desglose-factor__weight {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--tico-text-muted);
+    background: #e5e7eb;
+    padding: 2px 8px;
+    border-radius: 9999px;
+}
+
+.desglose-factor__bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.desglose-factor__bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+.desglose-factor__detail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--tico-text-muted);
+}
+
+.desglose-factor__tendencia {
+    font-weight: 700;
+}
+
+.desglose-factor__tendencia--up {
+    color: #ef4444;
+}
+
+.desglose-factor__tendencia--down {
+    color: #22c55e;
+}
+
+.desglose-factor__tendencia--stable {
+    color: #6b7280;
+}
+
+/* ── Mini chart de tendencia semanal ─────────────────────────────────────── */
+.tendencia-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 80px;
+    padding: 0.75rem 0;
+}
+
+.tendencia-chart-wrapper {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #fafbfc;
+    border-radius: 10px;
+}
+
+.tendencia-bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+}
+
+.tendencia-bars {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    flex: 1;
+    width: 100%;
+}
+
+.tendencia-bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height 0.4s ease;
+}
+
+.tendencia-bar--burbujas {
+    background: linear-gradient(to top, #93c5fd, #3b82f6);
+}
+
+.tendencia-bar--laberinto {
+    background: linear-gradient(to top, #c4b5fd, #8b5cf6);
+}
+
+.tendencia-bar--globos {
+    background: linear-gradient(to top, #fed7aa, #f97316);
+}
+
+/* ── Rendimiento por juegos en tabla ─────────────────────────────────────── */
+.rendimiento-juegos {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.rendimiento-juegos__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.rendimiento-juegos__item--mejor {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.rendimiento-juegos__item--peor {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.tendencia-bar-label {
+    font-size: 0.6rem;
+    color: var(--tico-text-muted);
+    font-weight: 600;
+}
+
+.tendencia-bar-separator {
+    width: 1px;
+    background: #d1d5db;
+    opacity: 0.4;
+    align-self: stretch;
+}
+
+.tendencia-legend {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.tendencia-legend__item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    color: var(--tico-text-muted);
+    font-weight: 600;
+}
+
+.tendencia-legend__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+/* ── Estado terapéutico en modal ─────────────────────────────────────────── */
+.desglose-estado-section {
+    padding: 1rem 1.25rem;
+    background: #fafbfc;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+}
+
+.desglose-estado-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.desglose-estado-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0.6rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #f3f4f6;
+}
+
+.desglose-estado-item__label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--tico-text-muted);
+    letter-spacing: 0.03em;
+}
+
+.desglose-estado-item__values {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+}
+
+.desglose-estado-item__prev {
+    color: var(--tico-text-muted);
+}
+
+.desglose-estado-item__arrow {
+    font-size: 0.7rem;
+    color: #9ca3af;
+}
+
+.desglose-estado-item__curr {
+    font-weight: 700;
+    color: var(--tico-text);
+}
+
+.desglose-estado-item__change {
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-left: auto;
+}
+
+.desglose-estado-item__change--good {
+    color: #22c55e;
+}
+
+.desglose-estado-item__change--bad {
+    color: #ef4444;
+}
+
+.desglose-estado-item__change--flat {
+    color: #6b7280;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .metricas-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .desglose-modal {
+        padding: 1.25rem;
+    }
+
+    .desglose-gauge-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .desglose-estado-grid {
+        grid-template-columns: 1fr;
+    }
+}
