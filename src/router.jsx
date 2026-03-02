@@ -33,10 +33,15 @@ const router = createBrowserRouter([
                     { path: 'especialistas', element: <EspecialistasPage /> },
                     { path: 'metricas', element: <MetricasPage /> },
                     { path: 'notificaciones', element: <NotificacionesPage /> },
-                    { path: '*', element: <NotFoundPage /> },
                 ],
             },
         ],
+    },
+
+    // 404 — pantalla completa, sin layout
+    {
+        path: '*',
+        element: <NotFoundPage />,
     },
 ]);
 

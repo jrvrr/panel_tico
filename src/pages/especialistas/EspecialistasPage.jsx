@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import '../gestion-pacientes/pacientes/Pacientes.css';
 import './Especialistas.css';
+import { getEspecialistas } from '../../services/api';
 import {
     ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck,
     X, Plus, SlidersHorizontal, FilterX, ShieldCheck,
@@ -325,8 +326,24 @@ const FormBody = ({
 // ════════════════════════════════════════════════════════════════════════════
 const EspecialistasPage = () => {
     // ── Estado principal ──
-    const [especialistas, setEspecialistas] = useState(INITIAL_DATA);
-    const [nextId, setNextId] = useState(6);
+    const [especialistas, setEspecialistas] = useState([]);
+    const [nextId, setNextId] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    // ── Cargar desde API ──
+    useEffect(() => {
+        getEspecialistas()
+            .then(data => {
+                // La API devuelve { data: [...] }
+                const list = Array.isArray(data) ? data : (data.data ?? []);
+                setEspecialistas(list);
+                const maxId = list.reduce((acc, e) => Math.max(acc, e.id), 0);
+                setNextId(maxId + 1);
+            })
+            .catch(err => setError(err.message))
+            .finally(() => setLoading(false));
+    }, []);
 
     // ── Selección ──
     const [selectedRows, setSelectedRows] = useState([]);
@@ -698,7 +715,22 @@ const EspecialistasPage = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredData.map(e => (
+                    {loading && (
+                        <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+                                <Loader2 size={18} style={{ animation: 'spin 1s linear infinite', display: 'inline', marginRight: '8px' }} />
+                                Cargando especialistas…
+                            </td>
+                        </tr>
+                    )}
+                    {!loading && error && (
+                        <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', color: '#ef4444', padding: '2rem' }}>
+                                Error: {error}
+                            </td>
+                        </tr>
+                    )}
+                    {!loading && !error && filteredData.map(e => (
                         <tr
                             key={e.id}
                             className={[
@@ -736,7 +768,7 @@ const EspecialistasPage = () => {
                             </td>
                         </tr>
                     ))}
-                    {filteredData.length === 0 && (
+                    {!loading && !error && filteredData.length === 0 && (
                         <tr>
                             <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
                                 No se encontraron especialistas.
