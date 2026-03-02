@@ -1,21 +1,32 @@
 import { Link } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import error404Img from "../assets/error404.png";
+import "./NotFound.css";
 
 const NotFoundPage = () => {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-gray-900">
-            <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full">
-                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                <h1 className="text-4xl font-bold mb-2">404</h1>
-                <h2 className="text-xl font-semibold mb-4">Página no encontrada</h2>
-                <p className="text-gray-600 mb-6">
-                    Lo sentimos, la página que buscas no existe o ha sido movida.
+        <div className="nf-root">
+            {/* Left side — illustration */}
+            <div className="nf-left">
+                {/* Blob grande detrás del robot */}
+                <div className="nf-blob-main" aria-hidden="true" />
+                {/* Blob pequeño flotando cerca */}
+                <div className="nf-blob-small" aria-hidden="true" />
+                <img
+                    src={error404Img}
+                    alt="Robot 404"
+                    className="nf-robot-img"
+                />
+            </div>
+
+            {/* Right side — text */}
+            <div className="nf-right">
+                <h1 className="nf-title">404 ERROR</h1>
+                <h2 className="nf-whoops">¡Vaya!</h2>
+                <p className="nf-desc">
+                    No pudimos encontrar la página que buscabas :(
                 </p>
-                <Link
-                    to="/"
-                    className="inline-block bg-primary hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200"
-                >
-                    Volver al Inicio
+                <Link to="/" className="nf-btn" id="nf-go-home-btn">
+                    Ir al inicio
                 </Link>
             </div>
         </div>

@@ -1,0 +1,181 @@
+/* ── 404 Not Found — Robot theme ── */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap');
+
+/* ─── Root layout ─── */
+.nf-root {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Outfit', sans-serif;
+    /* Gradiente: amarillo y azul del proyecto */
+    background:
+        radial-gradient(ellipse at 15% 65%, #5c93c9d0 0%, transparent 28%),
+        radial-gradient(ellipse at 80% 15%, #f7d347c0 0%, transparent 22%),
+        radial-gradient(ellipse at 68% 78%, #a8c5e8c0 0%, transparent 20%),
+        #fbfcee;
+    padding: 2rem;
+    gap: 2rem;
+    box-sizing: border-box;
+}
+
+/* ─── Left: illustration ─── */
+.nf-left {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 560px;
+}
+
+/* Blob grande blanco detrás del robot */
+.nf-blob-main {
+    position: absolute;
+    width: 85%;
+    height: 85%;
+    background: rgba(255, 255, 255, 0.72);
+    border-radius: 62% 38% 46% 54% / 60% 44% 56% 40%;
+    z-index: 0;
+    animation: blobMorph 8s ease-in-out infinite alternate;
+}
+
+/* Blob pequeño flotando a la derecha-abajo */
+.nf-blob-small {
+    position: absolute;
+    width: 32%;
+    height: 32%;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 70% 30% 55% 45% / 45% 65% 35% 55%;
+    bottom: -4%;
+    right: -6%;
+    z-index: 0;
+    animation: blobMorphSmall 6s ease-in-out infinite alternate;
+}
+
+@keyframes blobMorph {
+    0% {
+        border-radius: 62% 38% 46% 54% / 60% 44% 56% 40%;
+    }
+
+    50% {
+        border-radius: 45% 55% 60% 40% / 50% 60% 40% 50%;
+    }
+
+    100% {
+        border-radius: 55% 45% 40% 60% / 42% 55% 45% 58%;
+    }
+}
+
+@keyframes blobMorphSmall {
+    0% {
+        border-radius: 70% 30% 55% 45% / 45% 65% 35% 55%;
+        transform: translate(0, 0) scale(1);
+    }
+
+    100% {
+        border-radius: 40% 60% 35% 65% / 60% 40% 60% 40%;
+        transform: translate(6px, -8px) scale(1.05);
+    }
+}
+
+.nf-robot-img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 560px;
+    object-fit: contain;
+    animation: robotFloat 4s ease-in-out infinite alternate;
+    filter: drop-shadow(0 16px 32px rgba(100, 120, 200, 0.25));
+}
+
+@keyframes robotFloat {
+    0% {
+        transform: translateY(0px);
+    }
+
+    100% {
+        transform: translateY(-18px);
+    }
+}
+
+/* ─── Right: text content ─── */
+.nf-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    max-width: 480px;
+}
+
+.nf-title {
+    font-size: clamp(3.2rem, 7vw, 6rem);
+    font-weight: 900;
+    color: #1a237e;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin: 0 0 0.3rem;
+}
+
+.nf-whoops {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 700;
+    color: #283593;
+    margin: 0 0 1rem;
+    letter-spacing: -0.01em;
+}
+
+.nf-desc {
+    font-size: clamp(1rem, 2.2vw, 1.2rem);
+    color: #5c6bc0;
+    font-weight: 400;
+    margin: 0 0 2.2rem;
+    line-height: 1.5;
+}
+
+/* ─── CTA Button ─── */
+.nf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 2.8rem;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #e91e8c, #c2185b);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    box-shadow: 0 8px 24px rgba(233, 30, 140, 0.45);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.nf-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px rgba(233, 30, 140, 0.6);
+}
+
+.nf-btn:active {
+    transform: translateY(-1px);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 700px) {
+    .nf-root {
+        flex-direction: column;
+        text-align: center;
+        padding: 3rem 1.5rem;
+    }
+
+    .nf-right {
+        align-items: center;
+    }
+
+    .nf-robot-img {
+        max-width: 280px;
+    }
+}
