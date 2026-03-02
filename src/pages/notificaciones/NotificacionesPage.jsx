@@ -2,97 +2,99 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import {
     Bell, BellOff, CheckCircle2, AlertTriangle, Info,
-    Trash2, CheckCheck, Filter, X
+    Trash2, CheckCheck, Filter, X, Users, Activity
 } from 'lucide-react';
+import './Notificaciones.css';
 
 /* ─── Datos de ejemplo ─────────────────────────────────────────────────── */
 const SAMPLE = [
     {
         id: 1,
         tipo: 'cita',
-        titulo: 'Cita confirmada',
-        mensaje: 'La cita de María García para el 28/02 a las 10:00 fue confirmada.',
-        fecha: '2025-02-27T10:00:00',
+        titulo: 'Próxima cita agendada',
+        mensaje: 'Recordatorio: Mañana 03/03 a las 09:00 - Consulta de valoración para Ricardo Arjona.',
+        fecha: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
         leida: false,
-        nivel: 'success',
+        nivel: 'info',
     },
     {
         id: 2,
         tipo: 'pago',
-        titulo: 'Pago pendiente',
-        mensaje: 'El paciente Carlos López tiene un pago vencido de $1,200 MXN.',
-        fecha: '2025-02-26T15:30:00',
+        titulo: 'Atraso de pago detectado',
+        mensaje: 'El paciente Carlos López tiene una factura pendiente desde hace 5 días ($2,500 MXN).',
+        fecha: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
         leida: false,
-        nivel: 'warning',
+        nivel: 'error',
     },
     {
         id: 3,
         tipo: 'sistema',
-        titulo: 'Actualización del sistema',
-        mensaje: 'Se aplicó una actualización de seguridad. Los datos están protegidos.',
-        fecha: '2025-02-25T08:00:00',
-        leida: true,
-        nivel: 'info',
+        titulo: 'Error de sincronización',
+        mensaje: 'Se detectó un problema técnico: Los perfiles de especialistas no cargaron correctamente en el módulo de búsqueda.',
+        fecha: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+        leida: false,
+        nivel: 'error',
     },
     {
         id: 4,
         tipo: 'cita',
-        titulo: 'Cita cancelada',
-        mensaje: 'Pedro Ramírez canceló su cita del 01/03 a las 16:00.',
-        fecha: '2025-02-25T12:00:00',
+        titulo: 'Cancelación de Cita',
+        mensaje: 'Lucía Méndez ha cancelado su cita del viernes 05/03 a las 11:30 por motivos personales.',
+        fecha: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
         leida: true,
-        nivel: 'error',
+        nivel: 'warning',
     },
     {
         id: 5,
         tipo: 'paciente',
-        titulo: 'Nuevo paciente registrado',
-        mensaje: 'Ana Martínez fue registrada como nueva paciente en el sistema.',
-        fecha: '2025-02-24T09:00:00',
-        leida: false,
+        titulo: 'Nueva ficha clínica',
+        mensaje: 'Se ha generado exitosamente el expediente para la paciente nueva Sofía Reyes.',
+        fecha: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+        leida: true,
         nivel: 'success',
     },
+    {
+        id: 6,
+        tipo: 'sistema',
+        titulo: 'Mantenimiento programado',
+        mensaje: 'El sistema entrará en mantenimiento el domingo a las 02:00 AM. Duración estimada: 1 hora.',
+        fecha: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
+        leida: true,
+        nivel: 'info',
+    }
 ];
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
 const NIVEL_CONFIG = {
     success: {
-        icon: <CheckCircle2 size={18} />,
-        colorBg: 'bg-emerald-50',
-        colorBorder: 'border-emerald-200',
-        colorIcon: 'text-emerald-500',
-        colorDot: 'bg-emerald-500',
+        icon: <CheckCircle2 />,
+        colorIcon: '#10b981',
+        colorBg: '#ecfdf5',
         label: 'Éxito',
     },
     warning: {
-        icon: <AlertTriangle size={18} />,
-        colorBg: 'bg-amber-50',
-        colorBorder: 'border-amber-200',
-        colorIcon: 'text-amber-500',
-        colorDot: 'bg-amber-500',
-        label: 'Advertencia',
+        icon: <AlertTriangle />,
+        colorIcon: '#f59e0b',
+        colorBg: '#fffbeb',
+        label: 'Aviso',
     },
     error: {
-        icon: <X size={18} />,
-        colorBg: 'bg-red-50',
-        colorBorder: 'border-red-200',
-        colorIcon: 'text-red-500',
-        colorDot: 'bg-red-500',
+        icon: <X />,
+        colorIcon: '#ef4444',
+        colorBg: '#fef2f2',
         label: 'Error',
     },
     info: {
-        icon: <Info size={18} />,
-        colorBg: 'bg-blue-50',
-        colorBorder: 'border-blue-200',
-        colorIcon: 'text-blue-500',
-        colorDot: 'bg-blue-500',
+        icon: <Info />,
+        colorIcon: '#3b82f6',
+        colorBg: '#eff6ff',
         label: 'Info',
     },
 };
 
 const formatFecha = (iso) => {
     const d = new Date(iso);
-    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
         + ' · '
         + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 };
@@ -103,14 +105,24 @@ const FILTROS = ['Todas', 'No leídas', 'Éxito', 'Advertencia', 'Error', 'Info'
 const NotificacionesPage = () => {
     const [notifs, setNotifs] = useState(SAMPLE);
     const [filtro, setFiltro] = useState('Todas');
+    const [activeTab, setActiveTab] = useState('gestion'); // 'gestion' o 'sistema'
+
+    /* Categorización */
+    const CAT_MAP = {
+        cita: 'gestion',
+        pago: 'gestion',
+        paciente: 'gestion',
+        sistema: 'sistema',
+        seguridad: 'sistema',
+    };
 
     /* Disparar un toast de prueba */
     const toastDemo = (nivel) => {
         const msg = {
-            success: () => toast.success(' Operación completada correctamente.'),
-            warning: () => toast.warning(' Hay una advertencia que requiere atención.'),
-            error: () => toast.error(' Ocurrió un error. Revisa los detalles.'),
-            info: () => toast.info(' Nueva información disponible en el sistema.'),
+            success: () => toast.success('Operación completada.'),
+            warning: () => toast.warning('Atención requerida.'),
+            error: () => toast.error('Error del sistema.'),
+            info: () => toast.info('Nueva información.'),
         };
         msg[nivel]?.();
     };
@@ -118,179 +130,167 @@ const NotificacionesPage = () => {
     /* Marcar una como leída */
     const marcarLeida = (id) => {
         setNotifs(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
-        toast.success('Notificación marcada como leída');
+        toast.success('Marcada como leída');
     };
 
     /* Marcar todas como leídas */
     const marcarTodasLeidas = () => {
         setNotifs(prev => prev.map(n => ({ ...n, leida: true })));
-        toast.success('Todas las notificaciones marcadas como leídas');
+        toast.success('Todas leídas');
     };
 
     /* Eliminar */
     const eliminar = (id) => {
         setNotifs(prev => prev.filter(n => n.id !== id));
-        toast.info('Notificación eliminada');
+        toast.info('Eliminada');
     };
 
     /* Limpiar todas */
     const limpiarTodas = () => {
         setNotifs([]);
-        toast.info('Bandeja de notificaciones vacía');
+        toast.info('Bandeja vacía');
     };
 
     /* Filtrado */
     const NIVEL_MAP = { 'Éxito': 'success', 'Advertencia': 'warning', 'Error': 'error', 'Info': 'info' };
-    const filtradas = notifs.filter(n => {
+    const porTab = notifs.filter(n => CAT_MAP[n.tipo] === activeTab);
+    const filtradas = porTab.filter(n => {
         if (filtro === 'Todas') return true;
         if (filtro === 'No leídas') return !n.leida;
         return n.nivel === NIVEL_MAP[filtro];
     });
 
-    const noLeidas = notifs.filter(n => !n.leida).length;
+    const noLeidasGestion = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'gestion').length;
+    const noLeidasSistema = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'sistema').length;
 
     return (
-        <div className="max-w-3xl mx-auto">
+        <div className="notif-page">
 
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <Bell size={22} className="text-gray-700" />
-                        {noLeidas > 0 && (
-                            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">
-                                {noLeidas}
-                            </span>
-                        )}
+            <header className="notif-page-header">
+                <div className="notif-header-info">
+                    <div className="notif-bell-box">
+                        <Bell size={28} />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900 leading-none">Notificaciones</h1>
-                        <p className="text-xs text-gray-400 mt-0.5">{noLeidas} sin leer · {notifs.length} en total</p>
+                        <h1 className="notif-title">Centro de Notificaciones</h1>
+                        <p className="notif-subtitle">Gestiona avisos de pacientes y alertas técnicas</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {noLeidas > 0 && (
-                        <button
-                            onClick={marcarTodasLeidas}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
-                        >
-                            <CheckCheck size={14} /> Marcar todas leídas
-                        </button>
-                    )}
-                    {notifs.length > 0 && (
-                        <button
-                            onClick={limpiarTodas}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                        >
-                            <Trash2 size={13} /> Vaciar
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Prueba de Toast Demo */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5">
-                <p className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
-                    <Filter size={13} /> Probar notificaciones toast (Sonner)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                    {['success', 'warning', 'error', 'info'].map(n => {
-                        const cfg = NIVEL_CONFIG[n];
-                        return (
-                            <button
-                                key={n}
-                                onClick={() => toastDemo(n)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${cfg.colorBg} ${cfg.colorBorder} ${cfg.colorIcon} hover:opacity-80 transition-opacity`}
-                            >
-                                {cfg.icon} {cfg.label}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Filtros */}
-            <div className="flex gap-2 flex-wrap mb-4">
-                {FILTROS.map(f => (
-                    <button
-                        key={f}
-                        onClick={() => setFiltro(f)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${filtro === f
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary'
-                            }`}
-                    >
-                        {f}
+                <div className="notif-global-actions">
+                    <button onClick={marcarTodasLeidas} className="notif-btn-action primary">
+                        <CheckCheck size={16} /> Mark All
                     </button>
-                ))}
-            </div>
-
-            {/* Lista */}
-            {filtradas.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                    <BellOff size={40} className="mb-3 opacity-30" />
-                    <p className="text-sm font-medium">Sin notificaciones</p>
+                    <div className="notif-divider-v" />
+                    <button onClick={limpiarTodas} className="notif-btn-action danger">
+                        <Trash2 size={16} /> Vaciar
+                    </button>
                 </div>
-            ) : (
-                <div className="flex flex-col gap-2">
-                    {filtradas.map(n => {
-                        const cfg = NIVEL_CONFIG[n.nivel];
-                        return (
-                            <div
-                                key={n.id}
-                                className={`flex gap-4 p-4 rounded-xl border transition-all ${n.leida
-                                        ? 'bg-white border-gray-100 opacity-70'
-                                        : `${cfg.colorBg} ${cfg.colorBorder}`
-                                    }`}
-                            >
-                                {/* Icono */}
-                                <div className={`mt-0.5 shrink-0 ${n.leida ? 'text-gray-300' : cfg.colorIcon}`}>
-                                    {cfg.icon}
-                                </div>
+            </header>
 
-                                {/* Contenido */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-center gap-2">
-                                            {!n.leida && (
-                                                <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.colorDot}`} />
-                                            )}
-                                            <p className="text-sm font-semibold text-gray-800 leading-tight">
-                                                {n.titulo}
-                                            </p>
-                                        </div>
-                                        <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0">
-                                            {formatFecha(n.fecha)}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{n.mensaje}</p>
-                                </div>
+            <div className="notif-panel">
+                <nav className="notif-tabs">
+                    <button
+                        onClick={() => { setActiveTab('gestion'); setFiltro('Todas'); }}
+                        className={`notif-tab-btn ${activeTab === 'gestion' ? 'active' : ''}`}
+                    >
+                        <Users size={20} />
+                        Gestión de Pacientes
+                        {noLeidasGestion > 0 && <span className="notif-tab-count">{noLeidasGestion}</span>}
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab('sistema'); setFiltro('Todas'); }}
+                        className={`notif-tab-btn ${activeTab === 'sistema' ? 'active' : ''}`}
+                    >
+                        <Activity size={20} />
+                        Sistema
+                        {noLeidasSistema > 0 && <span className="notif-tab-count">{noLeidasSistema}</span>}
+                    </button>
+                </nav>
 
-                                {/* Acciones */}
-                                <div className="flex flex-col gap-1 shrink-0">
-                                    {!n.leida && (
-                                        <button
-                                            onClick={() => marcarLeida(n.id)}
-                                            title="Marcar como leída"
-                                            className="p-1 text-gray-400 hover:text-primary transition-colors"
-                                        >
-                                            <CheckCheck size={15} />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => eliminar(n.id)}
-                                        title="Eliminar"
-                                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
+                <main className="notif-body">
+                    <div className="notif-filters">
+                        <div className="notif-filter-group">
+                            {FILTROS.map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFiltro(f)}
+                                    className={`notif-filter-btn ${filtro === f ? 'active' : ''}`}
+                                >
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="notif-stats">
+                            Mostrando <b>{filtradas.length}</b> avisos
+                        </div>
+                    </div>
+
+                    {filtradas.length === 0 ? (
+                        <div className="notif-empty">
+                            <div className="notif-empty-icon">
+                                <BellOff size={56} />
                             </div>
-                        );
-                    })}
-                </div>
-            )}
+                            <h2 className="notif-empty-title">Sin notificaciones</h2>
+                            <p className="notif-empty-desc">Todo está en orden por ahora.</p>
+                        </div>
+                    ) : (
+                        <div className="notif-list">
+                            {filtradas.map(n => {
+                                const cfg = NIVEL_CONFIG[n.nivel];
+                                return (
+                                    <div key={n.id} className={`notif-card ${n.leida ? 'read' : 'unread'}`}>
+                                        {!n.leida && <div className="notif-card-indicator" />}
+
+                                        <div className="notif-icon-wrapper" style={{ background: cfg.colorBg, color: cfg.colorIcon }}>
+                                            {React.cloneElement(cfg.icon, { size: 28 })}
+                                        </div>
+
+                                        <div className="notif-content">
+                                            <div className="notif-content-header">
+                                                <div className="notif-card-title-row">
+                                                    <h3 className="notif-card-title">{n.titulo}</h3>
+                                                    {n.nivel === 'error' && !n.leida && <span className="notif-badge-high">Prioridad</span>}
+                                                </div>
+                                                <span className="notif-timestamp">{formatFecha(n.fecha)}</span>
+                                            </div>
+                                            <p className="notif-card-msg">{n.mensaje}</p>
+                                        </div>
+
+                                        <div className="notif-card-actions">
+                                            {!n.leida && (
+                                                <button onClick={() => marcarLeida(n.id)} className="notif-action-btn success" title="Leída">
+                                                    <CheckCheck size={20} />
+                                                </button>
+                                            )}
+                                            <button onClick={() => eliminar(n.id)} className="notif-action-btn danger" title="Eliminar">
+                                                <Trash2 size={20} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </main>
+
+                <footer className="notif-footer">
+                    <div className="notif-live-badge">
+                        <div className="notif-live-dot" />
+                        <span className="notif-live-text">Live Feedback</span>
+                    </div>
+                    <div className="notif-demo-tools">
+                        <span className="notif-demo-label">Probar alertas:</span>
+                        <div className="notif-demo-btns">
+                            {['success', 'warning', 'error', 'info'].map(n => (
+                                <button key={n} onClick={() => toastDemo(n)} className="notif-demo-dot" title={n} style={{ color: NIVEL_CONFIG[n].colorIcon }}>
+                                    {React.cloneElement(NIVEL_CONFIG[n].icon, { size: 18 })}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </footer>
+            </div>
         </div>
     );
 };
