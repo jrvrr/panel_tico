@@ -7,6 +7,7 @@ import {
     X, Plus, SlidersHorizontal, FilterX, ShieldCheck,
     BadgeCheck, Camera, EyeOff, Loader2, Star
 } from 'lucide-react';
+import { useNotifications } from '../../context/NotificationContext';
 
 // ── Roles (espejo de la BD) ──────────────────────────────────────────────────
 const ESPECIALIDADES = [
@@ -325,8 +326,9 @@ const FormBody = ({
 
 // ════════════════════════════════════════════════════════════════════════════
 const EspecialistasPage = () => {
+    const { addNotification } = useNotifications();
     // ── Estado principal ──
-    const [especialistas, setEspecialistas] = useState([]);
+    const [especialistas, setEspecialistas] = useState(INITIAL_DATA);
     const [nextId, setNextId] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -341,7 +343,15 @@ const EspecialistasPage = () => {
                 const maxId = list.reduce((acc, e) => Math.max(acc, e.id), 0);
                 setNextId(maxId + 1);
             })
-            .catch(err => setError(err.message))
+            .catch(err => {
+                setError(err.message);
+                addNotification({
+                    tipo: 'sistema',
+                    titulo: 'Error de API (Especialistas)',
+                    mensaje: `Fallo al obtener datos: ${err.message}`,
+                    nivel: 'error'
+                });
+            })
             .finally(() => setLoading(false));
     }, []);
 
@@ -509,6 +519,13 @@ const EspecialistasPage = () => {
         };
         setEspecialistas(prev => [...prev, nuevo]);
         setNextId(id => id + 1);
+        import('sonner').then(({ toast }) => toast.success(`Especialista ${nuevo.nombre} registrado.`));
+        addNotification({
+            tipo: 'sistema',
+            titulo: 'Nuevo especialista registrado',
+            mensaje: `El especialista ${nuevo.nombre} (${nuevo.especialidad_principal}) se registró exitosamente.`,
+            nivel: 'success'
+        });
         setModalNuevo(false);
         setFormData(EMPTY_FORM);
         setFormErrors({});
@@ -545,6 +562,13 @@ const EspecialistasPage = () => {
                 ? { ...e, ...formData, cedula_verificada: cedulaStatus === 'ok' }
                 : e)
         );
+        import('sonner').then(({ toast }) => toast.success(`Especialista modificado.`));
+        addNotification({
+            tipo: 'sistema',
+            titulo: 'Perfil actualizado',
+            mensaje: `Se actualizaron los datos del especialista ${formData.nombre}.`,
+            nivel: 'info'
+        });
         setModalEditar(null);
         setFormData(EMPTY_FORM);
         setFormErrors({});

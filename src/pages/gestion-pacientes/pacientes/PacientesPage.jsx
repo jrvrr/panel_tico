@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import './Pacientes.css';
 import { ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck, X, Plus, SlidersHorizontal, FilterX } from 'lucide-react';
+import { useNotifications } from '../../../context/NotificationContext';
 
 const EMPTY_NUEVO = {
     nombre: '',
@@ -20,6 +21,7 @@ const EMPTY_NUEVO = {
 };
 
 const PacientesPage = () => {
+    const { addNotification } = useNotifications();
     const [selectedRows, setSelectedRows] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [modalPaciente, setModalPaciente] = useState(null);
@@ -113,6 +115,13 @@ const PacientesPage = () => {
             prev.map(p => selectedRows.includes(p.id) && p.active
                 ? { ...p, active: false, estado: 'Inhabilitado' } : p)
         );
+        import('sonner').then(({ toast }) => toast.warning(`Se inhabilitaron ${selectedRows.length} paciente(s)`));
+        addNotification({
+            tipo: 'paciente',
+            titulo: 'Pacientes inhabilitados',
+            mensaje: `Se inhabilitaron ${selectedRows.length} paciente(s) del sistema.`,
+            nivel: 'warning'
+        });
         setSelectedRows([]);
     };
 
@@ -122,11 +131,25 @@ const PacientesPage = () => {
             prev.map(p => selectedRows.includes(p.id) && !p.active
                 ? { ...p, active: true, estado: 'Estable' } : p)
         );
+        import('sonner').then(({ toast }) => toast.success(`Se reactivaron ${selectedRows.length} paciente(s)`));
+        addNotification({
+            tipo: 'paciente',
+            titulo: 'Pacientes reactivados',
+            mensaje: `Se reactivaron ${selectedRows.length} paciente(s) en el sistema.`,
+            nivel: 'success'
+        });
         setSelectedRows([]);
     };
 
     const handleGuardarEdicion = () => {
         setPacientes(prev => prev.map(p => p.id === editPaciente.id ? { ...editPaciente } : p));
+        import('sonner').then(({ toast }) => toast.success(`Paciente actualizado`));
+        addNotification({
+            tipo: 'paciente',
+            titulo: 'Perfil de paciente actualizado',
+            mensaje: `Se modificó la información de ${editPaciente.nombre}.`,
+            nivel: 'info'
+        });
         setEditPaciente(null);
         setSelectedRows([]);
     };
@@ -220,6 +243,13 @@ const PacientesPage = () => {
         };
         setPacientes(prev => [...prev, nuevo]);
         setNextId(id => id + 1);
+        import('sonner').then(({ toast }) => toast.success(`Paciente registrado`));
+        addNotification({
+            tipo: 'sistema',
+            titulo: 'Nuevo paciente registrado',
+            mensaje: `Se registró al paciente ${nuevo.paciente} en el sistema.`,
+            nivel: 'success'
+        });
         setFormNuevo(EMPTY_NUEVO);
         setFormErrors({});
         setModalNuevo(false);

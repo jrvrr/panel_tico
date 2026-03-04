@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import '../pacientes/Pacientes.css';
 import { ChevronUp, ChevronDown, Eye, CheckCircle, Trash2, X, Plus, DollarSign, SlidersHorizontal, FilterX } from 'lucide-react';
+import { useNotifications } from '../../../context/NotificationContext';
 
 // Lista de pacientes simulados (en un app real vendría de la BD)
 const PACIENTES_LISTA = [
@@ -23,6 +24,7 @@ const EMPTY_PAGO = {
 };
 
 const PagosPage = () => {
+    const { addNotification } = useNotifications();
     const [selectedRows, setSelectedRows] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [modalDetalle, setModalDetalle] = useState(null);
@@ -113,11 +115,25 @@ const PagosPage = () => {
             prev.map(p => selectedRows.includes(p.id) && p.estado_pago !== 'Pagado'
                 ? { ...p, estado_pago: 'Pagado' } : p)
         );
+        import('sonner').then(({ toast }) => toast.success(`Se registró el pago de ${selectedRows.length} factura(s)`));
+        addNotification({
+            tipo: 'pago',
+            titulo: 'Pagos completados',
+            mensaje: `Se registró el pago de ${selectedRows.length} factura(s) pendiente(s).`,
+            nivel: 'success'
+        });
         setSelectedRows([]);
     };
 
     const handleEliminar = () => {
         setPagos(prev => prev.filter(p => !selectedRows.includes(p.id)));
+        import('sonner').then(({ toast }) => toast.info(`Se eliminaron ${selectedRows.length} registro(s) de pago`));
+        addNotification({
+            tipo: 'pago',
+            titulo: 'Registros eliminados',
+            mensaje: `Se eliminaron ${selectedRows.length} registro(s) de pago del historial.`,
+            nivel: 'info'
+        });
         setSelectedRows([]);
     };
 
@@ -141,6 +157,13 @@ const PagosPage = () => {
         const nuevo = { id: nextId, ...formNuevo, monto: parseFloat(formNuevo.monto), paciente_id: parseInt(formNuevo.paciente_id) };
         setPagos(prev => [...prev, nuevo]);
         setNextId(id => id + 1);
+        import('sonner').then(({ toast }) => toast.success(`Nuevo pago registrado`));
+        addNotification({
+            tipo: 'pago',
+            titulo: 'Nuevo pago registrado',
+            mensaje: `Se emitió un recibo por $${nuevo.monto} MXN.`,
+            nivel: 'success'
+        });
         setFormNuevo(EMPTY_PAGO);
         setFormErrors({});
         setModalNuevo(false);

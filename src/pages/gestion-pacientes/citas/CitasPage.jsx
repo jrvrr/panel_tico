@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import '../pacientes/Pacientes.css';
 import { ChevronUp, ChevronDown, Eye, Pencil, X, Plus, XCircle, CheckCircle } from 'lucide-react';
+import { useNotifications } from '../../../context/NotificationContext';
 
 const EMPTY_CITA = {
     paciente_nombre: '',
@@ -13,6 +14,7 @@ const EMPTY_CITA = {
 };
 
 const CitasPage = () => {
+    const { addNotification } = useNotifications();
     const [selectedRows, setSelectedRows] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [modalCita, setModalCita] = useState(null);
@@ -88,6 +90,13 @@ const CitasPage = () => {
             prev.map(c => selectedRows.includes(c.id) && c.estado_cita !== 'Cancelada' && c.estado_cita !== 'Completada'
                 ? { ...c, estado_cita: 'Cancelada' } : c)
         );
+        import('sonner').then(({ toast }) => toast.warning(`Se cancelaron ${selectedRows.length} cita(s)`));
+        addNotification({
+            tipo: 'cita',
+            titulo: 'Citas canceladas',
+            mensaje: `Se cancelaron ${selectedRows.length} cita(s) en el sistema.`,
+            nivel: 'warning'
+        });
         setSelectedRows([]);
     };
 
@@ -96,11 +105,25 @@ const CitasPage = () => {
             prev.map(c => selectedRows.includes(c.id) && c.estado_cita === 'Programada'
                 ? { ...c, estado_cita: 'Confirmada' } : c)
         );
+        import('sonner').then(({ toast }) => toast.success(`Se confirmaron ${selectedRows.length} cita(s)`));
+        addNotification({
+            tipo: 'cita',
+            titulo: 'Citas confirmadas',
+            mensaje: `Se confirmaron ${selectedRows.length} cita(s) en el sistema.`,
+            nivel: 'success'
+        });
         setSelectedRows([]);
     };
 
     const handleGuardarEdicion = () => {
         setCitas(prev => prev.map(c => c.id === editCita.id ? { ...editCita } : c));
+        import('sonner').then(({ toast }) => toast.success(`Cita actualizada exitosamente`));
+        addNotification({
+            tipo: 'cita',
+            titulo: 'Cita actualizada',
+            mensaje: `Se modificó la cita del paciente ${editCita.paciente_nombre}.`,
+            nivel: 'info'
+        });
         setEditCita(null);
         setSelectedRows([]);
     };
@@ -135,6 +158,13 @@ const CitasPage = () => {
         const nueva = { id: nextId, ...formNueva };
         setCitas(prev => [...prev, nueva]);
         setNextId(id => id + 1);
+        import('sonner').then(({ toast }) => toast.success(`Cita agendada para ${nueva.paciente_nombre}`));
+        addNotification({
+            tipo: 'cita',
+            titulo: 'Nueva cita agendada',
+            mensaje: `Se programó una cita para ${nueva.paciente_nombre} a las ${nueva.hora_cita}.`,
+            nivel: 'success'
+        });
         setFormNueva(EMPTY_CITA);
         setFormErrors({});
         setModalNueva(false);
