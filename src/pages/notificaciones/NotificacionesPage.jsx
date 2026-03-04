@@ -42,7 +42,8 @@ const formatFecha = (iso) => {
         + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 };
 
-const FILTROS = ['Todas', 'No leídas', 'Éxito', 'Advertencia', 'Error', 'Info'];
+const FILTROS_GESTION = ['Todas', 'No leídas', 'Éxito', 'Advertencia', 'Error', 'Info'];
+const FILTROS_SISTEMA = ['Todas', 'No leídas', 'Error'];
 
 /* ─── Componente principal ─────────────────────────────────────────────── */
 const NotificacionesPage = () => {
@@ -101,6 +102,7 @@ const NotificacionesPage = () => {
     };
 
     /* Filtrado */
+    const filtrosActuales = activeTab === 'gestion' ? FILTROS_GESTION : FILTROS_SISTEMA;
     const NIVEL_MAP = { 'Éxito': 'success', 'Advertencia': 'warning', 'Error': 'error', 'Info': 'info' };
     const porTab = notifs.filter(n => CAT_MAP[n.tipo] === activeTab);
     const filtradas = porTab.filter(n => {
@@ -160,7 +162,7 @@ const NotificacionesPage = () => {
                 <main className="notif-body">
                     <div className="notif-filters">
                         <div className="notif-filter-group">
-                            {FILTROS.map(f => (
+                            {filtrosActuales.map(f => (
                                 <button
                                     key={f}
                                     onClick={() => setFiltro(f)}
