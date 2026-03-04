@@ -327,8 +327,9 @@
 .notif-card {
     position: relative;
     display: flex;
-    gap: 1.25rem;
-    padding: 1.25rem;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
     border-radius: 1rem;
     border: 1px solid transparent;
     transition: all 0.3s;
@@ -383,9 +384,9 @@
 
 .notif-content-header {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
     margin-bottom: 0.25rem;
 }
 
@@ -450,13 +451,7 @@
     align-items: center;
     gap: 0.5rem;
     flex-shrink: 0;
-    align-self: center;
-}
-
-@media (min-width: 768px) {
-    .notif-card-actions {
-        flex-direction: column;
-    }
+    margin-left: 0.5rem;
 }
 
 .notif-action-btn {

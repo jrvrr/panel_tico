@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const getInitials = (nombre = '') => {
@@ -23,13 +24,13 @@ const getInitials = (nombre = '') => {
 };
 
 // ── SidebarItem ──────────────────────────────────────────────────────────────
-const SidebarItem = ({ to, icon: Icon, label, isCollapsed }) => {
+const SidebarItem = ({ to, icon: Icon, label, isCollapsed, badges = [] }) => {
     return (
         <NavLink
             to={to}
             className={({ isActive }) =>
                 clsx(
-                    "flex items-center gap-2 px-3 py-2 transition-all rounded-lg mb-0.5 group relative",
+                    "flex items-center justify-between px-3 py-2 transition-all rounded-lg mb-0.5 group relative",
                     isActive
                         ? 'bg-primary text-white shadow-md'
                         : 'text-gray-600 hover:bg-gray-100',
@@ -37,12 +38,49 @@ const SidebarItem = ({ to, icon: Icon, label, isCollapsed }) => {
                 )
             }
         >
-            <Icon size={17} className="shrink-0" />
-            {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden">{label}</span>}
-            {isCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-                    {label}
+            <div className="flex items-center gap-2 overflow-hidden">
+                <Icon size={17} className="shrink-0" />
+                {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden">{label}</span>}
+            </div>
+
+            {/* Badges para el modo expandido */}
+            {!isCollapsed && badges.length > 0 && (
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                    {badges.map((badge, idx) => (
+                        badge.count > 0 && (
+                            <span
+                                key={idx}
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${badge.colorClass}`}
+                                title={badge.title}
+                            >
+                                {badge.count > 99 ? '99+' : badge.count}
+                            </span>
+                        )
+                    ))}
                 </div>
+            )}
+
+            {/* Tooltip y Badges para el modo colapsado */}
+            {isCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none flex items-center gap-2">
+                    <span>{label}</span>
+                    {badges.some(b => b.count > 0) && (
+                        <div className="flex gap-1 border-l border-gray-600 pl-2 ml-1">
+                            {badges.map((badge, idx) => (
+                                badge.count > 0 && (
+                                    <span key={idx} className={`text-[9px] font-bold px-1 py-0 rounded text-white ${badge.colorClass}`}>
+                                        {badge.count}
+                                    </span>
+                                )
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Indicador sutil sobre el ícono cuando está colapsado y hay notificaciones */}
+            {isCollapsed && badges.some(b => b.count > 0) && (
+                <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white"></div>
             )}
         </NavLink>
     );
@@ -102,7 +140,25 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
 const DashboardLayout = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { user, logout, isSuperAdmin } = useAuth();
+    const { notifs = [] } = useNotifications();
     const navigate = useNavigate();
+
+    // Calcular notificaciones no leídas por categoría
+    const CAT_MAP = {
+        cita: 'gestion',
+        pago: 'gestion',
+        paciente: 'gestion',
+        sistema: 'sistema',
+        seguridad: 'sistema',
+    };
+
+    const unreadGestion = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'gestion').length;
+    const unreadSistema = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'sistema').length;
+
+    const notificationBadges = [
+        { count: unreadSistema, colorClass: 'bg-blue-500', title: 'Notificaciones del Sistema' },
+        { count: unreadGestion, colorClass: 'bg-orange-500', title: 'Notificaciones de Gestión' }
+    ];
 
     const handleLogout = () => {
         logout();
@@ -172,7 +228,13 @@ const DashboardLayout = () => {
                                 General
                             </p>
                         )}
-                        <SidebarItem to="/notificaciones" icon={Bell} label="Notificaciones" isCollapsed={isCollapsed} />
+                        <SidebarItem
+                            to="/notificaciones"
+                            icon={Bell}
+                            label="Notificaciones"
+                            isCollapsed={isCollapsed}
+                            badges={notificationBadges}
+                        />
                     </div>
                 </nav>
 
