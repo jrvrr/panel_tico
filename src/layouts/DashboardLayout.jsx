@@ -30,17 +30,20 @@ const SidebarItem = ({ to, icon: Icon, label, isCollapsed, badges = [] }) => {
             to={to}
             className={({ isActive }) =>
                 clsx(
-                    "flex items-center justify-between px-3 py-2 transition-all rounded-lg mb-0.5 group relative",
+                    "flex items-center justify-between transition-all duration-300 rounded-xl mb-1 group relative",
                     isActive
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-600 hover:bg-gray-100',
-                    isCollapsed && "justify-center"
+                        ? 'text-white shadow-md scale-[1.02] z-10'
+                        : 'text-gray-600 hover:bg-slate-50 hover:text-[#3971b8] hover:scale-[1.02] active:scale-95',
+                    isCollapsed ? "justify-center p-3" : "px-3 py-2"
                 )
             }
+            style={({ isActive }) =>
+                isActive ? { background: 'linear-gradient(135deg, #3971b8 0%, #5c93c9 100%)' } : {}
+            }
         >
-            <div className="flex items-center gap-2 overflow-hidden">
-                <Icon size={17} className="shrink-0" />
-                {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden">{label}</span>}
+            <div className="flex items-center gap-2 overflow-visible">
+                <Icon size={20} className={clsx("shrink-0 transition-transform duration-300 group-hover:scale-110", badges.length > 0 && "group-hover:text-red-500")} />
+                {!isCollapsed && <span className="text-sm font-bold whitespace-nowrap overflow-hidden tracking-wide">{label}</span>}
             </div>
 
             {/* Badges para el modo expandido */}
@@ -106,14 +109,16 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
             <button
                 onClick={toggleOpen}
                 className={clsx(
-                    "w-full flex items-center justify-between px-3 py-2 transition-all rounded-lg group relative",
-                    isActiveParent ? 'text-primary bg-blue-50' : 'text-gray-600 hover:bg-gray-100',
+                    "w-full flex items-center justify-between px-3 py-2 transition-all duration-300 rounded-xl group relative",
+                    isActiveParent
+                        ? 'text-indigo-700 bg-indigo-50 shadow-sm border border-indigo-100 scale-[1.02] z-10'
+                        : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 hover:scale-[1.03] active:scale-95',
                     isCollapsed && "justify-center"
                 )}
             >
                 <div className="flex items-center gap-2">
-                    <Icon size={17} className="shrink-0" />
-                    {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden">{label}</span>}
+                    <Icon size={18} className="shrink-0 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
+                    {!isCollapsed && <span className="text-sm font-bold whitespace-nowrap overflow-hidden tracking-wide">{label}</span>}
                 </div>
                 {!isCollapsed && (isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
 
