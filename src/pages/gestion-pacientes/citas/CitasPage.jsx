@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import '../pacientes/Pacientes.css';
-import { ChevronUp, ChevronDown, Eye, Pencil, X, Plus, XCircle, CheckCircle } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, Pencil, X, Plus, XCircle, CheckCircle, Calendar, List } from 'lucide-react';
 import { useNotifications } from '../../../context/NotificationContext';
+import { getPacientes, getCitas, createCita, updateCita } from '../../../services/api';
+import CalendarioCitas from './CalendarioCitas';
 
 const EMPTY_CITA = {
     paciente_nombre: '',
@@ -26,16 +28,33 @@ const CitasPage = () => {
     const [filterEstado, setFilterEstado] = useState('');
     const [nextId, setNextId] = useState(9);
 
-    const [citas, setCitas] = useState([
-        { id: 1, paciente_nombre: 'Cristhian', tutor: 'Jane Cooper', fecha_cita: '2/19/21', hora_cita: '12:00', observacion_clinica: 'Control mensual', estado_cita: 'Confirmada', progreso_terapia_pct: 75 },
-        { id: 2, paciente_nombre: 'Mario', tutor: 'Wade Warren', fecha_cita: '5/7/16', hora_cita: '16:00', observacion_clinica: 'Primera consulta', estado_cita: 'Confirmada', progreso_terapia_pct: 30 },
-        { id: 3, paciente_nombre: 'Julio', tutor: 'Esther Howard', fecha_cita: '9/18/16', hora_cita: '18:00', observacion_clinica: 'Revisión terapia', estado_cita: 'Programada', progreso_terapia_pct: 50 },
-        { id: 4, paciente_nombre: 'Marcos', tutor: 'Cameron Williamson', fecha_cita: '2/11/12', hora_cita: '11:00', observacion_clinica: 'Seguimiento', estado_cita: 'Confirmada', progreso_terapia_pct: 90 },
-        { id: 5, paciente_nombre: 'Ignacio', tutor: 'Brooklyn Simmons', fecha_cita: '9/18/16', hora_cita: '16:00', observacion_clinica: 'Evaluación inicial', estado_cita: 'Programada', progreso_terapia_pct: 10 },
-        { id: 6, paciente_nombre: 'Octavio', tutor: 'Leslie Alexander', fecha_cita: '1/28/17', hora_cita: '17:00', observacion_clinica: 'Control peso', estado_cita: 'Programada', progreso_terapia_pct: 60 },
-        { id: 7, paciente_nombre: 'Franco', tutor: 'Jenny Wilson', fecha_cita: '5/27/15', hora_cita: '15:00', observacion_clinica: '', estado_cita: 'Completada', progreso_terapia_pct: 100 },
-        { id: 8, paciente_nombre: 'Lazario', tutor: 'Guy Hawkins', fecha_cita: '8/2/19', hora_cita: '19:00', observacion_clinica: 'Urgencia', estado_cita: 'Confirmada', progreso_terapia_pct: 45 },
-    ]);
+    const [citas, setCitas] = useState([]);
+
+    const [viewMode, setViewMode] = useState('list'); // 'list' o 'calendar'
+
+    const [pacientesList, setPacientesList] = useState([]);
+
+    const loadCitas = async () => {
+        try {
+            const response = await getCitas();
+            setCitas(response.data || []);
+        } catch (error) {
+            console.error("Error cargando citas:", error);
+        }
+    };
+
+    useEffect(() => {
+        loadCitas();
+        const fetchPacientes = async () => {
+            try {
+                const response = await getPacientes();
+                setPacientesList(response.data || []);
+            } catch (error) {
+                console.error("Error fetching pacientes for appointments:", error);
+            }
+        };
+        fetchPacientes();
+    }, []);
 
     // ── Selección ──
     const toggleRow = (id) =>
@@ -63,6 +82,15 @@ const CitasPage = () => {
             : <ChevronDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />;
     };
 
+    const formatFecha = (f) => {
+        if (!f) return '—';
+        if (f.includes('-')) {
+            const [y, m, d] = f.split('-');
+            return `${d}/${m}/${y}`;
+        }
+        return f;
+    };
+
     const filteredData = useMemo(() => {
         let items = [...citas];
         if (searchText.trim())
@@ -83,49 +111,66 @@ const CitasPage = () => {
 
     // ── Acciones ──
     const handleVerDetalle = () => setModalCita(selectedSingle);
+
+    const handleNuevaCitaFecha = (fecha) => {
+        setFormNueva({ ...EMPTY_CITA, fecha_cita: fecha });
+        setFormErrors({});
+        setModalNueva(true);
+    };
     const handleEditar = () => setEditCita({ ...selectedSingle });
 
-    const handleCancelar = () => {
-        setCitas(prev =>
-            prev.map(c => selectedRows.includes(c.id) && c.estado_cita !== 'Cancelada' && c.estado_cita !== 'Completada'
-                ? { ...c, estado_cita: 'Cancelada' } : c)
-        );
-        import('sonner').then(({ toast }) => toast.warning(`Se cancelaron ${selectedRows.length} cita(s)`));
-        addNotification({
-            tipo: 'cita',
-            titulo: 'Citas canceladas',
-            mensaje: `Se cancelaron ${selectedRows.length} cita(s) en el sistema.`,
-            nivel: 'warning'
-        });
-        setSelectedRows([]);
+    const handleCancelar = async () => {
+        try {
+            const activas = selectedCitas.filter(c => c.estado_cita !== 'Cancelada' && c.estado_cita !== 'Completada');
+            await Promise.all(activas.map(c => updateCita(c.id, { ...c, estado_cita: 'Cancelada' })));
+            await loadCitas();
+            import('sonner').then(({ toast }) => toast.warning(`Se cancelaron ${activas.length} cita(s)`));
+            addNotification({
+                tipo: 'cita',
+                titulo: 'Citas canceladas',
+                mensaje: `Se cancelaron ${activas.length} cita(s) en el sistema.`,
+                nivel: 'warning'
+            });
+            setSelectedRows([]);
+        } catch (error) {
+            import('sonner').then(({ toast }) => toast.error(`Error al cancelar: ${error.message}`));
+        }
     };
 
-    const handleConfirmar = () => {
-        setCitas(prev =>
-            prev.map(c => selectedRows.includes(c.id) && c.estado_cita === 'Programada'
-                ? { ...c, estado_cita: 'Confirmada' } : c)
-        );
-        import('sonner').then(({ toast }) => toast.success(`Se confirmaron ${selectedRows.length} cita(s)`));
-        addNotification({
-            tipo: 'cita',
-            titulo: 'Citas confirmadas',
-            mensaje: `Se confirmaron ${selectedRows.length} cita(s) en el sistema.`,
-            nivel: 'success'
-        });
-        setSelectedRows([]);
+    const handleConfirmar = async () => {
+        try {
+            const programadas = selectedCitas.filter(c => c.estado_cita === 'Programada');
+            await Promise.all(programadas.map(c => updateCita(c.id, { ...c, estado_cita: 'Confirmada' })));
+            await loadCitas();
+            import('sonner').then(({ toast }) => toast.success(`Se confirmaron ${programadas.length} cita(s)`));
+            addNotification({
+                tipo: 'cita',
+                titulo: 'Citas confirmadas',
+                mensaje: `Se confirmaron ${programadas.length} cita(s) en el sistema.`,
+                nivel: 'success'
+            });
+            setSelectedRows([]);
+        } catch (error) {
+            import('sonner').then(({ toast }) => toast.error(`Error al confirmar: ${error.message}`));
+        }
     };
 
-    const handleGuardarEdicion = () => {
-        setCitas(prev => prev.map(c => c.id === editCita.id ? { ...editCita } : c));
-        import('sonner').then(({ toast }) => toast.success(`Cita actualizada exitosamente`));
-        addNotification({
-            tipo: 'cita',
-            titulo: 'Cita actualizada',
-            mensaje: `Se modificó la cita del paciente ${editCita.paciente_nombre}.`,
-            nivel: 'info'
-        });
-        setEditCita(null);
-        setSelectedRows([]);
+    const handleGuardarEdicion = async () => {
+        try {
+            await updateCita(editCita.id, editCita);
+            await loadCitas();
+            import('sonner').then(({ toast }) => toast.success(`Cita actualizada exitosamente`));
+            addNotification({
+                tipo: 'cita',
+                titulo: 'Cita actualizada',
+                mensaje: `Se modificó la cita del paciente ${editCita.paciente_nombre}.`,
+                nivel: 'info'
+            });
+            setEditCita(null);
+            setSelectedRows([]);
+        } catch (error) {
+            import('sonner').then(({ toast }) => toast.error(`Error al actualizar cita: ${error.message}`));
+        }
     };
 
     // ── Form nueva cita ──
@@ -135,7 +180,24 @@ const CitasPage = () => {
             if (isNaN(n)) value = 0;
             else value = Math.max(0, Math.min(100, n));
         }
-        setFormNueva(prev => ({ ...prev, [field]: value }));
+
+        setFormNueva(prev => {
+            const updated = { ...prev, [field]: value };
+
+            // Auto-fill tutor y paciente_id when patient changes
+            if (field === 'paciente_nombre') {
+                const selectedPatient = pacientesList.find(p => p.nombre === value || p.paciente === value);
+                if (selectedPatient) {
+                    updated.tutor = selectedPatient.tutor_nombre || selectedPatient.tutor || 'N/D';
+                    updated.paciente_id = selectedPatient.id;
+                } else {
+                    updated.tutor = '';
+                    updated.paciente_id = null;
+                }
+            }
+            return updated;
+        });
+
         setFormErrors(prev => ({ ...prev, [field]: undefined }));
     };
 
@@ -153,21 +215,24 @@ const CitasPage = () => {
         return Object.keys(errors).length === 0;
     };
 
-    const handleAgregarCita = () => {
+    const handleAgregarCita = async () => {
         if (!validateForm()) return;
-        const nueva = { id: nextId, ...formNueva };
-        setCitas(prev => [...prev, nueva]);
-        setNextId(id => id + 1);
-        import('sonner').then(({ toast }) => toast.success(`Cita agendada para ${nueva.paciente_nombre}`));
-        addNotification({
-            tipo: 'cita',
-            titulo: 'Nueva cita agendada',
-            mensaje: `Se programó una cita para ${nueva.paciente_nombre} a las ${nueva.hora_cita}.`,
-            nivel: 'success'
-        });
-        setFormNueva(EMPTY_CITA);
-        setFormErrors({});
-        setModalNueva(false);
+        try {
+            await createCita(formNueva);
+            await loadCitas();
+            import('sonner').then(({ toast }) => toast.success(`Cita agendada para ${formNueva.paciente_nombre}`));
+            addNotification({
+                tipo: 'cita',
+                titulo: 'Nueva cita agendada',
+                mensaje: `Se programó una cita para ${formNueva.paciente_nombre} a las ${formNueva.hora_cita}.`,
+                nivel: 'success'
+            });
+            setFormNueva(EMPTY_CITA);
+            setFormErrors({});
+            setModalNueva(false);
+        } catch (error) {
+            import('sonner').then(({ toast }) => toast.error(`Error al crear cita: ${error.message}`));
+        }
     };
 
     const labelSeleccion = selectedRows.length === 1
@@ -198,9 +263,25 @@ const CitasPage = () => {
                     <h1 className="tico-title">Listado de Citas</h1>
                     <p className="tico-subtitle">Administra la programación y seguimiento de citas</p>
                 </div>
-                <button className="tico-btn-nuevo" onClick={() => { setFormNueva(EMPTY_CITA); setFormErrors({}); setModalNueva(true); }}>
-                    <Plus size={15} /> Nueva Cita
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="tico-view-toggle">
+                        <button
+                            className={`tico-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                            onClick={() => setViewMode('list')}
+                        >
+                            <List size={16} /> Lista
+                        </button>
+                        <button
+                            className={`tico-view-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+                            onClick={() => setViewMode('calendar')}
+                        >
+                            <Calendar size={16} /> Calendario
+                        </button>
+                    </div>
+                    <button className="tico-btn-nuevo" onClick={() => { setFormNueva(EMPTY_CITA); setFormErrors({}); setModalNueva(true); }}>
+                        <Plus size={15} /> Nueva Cita
+                    </button>
+                </div>
             </header>
 
             {/* Toolbar */}
@@ -251,65 +332,73 @@ const CitasPage = () => {
                 )}
             </div>
 
-            {/* Tabla */}
-            <table className="tico-table">
-                <thead>
-                    <tr>
-                        <th style={{ width: '40px' }}>
-                            <input
-                                type="checkbox"
-                                className="tico-checkbox"
-                                checked={selectedRows.length === filteredData.length && filteredData.length > 0}
-                                onChange={toggleAll}
-                            />
-                        </th>
-                        <th>PACIENTE</th>
-                        <th>TUTOR</th>
-                        <th className="sortable" onClick={() => handleSort('fecha_cita')}>
-                            CITA {getSortIcon('fecha_cita')}
-                        </th>
-                        <th>HORA</th>
-                        <th>NOTIFICACIÓN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((c) => (
-                        <tr
-                            key={c.id}
-                            className={[
-                                selectedRows.includes(c.id) ? 'selected' : '',
-                                c.estado_cita === 'Cancelada' ? 'inhabilitado' : '',
-                            ].join(' ').trim()}
-                            onClick={() => toggleRow(c.id)}
-                        >
-                            <td onClick={(e) => e.stopPropagation()}>
+            {/* Contenido Principal */}
+            {viewMode === 'calendar' ? (
+                <CalendarioCitas
+                    citas={filteredData}
+                    onVerDetalle={(cita) => setModalCita(cita)}
+                    onNuevaCitaFecha={handleNuevaCitaFecha}
+                />
+            ) : (
+                <table className="tico-table">
+                    <thead>
+                        <tr>
+                            <th style={{ width: '40px' }}>
                                 <input
                                     type="checkbox"
                                     className="tico-checkbox"
-                                    checked={selectedRows.includes(c.id)}
-                                    onChange={() => toggleRow(c.id)}
+                                    checked={selectedRows.length === filteredData.length && filteredData.length > 0}
+                                    onChange={toggleAll}
                                 />
-                            </td>
-                            <td>{c.paciente_nombre}</td>
-                            <td>{c.tutor}</td>
-                            <td>{c.fecha_cita}</td>
-                            <td>{c.hora_cita}</td>
-                            <td>
-                                <span className={badgeClass(c.estado_cita)}>
-                                    {badgeLabel(c.estado_cita)}
-                                </span>
-                            </td>
+                            </th>
+                            <th>PACIENTE</th>
+                            <th>TUTOR</th>
+                            <th className="sortable" onClick={() => handleSort('fecha_cita')}>
+                                FECHA {getSortIcon('fecha_cita')}
+                            </th>
+                            <th>HORA</th>
+                            <th>NOTIFICACIÓN</th>
                         </tr>
-                    ))}
-                    {filteredData.length === 0 && (
-                        <tr>
-                            <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
-                                No se encontraron citas.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {filteredData.map((c) => (
+                            <tr
+                                key={c.id}
+                                className={[
+                                    selectedRows.includes(c.id) ? 'selected' : '',
+                                    c.estado_cita === 'Cancelada' ? 'inhabilitado' : '',
+                                ].join(' ').trim()}
+                                onClick={() => toggleRow(c.id)}
+                            >
+                                <td onClick={(e) => e.stopPropagation()}>
+                                    <input
+                                        type="checkbox"
+                                        className="tico-checkbox"
+                                        checked={selectedRows.includes(c.id)}
+                                        onChange={() => toggleRow(c.id)}
+                                    />
+                                </td>
+                                <td>{c.paciente_nombre}</td>
+                                <td>{c.tutor}</td>
+                                <td>{formatFecha(c.fecha_cita)}</td>
+                                <td>{c.hora_cita}</td>
+                                <td>
+                                    <span className={badgeClass(c.estado_cita)}>
+                                        {badgeLabel(c.estado_cita)}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                        {filteredData.length === 0 && (
+                            <tr>
+                                <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+                                    No se encontraron citas.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            )}
 
             {/* ── Modal: Nueva Cita ── */}
             {modalNueva && (
@@ -325,11 +414,16 @@ const CitasPage = () => {
                         <p className="tico-form-section-label">Datos de la Cita</p>
                         <div className="tico-form-stack">
                             <label>Paciente *
-                                <input
+                                <select
                                     className={`tico-edit-input${formErrors.paciente_nombre ? ' tico-input-error' : ''}`}
-                                    placeholder="Nombre del paciente"
                                     value={formNueva.paciente_nombre}
-                                    onChange={(e) => handleFormChange('paciente_nombre', e.target.value)} />
+                                    onChange={(e) => handleFormChange('paciente_nombre', e.target.value)}
+                                >
+                                    <option value="">— Seleccionar paciente —</option>
+                                    {pacientesList.map(p => (
+                                        <option key={p.id} value={p.nombre}>{p.nombre}</option>
+                                    ))}
+                                </select>
                                 {formErrors.paciente_nombre && <span className="tico-field-error">{formErrors.paciente_nombre}</span>}
                             </label>
                             <label>Tutor *
@@ -404,7 +498,7 @@ const CitasPage = () => {
                         <h2 className="tico-modal-title">{modalCita.paciente_nombre}</h2>
                         <div className="tico-modal-grid">
                             <div className="tico-modal-field"><span>Tutor</span><strong>{modalCita.tutor}</strong></div>
-                            <div className="tico-modal-field"><span>Fecha</span><strong>{modalCita.fecha_cita}</strong></div>
+                            <div className="tico-modal-field"><span>Fecha</span><strong>{formatFecha(modalCita.fecha_cita)}</strong></div>
                             <div className="tico-modal-field"><span>Hora</span><strong>{modalCita.hora_cita}</strong></div>
                             <div className="tico-modal-field"><span>Estado</span><strong>{modalCita.estado_cita}</strong></div>
                             <div className="tico-modal-field">

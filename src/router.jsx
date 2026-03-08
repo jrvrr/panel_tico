@@ -9,6 +9,7 @@ import PagosPage from './pages/gestion-pacientes/pagos/PagosPage';
 import EspecialistasPage from './pages/especialistas/EspecialistasPage';
 import MetricasPage from './pages/metricas/MetricasPage';
 import NotificacionesPage from './pages/notificaciones/NotificacionesPage';
+import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 const router = createBrowserRouter([
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
                     { path: 'especialistas', element: <EspecialistasPage /> },
                     { path: 'metricas', element: <MetricasPage /> },
                     { path: 'notificaciones', element: <NotificacionesPage /> },
+                    { path: 'configuracion', element: <ConfiguracionPage /> },
                 ],
             },
         ],

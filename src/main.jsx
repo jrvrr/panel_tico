@@ -18,6 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           richColors
           expand={false}
           duration={4000}
+          style={{ marginTop: '60px' }}
           toastOptions={{
             style: { fontFamily: 'Inter, sans-serif', fontSize: '0.875rem' },
           }}

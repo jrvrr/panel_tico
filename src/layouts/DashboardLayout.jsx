@@ -11,6 +11,7 @@ import {
     Menu,
     Star,
     UserCircle2,
+    Settings,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -224,52 +225,29 @@ const DashboardLayout = () => {
                         </SidebarSubmenu>
 
                         <SidebarItem to="/especialistas" icon={Users} label="Especialistas" isCollapsed={isCollapsed} />
+                    </div>
+
+                    <div className="mb-4">
+                        {!isCollapsed && (
+                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in mt-2 border-t border-gray-100 pt-3">
+                                Analíticas
+                            </p>
+                        )}
                         <SidebarItem to="/metricas" icon={Activity} label="Métricas" isCollapsed={isCollapsed} />
                     </div>
 
-                    <div>
+                    <div className="mb-4">
                         {!isCollapsed && (
-                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in">
+                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in mt-2 border-t border-gray-100 pt-3">
                                 General
                             </p>
                         )}
-                        <SidebarItem
-                            to="/notificaciones"
-                            icon={Bell}
-                            label="Notificaciones"
-                            isCollapsed={isCollapsed}
-                            badges={notificationBadges}
-                        />
+                        <SidebarItem to="/configuracion" icon={Settings} label="Configuración" isCollapsed={isCollapsed} />
                     </div>
                 </nav>
 
-                {/* Footer — perfil del usuario */}
+                {/* Footer — botón cerrar sesión */}
                 <div className="p-3 border-t border-gray-100">
-                    {/* Perfil compacto */}
-                    {!isCollapsed && user && (
-                        <div className="flex items-center gap-2 px-2 py-2 mb-1 rounded-lg bg-gray-50">
-                            {/* Avatar */}
-                            <div
-                                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[0.65rem] font-bold shrink-0"
-                                style={{
-                                    background: isSuperAdmin
-                                        ? 'linear-gradient(135deg,#f59e0b,#d97706)'
-                                        : 'linear-gradient(135deg,#3b82f6,#6d28d9)'
-                                }}
-                            >
-                                {getInitials(user.nombre)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold text-gray-800 truncate leading-none mb-0.5">
-                                    {user?.nombre?.split(' ').slice(0, 2).join(' ') ?? '—'}
-                                </p>
-                                <p className="text-[10px] text-gray-400 leading-none flex items-center gap-1">
-                                    {isSuperAdmin && <Star size={9} className="text-amber-500" />}
-                                    {isSuperAdmin ? 'Super Admin' : 'Especialista'}
-                                </p>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Botón cerrar sesión */}
                     <button
@@ -290,12 +268,59 @@ const DashboardLayout = () => {
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto bg-gray-50 p-6 transition-all duration-300">
-                <div className="max-w-7xl mx-auto">
-                    <Outlet />
-                </div>
-            </main>
+            {/* Main Content Area (Topbar + Outlet) */}
+            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+                {/* Topbar */}
+                <header className="h-[60px] bg-white border-b border-gray-200 flex items-center justify-end px-6 shrink-0 z-10">
+                    <div className="flex items-center gap-4">
+                        {/* Campana Notificaciones */}
+                        <button
+                            onClick={() => navigate('/notificaciones')}
+                            className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                            title="Ver notificaciones"
+                        >
+                            <Bell size={20} />
+                            {(unreadSistema > 0 || unreadGestion > 0) && (
+                                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white pointer-events-none"></span>
+                            )}
+                        </button>
+
+                        <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
+                        {/* Perfil Usuario */}
+                        {user && (
+                            <div className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 py-1.5 px-3 rounded-xl transition-colors">
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-sm font-semibold text-gray-800 truncate leading-none mb-1">
+                                        {user?.nombre?.split(' ').slice(0, 2).join(' ') ?? '—'}
+                                    </p>
+                                    <p className="text-[11px] text-gray-500 leading-none flex items-center gap-1 justify-end">
+                                        {isSuperAdmin && <Star size={10} className="text-amber-500" />}
+                                        {isSuperAdmin ? 'Super Admin' : 'Especialista'}
+                                    </p>
+                                </div>
+                                <div
+                                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm shadow-indigo-100 group-hover:scale-105 transition-transform"
+                                    style={{
+                                        background: isSuperAdmin
+                                            ? 'linear-gradient(135deg,#f59e0b,#d97706)'
+                                            : 'linear-gradient(135deg,#3b82f6,#6d28d9)'
+                                    }}
+                                >
+                                    {getInitials(user.nombre)}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </header>
+
+                {/* Page Content */}
+                <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <Outlet />
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };

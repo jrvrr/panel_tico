@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import '../gestion-pacientes/pacientes/Pacientes.css';
 import './Especialistas.css';
-import { getEspecialistas } from '../../services/api';
+import { getEspecialistas, createEspecialista, updateEspecialista, deleteEspecialista } from '../../services/api';
 import {
     ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck,
     X, Plus, SlidersHorizontal, FilterX, ShieldCheck,
     BadgeCheck, Camera, EyeOff, Loader2, Star
 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 
 // ── Roles (espejo de la BD) ──────────────────────────────────────────────────
 const ESPECIALIDADES = [
@@ -327,6 +328,7 @@ const FormBody = ({
 // ════════════════════════════════════════════════════════════════════════════
 const EspecialistasPage = () => {
     const { addNotification } = useNotifications();
+    const { user, updateUser } = useAuth();
     // ── Estado principal ──
     const [especialistas, setEspecialistas] = useState(INITIAL_DATA);
     const [nextId, setNextId] = useState(1);
@@ -444,20 +446,37 @@ const EspecialistasPage = () => {
         .some(e => !e.estado_activo);
 
     // ── Acciones ─────────────────────────────────────────────────────────
-    const handleInhabilitar = () => {
-        setEspecialistas(prev =>
-            prev.map(e => selectedRows.includes(e.id) && e.rol_id !== 1 && e.estado_activo
-                ? { ...e, estado_activo: false } : e)
-        );
-        setSelectedRows([]);
+    const handleInhabilitar = async () => {
+        const ids = especialistas.filter(e => selectedRows.includes(e.id) && e.rol_id !== 1 && e.estado_activo).map(e => e.id);
+        try {
+            // Eliminar secuencialmente, se puede optimizar en el futuro con un endpoint masivo
+            for (const id of ids) {
+                await deleteEspecialista(id);
+            }
+            setEspecialistas(prev =>
+                prev.map(e => ids.includes(e.id) ? { ...e, estado_activo: false } : e)
+            );
+            setSelectedRows([]);
+            import('sonner').then(({ toast }) => toast.success(`Especialistas inhabilitados.`));
+        } catch (err) {
+            import('sonner').then(({ toast }) => toast.error(err.message || 'Error al inhabilitar especialistas'));
+        }
     };
 
-    const handleReactivar = () => {
-        setEspecialistas(prev =>
-            prev.map(e => selectedRows.includes(e.id) && e.rol_id !== 1 && !e.estado_activo
-                ? { ...e, estado_activo: true } : e)
-        );
-        setSelectedRows([]);
+    const handleReactivar = async () => {
+        const ids = especialistas.filter(e => selectedRows.includes(e.id) && e.rol_id !== 1 && !e.estado_activo).map(e => e.id);
+        try {
+            for (const id of ids) {
+                await updateEspecialista(id, { estado_activo: true });
+            }
+            setEspecialistas(prev =>
+                prev.map(e => ids.includes(e.id) ? { ...e, estado_activo: true } : e)
+            );
+            setSelectedRows([]);
+            import('sonner').then(({ toast }) => toast.success(`Especialistas reactivados.`));
+        } catch (err) {
+            import('sonner').then(({ toast }) => toast.error(err.message || 'Error al reactivar especialistas'));
+        }
     };
 
     // ── Form helpers ─────────────────────────────────────────────────────
@@ -510,26 +529,32 @@ const EspecialistasPage = () => {
     };
 
     // ── Guardar nuevo ────────────────────────────────────────────────────
-    const handleGuardarNuevo = () => {
+    const handleGuardarNuevo = async () => {
         if (!validateForm(false)) return;
         const nuevo = {
-            id: nextId,
             ...formData,
             cedula_verificada: cedulaStatus === 'ok',
         };
-        setEspecialistas(prev => [...prev, nuevo]);
-        setNextId(id => id + 1);
-        import('sonner').then(({ toast }) => toast.success(`Especialista ${nuevo.nombre} registrado.`));
-        addNotification({
-            tipo: 'sistema',
-            titulo: 'Nuevo especialista registrado',
-            mensaje: `El especialista ${nuevo.nombre} (${nuevo.especialidad_principal}) se registró exitosamente.`,
-            nivel: 'success'
-        });
-        setModalNuevo(false);
-        setFormData(EMPTY_FORM);
-        setFormErrors({});
-        resetCedula();
+        try {
+            const res = await createEspecialista(nuevo);
+            const especialistaCreado = res.data;
+            setEspecialistas(prev => [...prev, especialistaCreado]);
+            if (especialistaCreado.id) setNextId(Math.max(nextId, especialistaCreado.id + 1));
+            import('sonner').then(({ toast }) => toast.success(`Especialista ${especialistaCreado.nombre} registrado.`));
+            addNotification({
+                tipo: 'sistema',
+                titulo: 'Nuevo especialista registrado',
+                mensaje: `El especialista ${especialistaCreado.nombre} (${especialistaCreado.especialidad_principal}) se registró exitosamente.`,
+                nivel: 'success'
+            });
+            setModalNuevo(false);
+            setFormData(EMPTY_FORM);
+            setFormErrors({});
+            resetCedula();
+        } catch (err) {
+            import('sonner').then(({ toast }) => toast.error(err.message || 'Error al crear especialista'));
+            setFormErrors({ ...formErrors, general: err.message });
+        }
     };
 
     // ── Abrir editar ─────────────────────────────────────────────────────
@@ -555,25 +580,40 @@ const EspecialistasPage = () => {
     };
 
     // ── Guardar edición ──────────────────────────────────────────────────
-    const handleGuardarEdicion = () => {
+    const handleGuardarEdicion = async () => {
         if (!validateForm(true)) return;
-        setEspecialistas(prev =>
-            prev.map(e => e.id === modalEditar.id
-                ? { ...e, ...formData, cedula_verificada: cedulaStatus === 'ok' }
-                : e)
-        );
-        import('sonner').then(({ toast }) => toast.success(`Especialista modificado.`));
-        addNotification({
-            tipo: 'sistema',
-            titulo: 'Perfil actualizado',
-            mensaje: `Se actualizaron los datos del especialista ${formData.nombre}.`,
-            nivel: 'info'
-        });
-        setModalEditar(null);
-        setFormData(EMPTY_FORM);
-        setFormErrors({});
-        resetCedula();
-        setSelectedRows([]);
+        const cambios = {
+            ...formData,
+            cedula_verificada: cedulaStatus === 'ok'
+        };
+        try {
+            const res = await updateEspecialista(modalEditar.id, cambios);
+            const especialistaActualizado = res.data;
+            setEspecialistas(prev =>
+                prev.map(e => e.id === modalEditar.id ? especialistaActualizado : e)
+            );
+
+            // Si el especialista actualizado es el usuario logueado, actualizar el contexto global
+            if (user && user.id === modalEditar.id) {
+                updateUser(especialistaActualizado);
+            }
+
+            import('sonner').then(({ toast }) => toast.success(`Especialista modificado.`));
+            addNotification({
+                tipo: 'sistema',
+                titulo: 'Perfil actualizado',
+                mensaje: `Se actualizaron los datos del especialista ${especialistaActualizado.nombre}.`,
+                nivel: 'info'
+            });
+            setModalEditar(null);
+            setFormData(EMPTY_FORM);
+            setFormErrors({});
+            resetCedula();
+            setSelectedRows([]);
+        } catch (err) {
+            import('sonner').then(({ toast }) => toast.error(err.message || 'Error al actualizar especialista'));
+            setFormErrors({ ...formErrors, general: err.message });
+        }
     };
 
     const hayFiltrosActivos = filterRol || filterEstado;
@@ -785,9 +825,11 @@ const EspecialistasPage = () => {
                             <td style={{ fontSize: '0.88rem' }}>{e.especialidad_principal || '—'}</td>
                             <td><CedulaBadge verificada={e.cedula_verificada} /></td>
                             <td>
-                                {e.estado_activo
-                                    ? <span className="esp-estado-activo">Activo</span>
-                                    : <span className="esp-estado-inactivo">Inhabilitado</span>
+                                {!e.estado_activo
+                                    ? <span className="esp-estado-inactivo">Inhabilitado</span>
+                                    : e.en_linea
+                                        ? <span className="esp-estado-enlinea">En línea</span>
+                                        : <span className="esp-estado-desconectado">Desconectado</span>
                                 }
                             </td>
                         </tr>
@@ -837,9 +879,11 @@ const EspecialistasPage = () => {
                             <div className="tico-modal-field">
                                 <span>Estado</span>
                                 <strong>
-                                    {modalPerfil.estado_activo
-                                        ? <span className="esp-estado-activo">Activo</span>
-                                        : <span className="esp-estado-inactivo">Inhabilitado</span>
+                                    {!modalPerfil.estado_activo
+                                        ? <span className="esp-estado-inactivo">Inhabilitado</span>
+                                        : modalPerfil.en_linea
+                                            ? <span className="esp-estado-enlinea">En línea</span>
+                                            : <span className="esp-estado-desconectado">Desconectado</span>
                                     }
                                 </strong>
                             </div>

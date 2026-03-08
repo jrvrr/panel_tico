@@ -11,9 +11,8 @@ const publicHeaders = { 'Content-Type': 'application/json' };
 // ── AUTH ─────────────────────────────────────────────────────────────────────
 
 /**
- * Inicia sesión con email y password.
- * Guarda el token JWT y los datos del usuario en localStorage.
- * @returns {{ token: string, user: object }}
+ * Inicia el proceso de login, retornando { message, require2FA, email }
+ * si las credenciales son correctas.
  */
 export const login = async (email, password) => {
     const res = await fetch(`${BASE_URL}/login`, {
@@ -23,8 +22,24 @@ export const login = async (email, password) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Credenciales inválidas');
+    return data;
+};
+
+/**
+ * Verifica el código 2FA enviado por correo.
+ * Si es exitoso, guarda el token y la sesión.
+ */
+export const verify2FACode = async (email, code) => {
+    const res = await fetch(`${BASE_URL}/verify-2fa`, {
+        method: 'POST',
+        headers: publicHeaders,
+        body: JSON.stringify({ email, code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Código de verificación inválido');
+
+    // Guardar token y sesión
     localStorage.setItem('token', data.token);
-    // Guardar datos del usuario para restaurar sesión al recargar
     if (data.user) localStorage.setItem('tico_user', JSON.stringify(data.user));
     return data;
 };
@@ -66,12 +81,45 @@ export const createPaciente = async (paciente) => {
     return data;
 };
 
+export const updatePaciente = async (id, paciente) => {
+    const res = await fetch(`${BASE_URL}/pacientes/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(paciente),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al actualizar paciente');
+    return data;
+};
+
 // ── CITAS ────────────────────────────────────────────────────────────────────
 
 export const getCitas = async () => {
     const res = await fetch(`${BASE_URL}/citas`, { headers: authHeaders() });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Error al obtener citas');
+    return data;
+};
+
+export const createCita = async (cita) => {
+    const res = await fetch(`${BASE_URL}/citas`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(cita),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al crear cita');
+    return data;
+};
+
+export const updateCita = async (id, cita) => {
+    const res = await fetch(`${BASE_URL}/citas/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(cita),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al actualizar cita');
     return data;
 };
 
@@ -101,3 +149,41 @@ export const getEspecialistas = async () => {
     if (!res.ok) throw new Error(data.message || 'Error al obtener especialistas');
     return data;
 };
+
+export const createEspecialista = async (especialista) => {
+    const res = await fetch(`${BASE_URL}/especialistas`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(especialista),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+        if (data.errors && data.errors.length > 0) {
+            throw new Error(data.errors[0].msg || 'Error de validación');
+        }
+        throw new Error(data.message || 'Error al crear especialista');
+    }
+    return data;
+};
+
+export const updateEspecialista = async (id, especialista) => {
+    const res = await fetch(`${BASE_URL}/especialistas/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(especialista),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al actualizar especialista');
+    return data;
+};
+
+export const deleteEspecialista = async (id) => {
+    const res = await fetch(`${BASE_URL}/especialistas/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al eliminar especialista');
+    return data;
+};
+
