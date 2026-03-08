@@ -5,6 +5,8 @@ import {
     Users,
     Activity,
     Bell,
+    BellOff,
+    ListChecks,
     LogOut,
     ChevronDown,
     ChevronUp,
@@ -161,9 +163,13 @@ const DashboardLayout = () => {
     const unreadGestion = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'gestion').length;
     const unreadSistema = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'sistema').length;
 
+    let dotColor = null;
+    if (unreadSistema > 0) dotColor = 'bg-orange-500';
+    else if (unreadGestion > 0) dotColor = 'bg-blue-500';
+
     const notificationBadges = [
-        { count: unreadSistema, colorClass: 'bg-blue-500', title: 'Notificaciones del Sistema' },
-        { count: unreadGestion, colorClass: 'bg-orange-500', title: 'Notificaciones de Gestión' }
+        { count: unreadSistema, colorClass: 'bg-orange-500', title: 'Notificaciones del Sistema' },
+        { count: unreadGestion, colorClass: 'bg-blue-500', title: 'Notificaciones de Gestión' }
     ];
 
     const handleLogout = () => {
@@ -274,16 +280,49 @@ const DashboardLayout = () => {
                 <header className="h-[60px] bg-white border-b border-gray-200 flex items-center justify-end px-6 shrink-0 z-10">
                     <div className="flex items-center gap-4">
                         {/* Campana Notificaciones */}
-                        <button
-                            onClick={() => navigate('/notificaciones')}
-                            className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
-                            title="Ver notificaciones"
-                        >
-                            <Bell size={20} />
-                            {(unreadSistema > 0 || unreadGestion > 0) && (
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white pointer-events-none"></span>
-                            )}
-                        </button>
+                        <div className="relative group/bell">
+                            <button
+                                onClick={() => navigate('/notificaciones')}
+                                className="relative p-2 text-gray-500 group-hover/bell:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                                title="Ver notificaciones"
+                            >
+                                <Bell size={20} />
+                                {dotColor && (
+                                    <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${dotColor} border-2 border-white pointer-events-none`}></span>
+                                )}
+                            </button>
+
+                            {/* Dropdown flotante (estilo oscuro) */}
+                            <div className="absolute top-full right-0 pt-2 w-80 opacity-0 invisible group-hover/bell:opacity-100 group-hover/bell:visible transition-all duration-300 z-50">
+                                <div
+                                    onClick={() => navigate('/notificaciones')}
+                                    className="bg-[#1e1e1e] text-gray-300 rounded-lg shadow-xl border border-[#333] pointer-events-none group-hover/bell:pointer-events-auto overflow-hidden cursor-pointer"
+                                >
+                                    <div className="flex items-center justify-between px-4 py-3 bg-[#18181b]">
+                                        <span className="text-[11px] font-semibold tracking-wider text-gray-300 uppercase">
+                                            {(unreadSistema + unreadGestion) > 0 ? `(${unreadGestion}) PACIENTES Y (${unreadSistema}) SISTEMA` : "SIN NOTIFICACIONES NUEVAS"}
+                                        </span>
+                                        <div className="flex items-center gap-3 text-gray-400" onClick={(e) => e.stopPropagation()}>
+                                            <button className="hover:text-white transition-colors" title="Marcar todas como leídas">
+                                                <ListChecks size={15} />
+                                            </button>
+                                            <button className="hover:text-white transition-colors" title="Silenciar notificaciones">
+                                                <BellOff size={14} />
+                                            </button>
+                                            <button className="hover:text-white transition-colors">
+                                                <ChevronDown size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#18181b] border-t border-[#333] px-4 py-2 flex items-center justify-between">
+                                        <span className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer transition-colors" onClick={() => navigate('/notificaciones')}>
+                                            Ver todas
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div className="h-6 w-px bg-gray-200 mx-2"></div>
 
