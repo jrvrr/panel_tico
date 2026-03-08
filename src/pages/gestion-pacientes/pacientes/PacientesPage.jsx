@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './Pacientes.css';
-import { ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck, X, Plus, SlidersHorizontal, FilterX } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck, X, Plus, Filter, FilterX } from 'lucide-react';
+import { useNotifications } from '../../../context/NotificationContext';
+import { createPaciente, getPacientes, updatePaciente, createCita } from '../../../services/api';
 
 const EMPTY_NUEVO = {
     nombre: '',
@@ -17,9 +19,12 @@ const EMPTY_NUEVO = {
     tutor_parentesco: '',
     tutor_email: '',
     tutor_telefono: '',
+    fecha_cita: '',
+    hora_cita: '',
 };
 
 const PacientesPage = () => {
+    const { addNotification } = useNotifications();
     const [selectedRows, setSelectedRows] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [modalPaciente, setModalPaciente] = useState(null);
@@ -34,16 +39,51 @@ const PacientesPage = () => {
     const [filterGenero, setFilterGenero] = useState('');
     const [nextId, setNextId] = useState(9);
 
-    const [pacientes, setPacientes] = useState([
-        { id: 1, paciente: 'Cristhian', tutor: 'Jane Cooper', edad: '12 años', cita: '2/19/21', observacion: 'Bajo', estado: 'Estable', active: true },
-        { id: 2, paciente: 'Mario', tutor: 'Wade Warren', edad: '10 años', cita: '5/7/16', observacion: 'Bajo', estado: 'Estable', active: true },
-        { id: 3, paciente: 'Julio', tutor: 'Esther Howard', edad: '15 años', cita: '9/18/16', observacion: 'Alto', estado: 'Inestable', active: true },
-        { id: 4, paciente: 'Marcos', tutor: 'Cameron Williamson', edad: '8 años', cita: '2/11/12', observacion: 'Bajo', estado: 'Estable', active: true },
-        { id: 5, paciente: 'Ignacio', tutor: 'Brooklyn Simmons', edad: '11 años', cita: '9/18/16', observacion: 'Alto', estado: 'Inestable', active: true },
-        { id: 6, paciente: 'Octavio', tutor: 'Leslie Alexander', edad: '9 años', cita: '1/28/17', observacion: 'Alto', estado: 'Inestable', active: true },
-        { id: 7, paciente: 'Franco', tutor: 'Jenny Wilson', edad: '13 años', cita: '5/27/15', observacion: 'Bajo', estado: 'Estable', active: true },
-        { id: 8, paciente: 'Lazario', tutor: 'Guy Hawkins', edad: '7 años', cita: '8/2/19', observacion: 'Bajo', estado: 'Estable', active: true },
-    ]);
+    const [pacientes, setPacientes] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const calcEdad = (fechaNac) => {
+        if (!fechaNac) return '';
+        const hoy = new Date();
+        const nac = new Date(fechaNac);
+        const años = hoy.getFullYear() - nac.getFullYear();
+        const m = hoy.getMonth() - nac.getMonth();
+        const edad = (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) ? años - 1 : años;
+        return `${edad} años`;
+    };
+
+    // ── Data Fetching ────────────────────────────────────────────────────────
+    useEffect(() => {
+        const fetchPacientes = async () => {
+            try {
+                setLoading(true);
+                const response = await getPacientes();
+                const fetchedPacientes = response.data || [];
+
+                const mappedPacientes = fetchedPacientes.map(p => ({
+                    id: p.id,
+                    paciente: p.nombre,
+                    tutor: p.tutor_nombre || 'N/D',
+                    edad: calcEdad(p.fecha_nacimiento),
+                    cita: '', // TODO: Fetch next appointment
+                    observacion: p.observaciones || 'Bajo',
+                    estado: p.estado_clinico || 'Estable',
+                    active: p.estado_activo ?? true,
+                    // Keep original data for editing
+                    ...p
+                }));
+
+                setPacientes(mappedPacientes);
+            } catch (error) {
+                console.error("Error fetching pacientes:", error);
+                import('sonner').then(({ toast }) => toast.error('Error al cargar pacientes'));
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPacientes();
+    }, []);
 
     // ── Selección ────────────────────────────────────────────────────────────
     const toggleRow = (id) =>
@@ -113,6 +153,13 @@ const PacientesPage = () => {
             prev.map(p => selectedRows.includes(p.id) && p.active
                 ? { ...p, active: false, estado: 'Inhabilitado' } : p)
         );
+        import('sonner').then(({ toast }) => toast.warning(`Se inhabilitaron ${selectedRows.length} paciente(s)`));
+        addNotification({
+            tipo: 'paciente',
+            titulo: 'Pacientes inhabilitados',
+            mensaje: `Se inhabilitaron ${selectedRows.length} paciente(s) del sistema.`,
+            nivel: 'warning'
+        });
         setSelectedRows([]);
     };
 
@@ -122,13 +169,60 @@ const PacientesPage = () => {
             prev.map(p => selectedRows.includes(p.id) && !p.active
                 ? { ...p, active: true, estado: 'Estable' } : p)
         );
+        import('sonner').then(({ toast }) => toast.success(`Se reactivaron ${selectedRows.length} paciente(s)`));
+        addNotification({
+            tipo: 'paciente',
+            titulo: 'Pacientes reactivados',
+            mensaje: `Se reactivaron ${selectedRows.length} paciente(s) en el sistema.`,
+            nivel: 'success'
+        });
         setSelectedRows([]);
     };
 
-    const handleGuardarEdicion = () => {
-        setPacientes(prev => prev.map(p => p.id === editPaciente.id ? { ...editPaciente } : p));
-        setEditPaciente(null);
-        setSelectedRows([]);
+    const handleGuardarEdicion = async () => {
+        try {
+            // Preparar el mismo payload que espera el backend
+            const payload = {
+                nombre: editPaciente.paciente || editPaciente.nombre,
+                fecha_nacimiento: editPaciente.fecha_nacimiento,
+                genero: editPaciente.genero,
+                peso_kg: editPaciente.peso_kg || null,
+                altura_cm: editPaciente.altura_cm || null,
+                alergias: editPaciente.alergias,
+                observacion: editPaciente.observacion,
+                estado: editPaciente.estado,
+                tutor_nombre: editPaciente.tutor || editPaciente.tutor_nombre,
+                tutor_parentesco: editPaciente.tutor_parentesco,
+                tutor_telefono: editPaciente.tutor_telefono,
+                tutor_email: editPaciente.tutor_email,
+                monto_mensual: editPaciente.monto_mensual || null,
+                estado_activo: editPaciente.active
+            };
+
+            await updatePaciente(editPaciente.id, payload);
+
+            // Actualizar vista localmente    
+            setPacientes(prev => prev.map(p =>
+                p.id === editPaciente.id ? {
+                    ...p, ...editPaciente,
+                    paciente: payload.nombre,
+                    tutor: payload.tutor_nombre,
+                    edad: calcEdad(payload.fecha_nacimiento) // Recalcular edad
+                } : p
+            ));
+
+            import('sonner').then(({ toast }) => toast.success(`Paciente actualizado`));
+            addNotification({
+                tipo: 'paciente',
+                titulo: 'Perfil de paciente actualizado',
+                mensaje: `Se modificó la información de ${payload.nombre}.`,
+                nivel: 'info'
+            });
+            setEditPaciente(null);
+            setSelectedRows([]);
+        } catch (error) {
+            import('sonner').then(({ toast }) => toast.error(error.message || 'Error al actualizar paciente'));
+        }
     };
 
     const handleClearFilters = () => {
@@ -165,6 +259,24 @@ const PacientesPage = () => {
         setFormErrors(prev => ({ ...prev, [field]: undefined }));
     };
 
+    // Validación individual en tiempo real (al perder el foco)
+    const handleBlur = (field) => {
+        let error = undefined;
+        const value = formNuevo[field] || '';
+
+        if (field === 'nombre' && !value.trim()) {
+            error = 'El nombre es obligatorio';
+        } else if (field === 'tutor_nombre' && !value.trim()) {
+            error = 'El nombre del tutor es obligatorio';
+        } else if (field === 'fecha_nacimiento' && !value) {
+            error = 'La fecha de nacimiento es obligatoria';
+        }
+
+        if (error) {
+            setFormErrors(prev => ({ ...prev, [field]: error }));
+        }
+    };
+
     // Validación completa del formulario
     const validateForm = () => {
         const errors = {};
@@ -172,6 +284,8 @@ const PacientesPage = () => {
             errors.nombre = 'El nombre es obligatorio';
         if (!formNuevo.tutor_nombre.trim())
             errors.tutor_nombre = 'El nombre del tutor es obligatorio';
+        if (!formNuevo.fecha_nacimiento)
+            errors.fecha_nacimiento = 'La fecha de nacimiento es obligatoria';
         // Email: requiere @
         if (formNuevo.tutor_email && !/^[^@]+@[^@]+\.[^@]+$/.test(formNuevo.tutor_email))
             errors.tutor_email = 'Ingresa un correo válido (debe incluir @)';
@@ -193,36 +307,80 @@ const PacientesPage = () => {
         return Object.keys(errors).length === 0;
     };
 
-    // Edad a partir de fecha_nacimiento
-    const calcEdad = (fechaNac) => {
-        if (!fechaNac) return '';
-        const hoy = new Date();
-        const nac = new Date(fechaNac);
-        const años = hoy.getFullYear() - nac.getFullYear();
-        const m = hoy.getMonth() - nac.getMonth();
-        const edad = (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) ? años - 1 : años;
-        return `${edad} años`;
-    };
+    // Edad a partir de fecha_nacimiento is already defined above
 
     // Agregar nuevo paciente
-    const handleAgregarPaciente = () => {
+    const handleAgregarPaciente = async () => {
         if (!validateForm()) return;
-        const nuevo = {
-            id: nextId,
-            paciente: formNuevo.nombre,
-            tutor: formNuevo.tutor_nombre,
-            edad: calcEdad(formNuevo.fecha_nacimiento),
-            cita: '',
-            observacion: formNuevo.observacion,
-            estado: formNuevo.estado,
-            active: true,
-            ...formNuevo,
-        };
-        setPacientes(prev => [...prev, nuevo]);
-        setNextId(id => id + 1);
-        setFormNuevo(EMPTY_NUEVO);
-        setFormErrors({});
-        setModalNuevo(false);
+
+        try {
+            // Guardar en backend
+            const payload = {
+                nombre: formNuevo.nombre,
+                tutor_nombre: formNuevo.tutor_nombre,
+                fecha_nacimiento: formNuevo.fecha_nacimiento,
+                genero: formNuevo.genero,
+                peso_kg: formNuevo.peso_kg || null,
+                altura_cm: formNuevo.altura_cm || null,
+                alergias: formNuevo.alergias,
+                observaciones: formNuevo.observacion,
+                estado_clinico: formNuevo.estado,
+                tutor_parentesco: formNuevo.tutor_parentesco,
+                tutor_telefono: formNuevo.tutor_telefono,
+                tutor_email: formNuevo.tutor_email,
+                monto_mensual: formNuevo.monto_mensual || null,
+                estado_activo: true
+            };
+
+            const res = await createPaciente(payload);
+            const pacienteCreado = res.data || res;
+
+            // Adaptador para el frontend local (la BD devuelve diferentes nombres de columnas)
+            const nuevo = {
+                id: pacienteCreado.id,
+                paciente: pacienteCreado.nombre,
+                tutor: pacienteCreado.tutor_nombre,
+                edad: calcEdad(pacienteCreado.fecha_nacimiento) || calcEdad(formNuevo.fecha_nacimiento),
+                cita: '',
+                observacion: pacienteCreado.observaciones || formNuevo.observacion,
+                estado: pacienteCreado.estado_clinico || formNuevo.estado,
+                active: pacienteCreado.estado_activo ?? true,
+                ...formNuevo,
+            };
+
+            setPacientes(prev => [...prev, nuevo]);
+
+            // Programando la cita inicial si especificaron fecha/hora
+            if (formNuevo.fecha_cita && formNuevo.hora_cita) {
+                try {
+                    await createCita({
+                        paciente_id: pacienteCreado.id,
+                        fecha_cita: formNuevo.fecha_cita,
+                        hora_cita: formNuevo.hora_cita,
+                        estado_cita: 'Programada',
+                        observacion_clinica: 'Primera consulta (Agendada en registro)'
+                    });
+                } catch (citaErr) {
+                    console.error("Error al agendar primera cita:", citaErr);
+                    import('sonner').then(({ toast }) => toast.warning(`Paciente registrado, pero no se pudo agendar la cita`));
+                }
+            }
+
+            import('sonner').then(({ toast }) => toast.success(`Paciente registrado`));
+            addNotification({
+                tipo: 'sistema',
+                titulo: 'Nuevo paciente registrado',
+                mensaje: `Se registró al paciente ${nuevo.paciente} en el sistema.`,
+                nivel: 'success'
+            });
+            setFormNuevo(EMPTY_NUEVO);
+            setFormErrors({});
+            setModalNuevo(false);
+
+        } catch (error) {
+            import('sonner').then(({ toast }) => toast.error(error.message || 'Error al guardar paciente'));
+            setFormErrors({ general: error.message });
+        }
     };
 
 
@@ -261,7 +419,7 @@ const PacientesPage = () => {
                             className={`tico-btn tico-btn-outline tico-btn-filter ${showFilterMenu ? 'active' : ''}`}
                             onClick={() => setShowFilterMenu(!showFilterMenu)}
                         >
-                            <SlidersHorizontal size={14} />
+                            <Filter size={14} />
                             Filtro
                             {(filterEstado || filterObservacion || filterGenero) && (
                                 <span className="tico-filter-dot" />
@@ -360,7 +518,7 @@ const PacientesPage = () => {
                         <th>TUTOR</th>
                         <th>EDAD</th>
                         <th className="sortable" onClick={() => handleSort('cita')}>
-                            CITA {getSortIcon('cita')}
+                            FECHA {getSortIcon('cita')}
                         </th>
                         <th>OBSERVACION</th>
                         <th>ESTADO</th>
@@ -396,13 +554,19 @@ const PacientesPage = () => {
                             <td>{p.estado}</td>
                         </tr>
                     ))}
-                    {filteredData.length === 0 && (
+                    {loading ? (
+                        <tr>
+                            <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+                                Cargando pacientes...
+                            </td>
+                        </tr>
+                    ) : filteredData.length === 0 ? (
                         <tr>
                             <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
                                 No se encontraron pacientes.
                             </td>
                         </tr>
-                    )}
+                    ) : null}
                 </tbody>
             </table>
 
@@ -427,13 +591,16 @@ const PacientesPage = () => {
                                     <label>Nombre completo *
                                         <input className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`} placeholder="Nombre completo"
                                             value={formNuevo.nombre}
-                                            onChange={(e) => handleFormNuevoChange('nombre', e.target.value)} />
+                                            onChange={(e) => handleFormNuevoChange('nombre', e.target.value)}
+                                            onBlur={() => handleBlur('nombre')} />
                                         {formErrors.nombre && <span className="tico-field-error">{formErrors.nombre}</span>}
                                     </label>
-                                    <label>Fecha de nacimiento
-                                        <input className="tico-edit-input" type="date"
+                                    <label>Fecha de nacimiento *
+                                        <input className={`tico-edit-input${formErrors.fecha_nacimiento ? ' tico-input-error' : ''}`} type="date"
                                             value={formNuevo.fecha_nacimiento}
-                                            onChange={(e) => handleFormNuevoChange('fecha_nacimiento', e.target.value)} />
+                                            onChange={(e) => handleFormNuevoChange('fecha_nacimiento', e.target.value)}
+                                            onBlur={() => handleBlur('fecha_nacimiento')} />
+                                        {formErrors.fecha_nacimiento && <span className="tico-field-error">{formErrors.fecha_nacimiento}</span>}
                                     </label>
                                     <label>Género
                                         <select className="tico-edit-input" value={formNuevo.genero}
@@ -498,7 +665,8 @@ const PacientesPage = () => {
                                     <label>Nombre del tutor *
                                         <input className={`tico-edit-input${formErrors.tutor_nombre ? ' tico-input-error' : ''}`} placeholder="Nombre del tutor"
                                             value={formNuevo.tutor_nombre}
-                                            onChange={(e) => handleFormNuevoChange('tutor_nombre', e.target.value)} />
+                                            onChange={(e) => handleFormNuevoChange('tutor_nombre', e.target.value)}
+                                            onBlur={() => handleBlur('tutor_nombre')} />
                                         {formErrors.tutor_nombre && <span className="tico-field-error">{formErrors.tutor_nombre}</span>}
                                     </label>
                                     <label>Parentesco
@@ -532,6 +700,25 @@ const PacientesPage = () => {
                                             onChange={(e) => handleFormNuevoChange('tutor_email', e.target.value)} />
                                         {formErrors.tutor_email && <span className="tico-field-error">{formErrors.tutor_email}</span>}
                                     </label>
+
+                                    <div className="tico-form-divider" style={{ margin: '1rem 0' }} />
+                                    <p className="tico-form-section-label">Primera Cita (Opcional)</p>
+                                    <div className="tico-form-row2">
+                                        <label>Fecha sugerida
+                                            <input
+                                                className="tico-edit-input"
+                                                type="date"
+                                                value={formNuevo.fecha_cita || ''}
+                                                onChange={(e) => handleFormNuevoChange('fecha_cita', e.target.value)} />
+                                        </label>
+                                        <label>Hora
+                                            <input
+                                                className="tico-edit-input"
+                                                type="time"
+                                                value={formNuevo.hora_cita || ''}
+                                                onChange={(e) => handleFormNuevoChange('hora_cita', e.target.value)} />
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -670,8 +857,8 @@ const PacientesPage = () => {
                                 <div className="tico-form-stack">
                                     <label>Nombre del tutor
                                         <input className="tico-edit-input" placeholder="Nombre del tutor"
-                                            value={editPaciente.tutor_nombre || editPaciente.tutor || ''}
-                                            onChange={(e) => setEditPaciente({ ...editPaciente, tutor_nombre: e.target.value, tutor: e.target.value })} />
+                                            value={editPaciente.tutor || editPaciente.tutor_nombre || ''}
+                                            onChange={(e) => setEditPaciente({ ...editPaciente, tutor: e.target.value, tutor_nombre: e.target.value })} />
                                     </label>
                                     <label>Parentesco
                                         <select className="tico-edit-input" value={editPaciente.tutor_parentesco || ''}
@@ -687,16 +874,18 @@ const PacientesPage = () => {
                                         </select>
                                     </label>
                                     <label>Teléfono
-                                        <input className="tico-edit-input" placeholder="Ej. 555-1234"
+                                        <input
+                                            className="tico-edit-input"
+                                            placeholder="Ej. 555-1234"
                                             inputMode="numeric"
                                             value={editPaciente.tutor_telefono || ''}
-                                            onChange={(e) => {
-                                                if (!/^[\d\s+()\-]*$/.test(e.target.value)) return;
-                                                setEditPaciente({ ...editPaciente, tutor_telefono: e.target.value });
-                                            }} />
+                                            onChange={(e) => setEditPaciente({ ...editPaciente, tutor_telefono: e.target.value })} />
                                     </label>
                                     <label>Correo electrónico
-                                        <input className="tico-edit-input" type="email" placeholder="tutor@correo.com"
+                                        <input
+                                            className="tico-edit-input"
+                                            type="email"
+                                            placeholder="tutor@correo.com"
                                             value={editPaciente.tutor_email || ''}
                                             onChange={(e) => setEditPaciente({ ...editPaciente, tutor_email: e.target.value })} />
                                     </label>
@@ -707,7 +896,7 @@ const PacientesPage = () => {
 
                         <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
                             <button className="tico-btn tico-btn-outline" onClick={() => setEditPaciente(null)}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" onClick={handleGuardarEdicion}>Guardar cambios</button>
+                            <button className="tico-btn tico-btn-primary" onClick={handleGuardarEdicion}>Guardar Cambios</button>
                         </div>
                     </div>
                 </div>

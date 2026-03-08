@@ -1,111 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
-    Bell, BellOff, CheckCircle2, AlertTriangle, Info,
-    Trash2, CheckCheck, Filter, X, Users, Activity
+    CheckCircle2, AlertTriangle, Info, Trash2, CheckCheck,
+    X, Users, Activity, Bell, CheckCircle, BellOff
 } from 'lucide-react';
+import { useNotifications } from '../../context/NotificationContext';
+// Estilos globales de tablas
+import '../gestion-pacientes/pacientes/Pacientes.css';
+// Estilos locales de notificaciones
 import './Notificaciones.css';
 
-/* ─── Datos de ejemplo ─────────────────────────────────────────────────── */
-const SAMPLE = [
-    {
-        id: 1,
-        tipo: 'cita',
-        titulo: 'Próxima cita agendada',
-        mensaje: 'Recordatorio: Mañana 03/03 a las 09:00 - Consulta de valoración para Ricardo Arjona.',
-        fecha: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        leida: false,
-        nivel: 'info',
-    },
-    {
-        id: 2,
-        tipo: 'pago',
-        titulo: 'Atraso de pago detectado',
-        mensaje: 'El paciente Carlos López tiene una factura pendiente desde hace 5 días ($2,500 MXN).',
-        fecha: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        leida: false,
-        nivel: 'error',
-    },
-    {
-        id: 3,
-        tipo: 'sistema',
-        titulo: 'Error de sincronización',
-        mensaje: 'Se detectó un problema técnico: Los perfiles de especialistas no cargaron correctamente en el módulo de búsqueda.',
-        fecha: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-        leida: false,
-        nivel: 'error',
-    },
-    {
-        id: 4,
-        tipo: 'cita',
-        titulo: 'Cancelación de Cita',
-        mensaje: 'Lucía Méndez ha cancelado su cita del viernes 05/03 a las 11:30 por motivos personales.',
-        fecha: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        leida: true,
-        nivel: 'warning',
-    },
-    {
-        id: 5,
-        tipo: 'paciente',
-        titulo: 'Nueva ficha clínica',
-        mensaje: 'Se ha generado exitosamente el expediente para la paciente nueva Sofía Reyes.',
-        fecha: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-        leida: true,
-        nivel: 'success',
-    },
-    {
-        id: 6,
-        tipo: 'sistema',
-        titulo: 'Mantenimiento programado',
-        mensaje: 'El sistema entrará en mantenimiento el domingo a las 02:00 AM. Duración estimada: 1 hora.',
-        fecha: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-        leida: true,
-        nivel: 'info',
-    }
-];
-
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
-const NIVEL_CONFIG = {
-    success: {
-        icon: <CheckCircle2 />,
-        colorIcon: '#10b981',
-        colorBg: '#ecfdf5',
-        label: 'Éxito',
-    },
-    warning: {
-        icon: <AlertTriangle />,
-        colorIcon: '#f59e0b',
-        colorBg: '#fffbeb',
-        label: 'Aviso',
-    },
-    error: {
-        icon: <X />,
-        colorIcon: '#ef4444',
-        colorBg: '#fef2f2',
-        label: 'Error',
-    },
-    info: {
-        icon: <Info />,
-        colorIcon: '#3b82f6',
-        colorBg: '#eff6ff',
-        label: 'Info',
-    },
-};
-
 const formatFecha = (iso) => {
+    if (!iso) return '—';
     const d = new Date(iso);
     return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
         + ' · '
         + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 };
 
-const FILTROS = ['Todas', 'No leídas', 'Éxito', 'Advertencia', 'Error', 'Info'];
+const FILTROS_GESTION = ['Todas', 'No leídas', 'Éxito', 'Advertencia', 'Error', 'Info'];
+const FILTROS_SISTEMA = ['Todas', 'No leídas', 'Error'];
+
+const NIVEL_MAP = { 'Éxito': 'success', 'Advertencia': 'warning', 'Error': 'error', 'Info': 'info' };
 
 /* ─── Componente principal ─────────────────────────────────────────────── */
 const NotificacionesPage = () => {
-    const [notifs, setNotifs] = useState(SAMPLE);
-    const [filtro, setFiltro] = useState('Todas');
+    const { notifs, marcarLeida, marcarTodasLeidas, eliminar, limpiarTodas } = useNotifications();
+
+    // ── Estado ──
     const [activeTab, setActiveTab] = useState('gestion'); // 'gestion' o 'sistema'
+    const [filtroNivel, setFiltroNivel] = useState('Todas');
+    const [searchText, setSearchText] = useState('');
+    const [selectedRows, setSelectedRows] = useState([]);
 
     /* Categorización */
     const CAT_MAP = {
@@ -116,180 +43,251 @@ const NotificacionesPage = () => {
         seguridad: 'sistema',
     };
 
-    /* Disparar un toast de prueba */
-    const toastDemo = (nivel) => {
-        const msg = {
-            success: () => toast.success('Operación completada.'),
-            warning: () => toast.warning('Atención requerida.'),
-            error: () => toast.error('Error del sistema.'),
-            info: () => toast.info('Nueva información.'),
-        };
-        msg[nivel]?.();
-    };
+    // ── Seleccion ──
+    const toggleRow = (id) =>
+        setSelectedRows(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
 
-    /* Marcar una como leída */
-    const marcarLeida = (id) => {
-        setNotifs(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
-        toast.success('Marcada como leída');
-    };
-
-    /* Marcar todas como leídas */
-    const marcarTodasLeidas = () => {
-        setNotifs(prev => prev.map(n => ({ ...n, leida: true })));
-        toast.success('Todas leídas');
-    };
-
-    /* Eliminar */
-    const eliminar = (id) => {
-        setNotifs(prev => prev.filter(n => n.id !== id));
-        toast.info('Eliminada');
-    };
-
-    /* Limpiar todas */
-    const limpiarTodas = () => {
-        setNotifs([]);
-        toast.info('Bandeja vacía');
-    };
-
-    /* Filtrado */
-    const NIVEL_MAP = { 'Éxito': 'success', 'Advertencia': 'warning', 'Error': 'error', 'Info': 'info' };
-    const porTab = notifs.filter(n => CAT_MAP[n.tipo] === activeTab);
-    const filtradas = porTab.filter(n => {
-        if (filtro === 'Todas') return true;
-        if (filtro === 'No leídas') return !n.leida;
-        return n.nivel === NIVEL_MAP[filtro];
-    });
-
+    // ── Filtrado ──
+    const filtrosActuales = activeTab === 'gestion' ? FILTROS_GESTION : FILTROS_SISTEMA;
     const noLeidasGestion = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'gestion').length;
     const noLeidasSistema = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'sistema').length;
 
+    const filteredData = useMemo(() => {
+        let items = notifs.filter(n => CAT_MAP[n.tipo] === activeTab);
+
+        if (searchText.trim()) {
+            const lowerSearch = searchText.toLowerCase();
+            items = items.filter(n =>
+                n.titulo.toLowerCase().includes(lowerSearch) ||
+                n.mensaje.toLowerCase().includes(lowerSearch)
+            );
+        }
+
+        if (filtroNivel !== 'Todas') {
+            if (filtroNivel === 'No leídas') {
+                items = items.filter(n => !n.leida);
+            } else {
+                items = items.filter(n => n.nivel === NIVEL_MAP[filtroNivel]);
+            }
+        }
+
+        // Ordenar por fecha descendente (más recientes primero)
+        items.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+        return items;
+    }, [notifs, activeTab, searchText, filtroNivel]);
+
+    const toggleAll = () =>
+        setSelectedRows(selectedRows.length === filteredData.length && filteredData.length > 0 ? [] : filteredData.map(c => c.id));
+
+    // ── Acciones Globales ──
+    const handleMarcarTodasLeidas = () => {
+        marcarTodasLeidas();
+        toast.success('Todas marcadas como leídas');
+    };
+
+    const handleLimpiarTodas = () => {
+        if (window.confirm('¿Estás seguro de vaciar todas las notificaciones?')) {
+            limpiarTodas();
+            toast.info('Bandeja vacía');
+            setSelectedRows([]);
+        }
+    };
+
+    // ── Acciones Lote ──
+    const handleMarcarLoteLeidas = () => {
+        selectedRows.forEach(id => marcarLeida(id));
+        toast.success(`Se marcaron ${selectedRows.length} como leídas`);
+        setSelectedRows([]);
+    };
+
+    const handleEliminarLote = () => {
+        if (window.confirm(`¿Eliminar ${selectedRows.length} notificaciones?`)) {
+            selectedRows.forEach(id => eliminar(id));
+            toast.info('Notificaciones eliminadas');
+            setSelectedRows([]);
+        }
+    };
+
+    const showToolbarActions = selectedRows.length > 0;
+    const labelSeleccion = selectedRows.length === 1 ? '1 seleccionado' : `${selectedRows.length} seleccionados`;
+
+    // ── Badges según nivel ──
+    const badgeClass = (nivel) => {
+        if (nivel === 'success') return 'tico-badge tico-badge-completada';
+        if (nivel === 'warning') return 'tico-badge tico-badge-alto';
+        if (nivel === 'error') return 'tico-badge tico-badge-cancelada';
+        return 'tico-badge tico-badge-bajo'; // info
+    };
+
+    const badgeLabel = (nivel) => {
+        if (nivel === 'success') return 'Éxito';
+        if (nivel === 'warning') return 'Aviso';
+        if (nivel === 'error') return 'Error';
+        return 'Info';
+    };
+
+    // ── Render ──
     return (
-        <div className="notif-page">
+        <div className="tico-container notif-page-container">
 
-            <header className="notif-page-header">
-                <div className="notif-header-info">
-                    <div className="notif-bell-box">
-                        <Bell size={28} />
-                    </div>
-                    <div>
-                        <h1 className="notif-title">Centro de Notificaciones</h1>
-                        <p className="notif-subtitle">Gestiona avisos de pacientes y alertas técnicas</p>
-                    </div>
-                </div>
-
-                <div className="notif-global-actions">
-                    <button onClick={marcarTodasLeidas} className="notif-btn-action primary">
-                        <CheckCheck size={16} /> Mark All
-                    </button>
-                    <div className="notif-divider-v" />
-                    <button onClick={limpiarTodas} className="notif-btn-action danger">
-                        <Trash2 size={16} /> Vaciar
-                    </button>
+            {/* Header */}
+            <header className="tico-header" style={{ paddingBottom: '1rem', borderBottom: 'none' }}>
+                <div>
+                    <h1 className="tico-title">Centro de Notificaciones</h1>
+                    <p className="tico-subtitle">Gestiona avisos de pacientes y alertas técnicas</p>
                 </div>
             </header>
 
-            <div className="notif-panel">
-                <nav className="notif-tabs">
-                    <button
-                        onClick={() => { setActiveTab('gestion'); setFiltro('Todas'); }}
-                        className={`notif-tab-btn ${activeTab === 'gestion' ? 'active' : ''}`}
-                    >
-                        <Users size={20} />
-                        Gestión de Pacientes
-                        {noLeidasGestion > 0 && <span className="notif-tab-count">{noLeidasGestion}</span>}
-                    </button>
-                    <button
-                        onClick={() => { setActiveTab('sistema'); setFiltro('Todas'); }}
-                        className={`notif-tab-btn ${activeTab === 'sistema' ? 'active' : ''}`}
-                    >
-                        <Activity size={20} />
-                        Sistema
-                        {noLeidasSistema > 0 && <span className="notif-tab-count">{noLeidasSistema}</span>}
-                    </button>
-                </nav>
+            {/* Tabs Anchos */}
+            <div className="notif-tabs-container">
+                <button
+                    className={`notif-tab-full ${activeTab === 'gestion' ? 'active' : ''}`}
+                    onClick={() => { setActiveTab('gestion'); setFiltroNivel('Todas'); setSelectedRows([]); }}
+                >
+                    <Users size={18} />
+                    Gestión
+                    {noLeidasGestion > 0 && <span className="notif-count-badge">{noLeidasGestion}</span>}
+                </button>
+                <button
+                    className={`notif-tab-full ${activeTab === 'sistema' ? 'active' : ''}`}
+                    onClick={() => { setActiveTab('sistema'); setFiltroNivel('Todas'); setSelectedRows([]); }}
+                >
+                    <Activity size={18} />
+                    Sistema
+                    {noLeidasSistema > 0 && <span className="notif-count-badge">{noLeidasSistema}</span>}
+                </button>
+            </div>
 
-                <main className="notif-body">
-                    <div className="notif-filters">
-                        <div className="notif-filter-group">
-                            {FILTROS.map(f => (
-                                <button
-                                    key={f}
-                                    onClick={() => setFiltro(f)}
-                                    className={`notif-filter-btn ${filtro === f ? 'active' : ''}`}
-                                >
-                                    {f}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="notif-stats">
-                            Mostrando <b>{filtradas.length}</b> avisos
-                        </div>
-                    </div>
+            {/* Toolbar */}
+            <div className="tico-toolbar" style={{ marginBottom: '1rem' }}>
+                <input
+                    className="tico-search"
+                    placeholder="Buscar en título o mensaje…"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                />
+                {filtrosActuales.map(f => (
+                    <button
+                        key={f}
+                        className={`tico-btn tico-btn-outline tico-btn-filter ${filtroNivel === f ? 'active' : ''}`}
+                        onClick={() => setFiltroNivel(f)}
+                    >
+                        {f}
+                        {filtroNivel === f && <div className="tico-filter-dot" />}
+                    </button>
+                ))}
 
-                    {filtradas.length === 0 ? (
-                        <div className="notif-empty">
-                            <div className="notif-empty-icon">
-                                <BellOff size={56} />
-                            </div>
-                            <h2 className="notif-empty-title">Sin notificaciones</h2>
-                            <p className="notif-empty-desc">Todo está en orden por ahora.</p>
-                        </div>
+                <div className="tico-toolbar-actions notif-toolbar-actions">
+                    {!showToolbarActions ? (
+                        <>
+                            <button className="tico-btn tico-btn-outline" onClick={handleMarcarTodasLeidas}>
+                                <CheckCheck size={14} /> Marcar todas leídas
+                            </button>
+                            <button className="tico-btn tico-btn-outline notif-btn-danger-outline" onClick={handleLimpiarTodas}>
+                                <Trash2 size={14} /> Vaciar bandeja
+                            </button>
+                        </>
                     ) : (
-                        <div className="notif-list">
-                            {filtradas.map(n => {
-                                const cfg = NIVEL_CONFIG[n.nivel];
-                                return (
-                                    <div key={n.id} className={`notif-card ${n.leida ? 'read' : 'unread'}`}>
-                                        {!n.leida && <div className="notif-card-indicator" />}
-
-                                        <div className="notif-icon-wrapper" style={{ background: cfg.colorBg, color: cfg.colorIcon }}>
-                                            {React.cloneElement(cfg.icon, { size: 28 })}
-                                        </div>
-
-                                        <div className="notif-content">
-                                            <div className="notif-content-header">
-                                                <div className="notif-card-title-row">
-                                                    <h3 className="notif-card-title">{n.titulo}</h3>
-                                                    {n.nivel === 'error' && !n.leida && <span className="notif-badge-high">Prioridad</span>}
-                                                </div>
-                                                <span className="notif-timestamp">{formatFecha(n.fecha)}</span>
-                                            </div>
-                                            <p className="notif-card-msg">{n.mensaje}</p>
-                                        </div>
-
-                                        <div className="notif-card-actions">
-                                            {!n.leida && (
-                                                <button onClick={() => marcarLeida(n.id)} className="notif-action-btn success" title="Leída">
-                                                    <CheckCheck size={20} />
-                                                </button>
-                                            )}
-                                            <button onClick={() => eliminar(n.id)} className="notif-action-btn danger" title="Eliminar">
-                                                <Trash2 size={20} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        <>
+                            <span className="tico-selection-label">{labelSeleccion}</span>
+                            <button className="tico-btn tico-btn-action tico-btn-ver" onClick={handleMarcarLoteLeidas}>
+                                <CheckCircle size={14} /> Marcar leídas
+                            </button>
+                            <button className="tico-btn tico-btn-action tico-btn-inhabilitar" onClick={handleEliminarLote}>
+                                <Trash2 size={14} /> Eliminar seleccionadas
+                            </button>
+                        </>
                     )}
-                </main>
+                </div>
+            </div>
 
-                <footer className="notif-footer">
-                    <div className="notif-live-badge">
-                        <div className="notif-live-dot" />
-                        <span className="notif-live-text">Live Feedback</span>
-                    </div>
-                    <div className="notif-demo-tools">
-                        <span className="notif-demo-label">Probar alertas:</span>
-                        <div className="notif-demo-btns">
-                            {['success', 'warning', 'error', 'info'].map(n => (
-                                <button key={n} onClick={() => toastDemo(n)} className="notif-demo-dot" title={n} style={{ color: NIVEL_CONFIG[n].colorIcon }}>
-                                    {React.cloneElement(NIVEL_CONFIG[n].icon, { size: 18 })}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </footer>
+            {/* Contenido Principal (Tabla) Scrolleable */}
+            <div className="notif-table-wrapper">
+                <table className="tico-table">
+                    <thead>
+                        <tr>
+                            <th style={{ width: '40px' }}>
+                                <input
+                                    type="checkbox"
+                                    className="tico-checkbox"
+                                    checked={selectedRows.length === filteredData.length && filteredData.length > 0}
+                                    onChange={toggleAll}
+                                />
+                            </th>
+                            <th>NIVEL</th>
+                            <th>TÍTULO</th>
+                            <th style={{ width: '40%' }}>MENSAJE</th>
+                            <th>FECHA</th>
+                            <th className="notif-cell-center">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredData.map((n) => (
+                            <tr
+                                key={n.id}
+                                className={[
+                                    'notif-row-clickable',
+                                    selectedRows.includes(n.id) ? 'selected' : '',
+                                    n.leida ? 'inhabilitado' : '', // Opacidad para leídas
+                                ].join(' ').trim()}
+                                onClick={() => toggleRow(n.id)}
+                            >
+                                <td onClick={(e) => e.stopPropagation()}>
+                                    <input
+                                        type="checkbox"
+                                        className="tico-checkbox"
+                                        checked={selectedRows.includes(n.id)}
+                                        onChange={() => toggleRow(n.id)}
+                                    />
+                                </td>
+                                <td>
+                                    <span className={badgeClass(n.nivel)}>
+                                        {!n.leida && <span className="notif-unread-dot" />}
+                                        {badgeLabel(n.nivel)}
+                                    </span>
+                                </td>
+                                <td className={n.leida ? 'notif-cell-title' : 'notif-cell-title-unread'}>
+                                    {n.titulo}
+                                </td>
+                                <td className="notif-cell-msg">
+                                    {n.mensaje}
+                                </td>
+                                <td className="notif-cell-date">
+                                    {formatFecha(n.fecha)}
+                                </td>
+                                <td className="notif-cell-center" onClick={(e) => e.stopPropagation()}>
+                                    <div className="notif-action-group">
+                                        {!n.leida && (
+                                            <button
+                                                className="notif-btn-read"
+                                                onClick={() => { marcarLeida(n.id); toast.success('Leída'); }}
+                                                title="Marcar como leída"
+                                            >
+                                                <CheckCheck size={16} />
+                                            </button>
+                                        )}
+                                        <button
+                                            className="notif-btn-delete"
+                                            onClick={() => { eliminar(n.id); toast.info('Eliminada'); }}
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {filteredData.length === 0 && (
+                            <tr>
+                                <td colSpan={6} className="notif-cell-center" style={{ padding: '2rem', color: '#9ca3af' }}>
+                                    <BellOff size={32} className="notif-empty-icon" />
+                                    No se encontraron notificaciones en esta sección.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

@@ -24,6 +24,18 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     /**
+     * Completa el 2FA guardando el token y la sesión.
+     * Se llama después de verificar el código 2FA exitosamente.
+     */
+    const complete2FA = useCallback((data) => {
+        const userData = data.user ?? data.especialista ?? data;
+        setUser(userData);
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('tico_user', JSON.stringify(userData));
+        return userData;
+    }, []);
+
+    /**
      * Cierra sesión: invalida el token en el servidor y limpia el estado.
      */
     const logout = useCallback(async () => {
@@ -31,10 +43,22 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     }, []);
 
+    /**
+     * Actualiza los datos del usuario en caliente (ej. cuando edita su propio perfil)
+     */
+    const updateUser = useCallback((newData) => {
+        setUser((prev) => {
+            if (!prev) return null;
+            const updated = { ...prev, ...newData };
+            localStorage.setItem('tico_user', JSON.stringify(updated));
+            return updated;
+        });
+    }, []);
+
     const isSuperAdmin = user?.rol_id === 1 || user?.rol === 'SUPER_ADMIN';
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, isSuperAdmin }}>
+        <AuthContext.Provider value={{ user, login, logout, complete2FA, updateUser, isSuperAdmin }}>
             {children}
         </AuthContext.Provider>
     );

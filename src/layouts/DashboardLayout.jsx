@@ -5,15 +5,19 @@ import {
     Users,
     Activity,
     Bell,
+    BellOff,
+    ListChecks,
     LogOut,
     ChevronDown,
     ChevronUp,
     Menu,
     Star,
     UserCircle2,
+    Settings,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const getInitials = (nombre = '') => {
@@ -23,26 +27,66 @@ const getInitials = (nombre = '') => {
 };
 
 // ── SidebarItem ──────────────────────────────────────────────────────────────
-const SidebarItem = ({ to, icon: Icon, label, isCollapsed }) => {
+const SidebarItem = ({ to, icon: Icon, label, isCollapsed, badges = [] }) => {
     return (
         <NavLink
             to={to}
             className={({ isActive }) =>
                 clsx(
-                    "flex items-center gap-2 px-3 py-2 transition-all rounded-lg mb-0.5 group relative",
+                    "flex items-center justify-between transition-all duration-300 rounded-xl mb-1 group relative",
                     isActive
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-600 hover:bg-gray-100',
-                    isCollapsed && "justify-center"
+                        ? 'text-white shadow-md scale-[1.02] z-10'
+                        : 'text-gray-600 hover:bg-slate-50 hover:text-[#3971b8] hover:scale-[1.02] active:scale-95',
+                    isCollapsed ? "justify-center p-3" : "px-3 py-2"
                 )
             }
+            style={({ isActive }) =>
+                isActive ? { background: 'linear-gradient(135deg, #3971b8 0%, #5c93c9 100%)' } : {}
+            }
         >
-            <Icon size={17} className="shrink-0" />
-            {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden">{label}</span>}
-            {isCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-                    {label}
+            <div className="flex items-center gap-2 overflow-visible">
+                <Icon size={20} className={clsx("shrink-0 transition-transform duration-300 group-hover:scale-110", badges.length > 0 && "group-hover:text-red-500")} />
+                {!isCollapsed && <span className="text-sm font-bold whitespace-nowrap overflow-hidden tracking-wide">{label}</span>}
+            </div>
+
+            {/* Badges para el modo expandido */}
+            {!isCollapsed && badges.length > 0 && (
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                    {badges.map((badge, idx) => (
+                        badge.count > 0 && (
+                            <span
+                                key={idx}
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${badge.colorClass}`}
+                                title={badge.title}
+                            >
+                                {badge.count > 99 ? '99+' : badge.count}
+                            </span>
+                        )
+                    ))}
                 </div>
+            )}
+
+            {/* Tooltip y Badges para el modo colapsado */}
+            {isCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none flex items-center gap-2">
+                    <span>{label}</span>
+                    {badges.some(b => b.count > 0) && (
+                        <div className="flex gap-1 border-l border-gray-600 pl-2 ml-1">
+                            {badges.map((badge, idx) => (
+                                badge.count > 0 && (
+                                    <span key={idx} className={`text-[9px] font-bold px-1 py-0 rounded text-white ${badge.colorClass}`}>
+                                        {badge.count}
+                                    </span>
+                                )
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Indicador sutil sobre el ícono cuando está colapsado y hay notificaciones */}
+            {isCollapsed && badges.some(b => b.count > 0) && (
+                <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white"></div>
             )}
         </NavLink>
     );
@@ -68,14 +112,16 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
             <button
                 onClick={toggleOpen}
                 className={clsx(
-                    "w-full flex items-center justify-between px-3 py-2 transition-all rounded-lg group relative",
-                    isActiveParent ? 'text-primary bg-blue-50' : 'text-gray-600 hover:bg-gray-100',
+                    "w-full flex items-center justify-between px-3 py-2 transition-all duration-300 rounded-xl group relative",
+                    isActiveParent
+                        ? 'text-indigo-700 bg-indigo-50 shadow-sm border border-indigo-100 scale-[1.02] z-10'
+                        : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 hover:scale-[1.03] active:scale-95',
                     isCollapsed && "justify-center"
                 )}
             >
                 <div className="flex items-center gap-2">
-                    <Icon size={17} className="shrink-0" />
-                    {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden">{label}</span>}
+                    <Icon size={18} className="shrink-0 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
+                    {!isCollapsed && <span className="text-sm font-bold whitespace-nowrap overflow-hidden tracking-wide">{label}</span>}
                 </div>
                 {!isCollapsed && (isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
 
@@ -102,7 +148,29 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
 const DashboardLayout = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { user, logout, isSuperAdmin } = useAuth();
+    const { notifs = [] } = useNotifications();
     const navigate = useNavigate();
+
+    // Calcular notificaciones no leídas por categoría
+    const CAT_MAP = {
+        cita: 'gestion',
+        pago: 'gestion',
+        paciente: 'gestion',
+        sistema: 'sistema',
+        seguridad: 'sistema',
+    };
+
+    const unreadGestion = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'gestion').length;
+    const unreadSistema = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'sistema').length;
+
+    let dotColor = null;
+    if (unreadSistema > 0) dotColor = 'bg-orange-500';
+    else if (unreadGestion > 0) dotColor = 'bg-blue-500';
+
+    const notificationBadges = [
+        { count: unreadSistema, colorClass: 'bg-orange-500', title: 'Notificaciones del Sistema' },
+        { count: unreadGestion, colorClass: 'bg-blue-500', title: 'Notificaciones de Gestión' }
+    ];
 
     const handleLogout = () => {
         logout();
@@ -163,46 +231,29 @@ const DashboardLayout = () => {
                         </SidebarSubmenu>
 
                         <SidebarItem to="/especialistas" icon={Users} label="Especialistas" isCollapsed={isCollapsed} />
+                    </div>
+
+                    <div className="mb-4">
+                        {!isCollapsed && (
+                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in mt-2 border-t border-gray-100 pt-3">
+                                Analíticas
+                            </p>
+                        )}
                         <SidebarItem to="/metricas" icon={Activity} label="Métricas" isCollapsed={isCollapsed} />
                     </div>
 
-                    <div>
+                    <div className="mb-4">
                         {!isCollapsed && (
-                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in">
+                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in mt-2 border-t border-gray-100 pt-3">
                                 General
                             </p>
                         )}
-                        <SidebarItem to="/notificaciones" icon={Bell} label="Notificaciones" isCollapsed={isCollapsed} />
+                        <SidebarItem to="/configuracion" icon={Settings} label="Configuración" isCollapsed={isCollapsed} />
                     </div>
                 </nav>
 
-                {/* Footer — perfil del usuario */}
+                {/* Footer — botón cerrar sesión */}
                 <div className="p-3 border-t border-gray-100">
-                    {/* Perfil compacto */}
-                    {!isCollapsed && user && (
-                        <div className="flex items-center gap-2 px-2 py-2 mb-1 rounded-lg bg-gray-50">
-                            {/* Avatar */}
-                            <div
-                                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[0.65rem] font-bold shrink-0"
-                                style={{
-                                    background: isSuperAdmin
-                                        ? 'linear-gradient(135deg,#f59e0b,#d97706)'
-                                        : 'linear-gradient(135deg,#3b82f6,#6d28d9)'
-                                }}
-                            >
-                                {getInitials(user.nombre)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold text-gray-800 truncate leading-none mb-0.5">
-                                    {user?.nombre?.split(' ').slice(0, 2).join(' ') ?? '—'}
-                                </p>
-                                <p className="text-[10px] text-gray-400 leading-none flex items-center gap-1">
-                                    {isSuperAdmin && <Star size={9} className="text-amber-500" />}
-                                    {isSuperAdmin ? 'Super Admin' : 'Especialista'}
-                                </p>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Botón cerrar sesión */}
                     <button
@@ -223,12 +274,92 @@ const DashboardLayout = () => {
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto bg-gray-50 p-6 transition-all duration-300">
-                <div className="max-w-7xl mx-auto">
-                    <Outlet />
-                </div>
-            </main>
+            {/* Main Content Area (Topbar + Outlet) */}
+            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+                {/* Topbar */}
+                <header className="h-[60px] bg-white border-b border-gray-200 flex items-center justify-end px-6 shrink-0 z-10">
+                    <div className="flex items-center gap-4">
+                        {/* Campana Notificaciones */}
+                        <div className="relative group/bell">
+                            <button
+                                onClick={() => navigate('/notificaciones')}
+                                className="relative p-2 text-gray-500 group-hover/bell:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                                title="Ver notificaciones"
+                            >
+                                <Bell size={20} />
+                                {dotColor && (
+                                    <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${dotColor} border-2 border-white pointer-events-none`}></span>
+                                )}
+                            </button>
+
+                            {/* Dropdown flotante (estilo oscuro) */}
+                            <div className="absolute top-full right-0 pt-2 w-80 opacity-0 invisible group-hover/bell:opacity-100 group-hover/bell:visible transition-all duration-300 z-50">
+                                <div
+                                    onClick={() => navigate('/notificaciones')}
+                                    className="bg-[#1e1e1e] text-gray-300 rounded-lg shadow-xl border border-[#333] pointer-events-none group-hover/bell:pointer-events-auto overflow-hidden cursor-pointer"
+                                >
+                                    <div className="flex items-center justify-between px-4 py-3 bg-[#18181b]">
+                                        <span className="text-[11px] font-semibold tracking-wider text-gray-300 uppercase">
+                                            {(unreadSistema + unreadGestion) > 0 ? `(${unreadGestion}) PACIENTES Y (${unreadSistema}) SISTEMA` : "SIN NOTIFICACIONES NUEVAS"}
+                                        </span>
+                                        <div className="flex items-center gap-3 text-gray-400" onClick={(e) => e.stopPropagation()}>
+                                            <button className="hover:text-white transition-colors" title="Marcar todas como leídas">
+                                                <ListChecks size={15} />
+                                            </button>
+                                            <button className="hover:text-white transition-colors" title="Silenciar notificaciones">
+                                                <BellOff size={14} />
+                                            </button>
+                                            <button className="hover:text-white transition-colors">
+                                                <ChevronDown size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#18181b] border-t border-[#333] px-4 py-2 flex items-center justify-between">
+                                        <span className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer transition-colors" onClick={() => navigate('/notificaciones')}>
+                                            Ver todas
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
+                        {/* Perfil Usuario */}
+                        {user && (
+                            <div className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 py-1.5 px-3 rounded-xl transition-colors">
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-sm font-semibold text-gray-800 truncate leading-none mb-1">
+                                        {user?.nombre?.split(' ').slice(0, 2).join(' ') ?? '—'}
+                                    </p>
+                                    <p className="text-[11px] text-gray-500 leading-none flex items-center gap-1 justify-end">
+                                        {isSuperAdmin && <Star size={10} className="text-amber-500" />}
+                                        {isSuperAdmin ? 'Super Admin' : 'Especialista'}
+                                    </p>
+                                </div>
+                                <div
+                                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm shadow-indigo-100 group-hover:scale-105 transition-transform"
+                                    style={{
+                                        background: isSuperAdmin
+                                            ? 'linear-gradient(135deg,#f59e0b,#d97706)'
+                                            : 'linear-gradient(135deg,#3b82f6,#6d28d9)'
+                                    }}
+                                >
+                                    {getInitials(user.nombre)}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </header>
+
+                {/* Page Content */}
+                <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <Outlet />
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };

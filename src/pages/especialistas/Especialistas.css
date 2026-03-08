@@ -96,6 +96,26 @@
     display: inline-block;
 }
 
+.esp-estado-enlinea {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.70rem;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.esp-estado-desconectado {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.70rem;
+    font-weight: 700;
+    display: inline-block;
+}
+
 /* ── Badge cédula ── */
 .esp-cedula-badge {
     display: inline-flex;

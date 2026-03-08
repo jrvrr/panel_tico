@@ -1,18 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import '../pacientes/Pacientes.css';
-import { ChevronUp, ChevronDown, Eye, CheckCircle, Trash2, X, Plus, DollarSign, SlidersHorizontal, FilterX } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, CheckCircle, Trash2, X, Plus, DollarSign, Filter, FilterX } from 'lucide-react';
+import { useNotifications } from '../../../context/NotificationContext';
+import { getPacientes } from '../../../services/api';
 
-// Lista de pacientes simulados (en un app real vendría de la BD)
-const PACIENTES_LISTA = [
-    { id: 1, nombre: 'Cristhian' },
-    { id: 2, nombre: 'Mario' },
-    { id: 3, nombre: 'Julio' },
-    { id: 4, nombre: 'Marcos' },
-    { id: 5, nombre: 'Ignacio' },
-    { id: 6, nombre: 'Octavio' },
-    { id: 7, nombre: 'Franco' },
-    { id: 8, nombre: 'Lazario' },
-];
 
 const EMPTY_PAGO = {
     paciente_id: '',
@@ -23,6 +14,7 @@ const EMPTY_PAGO = {
 };
 
 const PagosPage = () => {
+    const { addNotification } = useNotifications();
     const [selectedRows, setSelectedRows] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [modalDetalle, setModalDetalle] = useState(null);
@@ -46,9 +38,24 @@ const PagosPage = () => {
         { id: 8, paciente_id: 8, monto: 1500.00, fecha_pago: '2024-04-20', metodo_pago: 'Efectivo', estado_pago: 'Vencido' },
     ]);
 
+    // ── Pacientes Data ──
+    const [pacientesList, setPacientesList] = useState([]);
+
+    useEffect(() => {
+        const fetchPacientes = async () => {
+            try {
+                const response = await getPacientes();
+                setPacientesList(response.data || []);
+            } catch (error) {
+                console.error("Error fetching pacientes for payments:", error);
+            }
+        };
+        fetchPacientes();
+    }, []);
+
     // ── Helpers ──
     const getNombrePaciente = (id) =>
-        PACIENTES_LISTA.find(p => p.id === parseInt(id))?.nombre || `Paciente #${id}`;
+        pacientesList.find(p => p.id === parseInt(id))?.nombre || `Paciente #${id}`;
 
     const formatMonto = (m) =>
         `$${parseFloat(m).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -113,11 +120,25 @@ const PagosPage = () => {
             prev.map(p => selectedRows.includes(p.id) && p.estado_pago !== 'Pagado'
                 ? { ...p, estado_pago: 'Pagado' } : p)
         );
+        import('sonner').then(({ toast }) => toast.success(`Se registró el pago de ${selectedRows.length} factura(s)`));
+        addNotification({
+            tipo: 'pago',
+            titulo: 'Pagos completados',
+            mensaje: `Se registró el pago de ${selectedRows.length} factura(s) pendiente(s).`,
+            nivel: 'success'
+        });
         setSelectedRows([]);
     };
 
     const handleEliminar = () => {
         setPagos(prev => prev.filter(p => !selectedRows.includes(p.id)));
+        import('sonner').then(({ toast }) => toast.info(`Se eliminaron ${selectedRows.length} registro(s) de pago`));
+        addNotification({
+            tipo: 'pago',
+            titulo: 'Registros eliminados',
+            mensaje: `Se eliminaron ${selectedRows.length} registro(s) de pago del historial.`,
+            nivel: 'info'
+        });
         setSelectedRows([]);
     };
 
@@ -141,6 +162,13 @@ const PagosPage = () => {
         const nuevo = { id: nextId, ...formNuevo, monto: parseFloat(formNuevo.monto), paciente_id: parseInt(formNuevo.paciente_id) };
         setPagos(prev => [...prev, nuevo]);
         setNextId(id => id + 1);
+        import('sonner').then(({ toast }) => toast.success(`Nuevo pago registrado`));
+        addNotification({
+            tipo: 'pago',
+            titulo: 'Nuevo pago registrado',
+            mensaje: `Se emitió un recibo por $${nuevo.monto} MXN.`,
+            nivel: 'success'
+        });
         setFormNuevo(EMPTY_PAGO);
         setFormErrors({});
         setModalNuevo(false);
@@ -211,7 +239,7 @@ const PagosPage = () => {
                         className={`tico-btn tico-btn-outline tico-btn-filter ${showFilterMenu ? 'active' : ''}`}
                         onClick={() => setShowFilterMenu(!showFilterMenu)}
                     >
-                        <SlidersHorizontal size={14} />
+                        <Filter size={14} />
                         Filtros
                         {(filterEstado || filterMetodo) && <span className="tico-filter-dot" />}
                     </button>
@@ -349,7 +377,7 @@ const PagosPage = () => {
                                     onChange={(e) => handleFormChange('paciente_id', e.target.value)}
                                 >
                                     <option value="">— Seleccionar paciente —</option>
-                                    {PACIENTES_LISTA.map(p => (
+                                    {pacientesList.map(p => (
                                         <option key={p.id} value={p.id}>{p.nombre}</option>
                                     ))}
                                 </select>
