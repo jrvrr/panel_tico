@@ -14,6 +14,29 @@ const publicHeaders = { 'Content-Type': 'application/json' };
  * Inicia el proceso de login, retornando { message, require2FA, email }
  * si las credenciales son correctas.
  */
+export const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const res = await fetch(`${BASE_URL}/upload`, {
+        method: 'POST',
+        // No enviamos Content-Type, el navegador lo añade automáticamente como multipart/form-data
+        // Pero si necesitamos autorización, la enviamos:
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al subir archivo');
+    return data; // { url, message, status }
+};
+
+/**
+ * Inicia el proceso de login, retornando { message, require2FA, email }
+ * si las credenciales son correctas.
+ */
 export const login = async (email, password) => {
     const res = await fetch(`${BASE_URL}/login`, {
         method: 'POST',

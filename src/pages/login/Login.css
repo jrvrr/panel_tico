@@ -477,6 +477,7 @@
     opacity: 0.65;
     cursor: not-allowed;
     transform: none;
+    background-color: #2b74d3;
 }
 
 /* ─── 2FA & ReCAPTCHA Styles ─── */

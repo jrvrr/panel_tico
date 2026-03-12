@@ -203,6 +203,7 @@ const FormBody = ({
                 className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`}
                 placeholder="Nombre completo"
                 value={formData.nombre}
+                maxLength={30}
                 onChange={e => handleFormChange('nombre', e.target.value)}
             />
             {formErrors.nombre && <span className="tico-field-error">{formErrors.nombre}</span>}
@@ -215,6 +216,7 @@ const FormBody = ({
                     type="email"
                     placeholder="ejemplo@tico.mx"
                     value={formData.email}
+                    maxLength={20}
                     onChange={e => handleFormChange('email', e.target.value)}
                 />
                 {formErrors.email && <span className="tico-field-error">{formErrors.email}</span>}
@@ -486,6 +488,14 @@ const EspecialistasPage = () => {
     };
 
     const handleFormChange = (field, value) => {
+        // Validaciones de longitud
+        if (field === 'nombre' && value.length > 30) return;
+        if (field === 'email' && value.length > 20) return;
+        if (field === 'telefono') {
+            const digitCount = value.replace(/\D/g, '').length;
+            if (digitCount > 10) return;
+        }
+
         setFormData(prev => ({ ...prev, [field]: value }));
         setFormErrors(prev => ({ ...prev, [field]: undefined }));
         if (field === 'cedula_profesional') resetCedula();

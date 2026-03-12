@@ -12,12 +12,11 @@ import {
     ChevronUp,
     Menu,
     Star,
-    UserCircle2,
     Settings,
 } from 'lucide-react';
-import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import './DashboardLayout.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const getInitials = (nombre = '') => {
@@ -32,61 +31,52 @@ const SidebarItem = ({ to, icon: Icon, label, isCollapsed, badges = [] }) => {
         <NavLink
             to={to}
             className={({ isActive }) =>
-                clsx(
-                    "flex items-center justify-between transition-all duration-300 rounded-xl mb-1 group relative",
-                    isActive
-                        ? 'text-white shadow-md scale-[1.02] z-10'
-                        : 'text-gray-600 hover:bg-slate-50 hover:text-[#3971b8] hover:scale-[1.02] active:scale-95',
-                    isCollapsed ? "justify-center p-3" : "px-3 py-2"
-                )
-            }
-            style={({ isActive }) =>
-                isActive ? { background: 'linear-gradient(135deg, #3971b8 0%, #5c93c9 100%)' } : {}
+                `dl-nav-item${isActive ? ' active' : ''}${isCollapsed ? ' collapsed-item' : ''}`
             }
         >
-            <div className="flex items-center gap-2 overflow-visible">
-                <Icon size={20} className={clsx("shrink-0 transition-transform duration-300 group-hover:scale-110", badges.length > 0 && "group-hover:text-red-500")} />
-                {!isCollapsed && <span className="text-sm font-bold whitespace-nowrap overflow-hidden tracking-wide">{label}</span>}
+            <div className="dl-nav-icon-wrap">
+                <Icon size={20} style={{ flexShrink: 0, transition: 'transform .3s' }} />
+                {!isCollapsed && <span>{label}</span>}
             </div>
 
-            {/* Badges para el modo expandido */}
+            {/* Badges modo expandido */}
             {!isCollapsed && badges.length > 0 && (
-                <div className="flex items-center gap-1 shrink-0 ml-2">
-                    {badges.map((badge, idx) => (
+                <div className="dl-nav-badges">
+                    {badges.map((badge, idx) =>
                         badge.count > 0 && (
                             <span
                                 key={idx}
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${badge.colorClass}`}
+                                className={`dl-badge dl-badge-${badge.colorClass === 'bg-orange-500' ? 'orange' : 'blue'}`}
                                 title={badge.title}
                             >
                                 {badge.count > 99 ? '99+' : badge.count}
                             </span>
                         )
-                    ))}
+                    )}
                 </div>
             )}
 
-            {/* Tooltip y Badges para el modo colapsado */}
+            {/* Tooltip modo colapsado */}
             {isCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none flex items-center gap-2">
+                <div className="dl-tooltip">
                     <span>{label}</span>
                     {badges.some(b => b.count > 0) && (
-                        <div className="flex gap-1 border-l border-gray-600 pl-2 ml-1">
-                            {badges.map((badge, idx) => (
+                        <div style={{ display: 'flex', gap: 4, borderLeft: '1px solid #4b5563', paddingLeft: 8, marginLeft: 4 }}>
+                            {badges.map((badge, idx) =>
                                 badge.count > 0 && (
-                                    <span key={idx} className={`text-[9px] font-bold px-1 py-0 rounded text-white ${badge.colorClass}`}>
+                                    <span key={idx} className={`dl-badge dl-badge-${badge.colorClass === 'bg-orange-500' ? 'orange' : 'blue'}`}>
                                         {badge.count}
                                     </span>
                                 )
-                            ))}
+                            )}
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Indicador sutil sobre el ícono cuando está colapsado y hay notificaciones */}
+            {/* Dot en ícono (colapsado + con notifs) */}
             {isCollapsed && badges.some(b => b.count > 0) && (
-                <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white"></div>
+                <div className="dl-icon-dot" style={{ background: '#ef4444' }} />
             )}
         </NavLink>
     );
@@ -97,7 +87,10 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
 
-    const isActiveParent = location.pathname.startsWith('/pacientes') || location.pathname.startsWith('/citas') || location.pathname.startsWith('/pagos');
+    const isActiveParent =
+        location.pathname.startsWith('/pacientes') ||
+        location.pathname.startsWith('/citas') ||
+        location.pathname.startsWith('/pagos');
 
     useEffect(() => {
         if (isActiveParent) setIsOpen(true);
@@ -108,37 +101,24 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
     };
 
     return (
-        <div className="mb-0.5">
+        <div style={{ marginBottom: 2 }}>
             <button
                 onClick={toggleOpen}
-                className={clsx(
-                    "w-full flex items-center justify-between px-3 py-2 transition-all duration-300 rounded-xl group relative",
-                    isActiveParent
-                        ? 'text-indigo-700 bg-indigo-50 shadow-sm border border-indigo-100 scale-[1.02] z-10'
-                        : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 hover:scale-[1.03] active:scale-95',
-                    isCollapsed && "justify-center"
-                )}
+                className={`dl-submenu-btn${isActiveParent ? ' active' : ''}${isCollapsed ? ' collapsed-btn' : ''}`}
             >
-                <div className="flex items-center gap-2">
-                    <Icon size={18} className="shrink-0 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
-                    {!isCollapsed && <span className="text-sm font-bold whitespace-nowrap overflow-hidden tracking-wide">{label}</span>}
+                <div className="dl-nav-icon-wrap">
+                    <Icon size={18} style={{ flexShrink: 0, transition: 'transform .3s' }} />
+                    {!isCollapsed && <span>{label}</span>}
                 </div>
                 {!isCollapsed && (isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
 
                 {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-                        {label}
-                    </div>
+                    <div className="dl-tooltip">{label}</div>
                 )}
             </button>
 
-            <div className={clsx(
-                "overflow-hidden transition-all duration-300 ease-in-out",
-                isOpen && !isCollapsed ? "max-h-96 opacity-100 mt-1" : "max-h-0 opacity-0"
-            )}>
-                <div className="pl-4 border-l-2 border-gray-100 ml-5 space-y-0.5">
-                    {children}
-                </div>
+            <div className={`dl-submenu-children${isOpen && !isCollapsed ? ' open' : ''}`}>
+                {children}
             </div>
         </div>
     );
@@ -151,21 +131,17 @@ const DashboardLayout = () => {
     const { notifs = [] } = useNotifications();
     const navigate = useNavigate();
 
-    // Calcular notificaciones no leídas por categoría
     const CAT_MAP = {
-        cita: 'gestion',
-        pago: 'gestion',
-        paciente: 'gestion',
-        sistema: 'sistema',
-        seguridad: 'sistema',
+        cita: 'gestion', pago: 'gestion', paciente: 'gestion',
+        sistema: 'sistema', seguridad: 'sistema',
     };
 
     const unreadGestion = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'gestion').length;
     const unreadSistema = notifs.filter(n => !n.leida && CAT_MAP[n.tipo] === 'sistema').length;
 
     let dotColor = null;
-    if (unreadSistema > 0) dotColor = 'bg-orange-500';
-    else if (unreadGestion > 0) dotColor = 'bg-blue-500';
+    if (unreadSistema > 0) dotColor = 'orange';
+    else if (unreadGestion > 0) dotColor = 'blue';
 
     const notificationBadges = [
         { count: unreadSistema, colorClass: 'bg-orange-500', title: 'Notificaciones del Sistema' },
@@ -178,172 +154,136 @@ const DashboardLayout = () => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 text-gray-900 font-sans">
-            {/* Sidebar */}
-            <aside
-                className={clsx(
-                    "bg-white border-r border-gray-200 flex flex-col shrink-0 transition-all duration-300 ease-in-out",
-                    isCollapsed ? "w-16" : "w-56"
-                )}
-            >
-                {/* Header con hamburguesa */}
-                <div className={clsx(
-                    "flex items-center border-b border-gray-100 h-[60px] px-3 gap-3",
-                    isCollapsed ? "justify-center" : ""
-                )}>
+        <div className="dl-root">
+            {/* ── Sidebar ── */}
+            <aside className={`dl-sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+
+                {/* Header */}
+                <div className={`dl-sidebar-header${isCollapsed ? ' collapsed' : ''}`}>
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-primary transition-colors focus:outline-none shrink-0"
+                        className="dl-hamburger"
                         aria-label="Toggle Sidebar"
                     >
                         <Menu size={20} />
                     </button>
-                    {!isCollapsed && (
-                        <span className="text-lg font-bold text-gray-900 whitespace-nowrap tracking-tight">
-                            TICO
-                        </span>
-                    )}
+                    {!isCollapsed && <span className="dl-brand">TICO</span>}
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 overflow-y-auto p-3 overflow-x-hidden">
-                    <div className="mb-4">
+                <nav className="dl-nav">
+                    <div className="dl-nav-section">
                         <SidebarItem to="/" icon={LayoutDashboard} label="Inicio" isCollapsed={isCollapsed} />
                     </div>
 
-                    <div className="mb-4">
-                        {!isCollapsed && (
-                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in">
-                                Canalización
-                            </p>
-                        )}
+                    <div className="dl-nav-section">
+                        {!isCollapsed && <span className="dl-nav-label">Canalización</span>}
 
                         <SidebarSubmenu icon={Users} label="Gestión pacientes" isCollapsed={isCollapsed}>
-                            <NavLink to="/pacientes" className={({ isActive }) => clsx("block px-3 py-1.5 text-xs rounded-md transition-colors", isActive ? "text-primary font-semibold bg-blue-50" : "text-gray-500 hover:text-gray-900")}>
-                                Pacientes
-                            </NavLink>
-                            <NavLink to="/citas" className={({ isActive }) => clsx("block px-3 py-1.5 text-xs rounded-md transition-colors", isActive ? "text-primary font-semibold bg-blue-50" : "text-gray-500 hover:text-gray-900")}>
-                                Citas
-                            </NavLink>
-                            <NavLink to="/pagos" className={({ isActive }) => clsx("block px-3 py-1.5 text-xs rounded-md transition-colors", isActive ? "text-primary font-semibold bg-blue-50" : "text-gray-500 hover:text-gray-900")}>
-                                Pagos
-                            </NavLink>
+                            <NavLink to="/pacientes" className={({ isActive }) => `dl-submenu-link${isActive ? ' active' : ''}`}>Pacientes</NavLink>
+                            <NavLink to="/citas" className={({ isActive }) => `dl-submenu-link${isActive ? ' active' : ''}`}>Citas</NavLink>
+                            <NavLink to="/pagos" className={({ isActive }) => `dl-submenu-link${isActive ? ' active' : ''}`}>Pagos</NavLink>
                         </SidebarSubmenu>
 
                         <SidebarItem to="/especialistas" icon={Users} label="Especialistas" isCollapsed={isCollapsed} />
                     </div>
 
-                    <div className="mb-4">
-                        {!isCollapsed && (
-                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in mt-2 border-t border-gray-100 pt-3">
-                                Analíticas
-                            </p>
-                        )}
+                    <div className="dl-nav-section">
+                        {!isCollapsed && <span className="dl-nav-label">Analíticas</span>}
                         <SidebarItem to="/metricas" icon={Activity} label="Métricas" isCollapsed={isCollapsed} />
                     </div>
 
-                    <div className="mb-4">
-                        {!isCollapsed && (
-                            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 animate-fade-in mt-2 border-t border-gray-100 pt-3">
-                                General
-                            </p>
-                        )}
+                    <div className="dl-nav-section">
+                        {!isCollapsed && <span className="dl-nav-label">General</span>}
                         <SidebarItem to="/configuracion" icon={Settings} label="Configuración" isCollapsed={isCollapsed} />
                     </div>
                 </nav>
 
-                {/* Footer — botón cerrar sesión */}
-                <div className="p-3 border-t border-gray-100">
-
-                    {/* Botón cerrar sesión */}
+                {/* Footer */}
+                <div className="dl-sidebar-footer">
                     <button
                         onClick={handleLogout}
-                        className={clsx(
-                            "flex items-center gap-2 w-full px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors group relative text-sm",
-                            isCollapsed && "justify-center"
-                        )}
+                        className={`dl-logout-btn${isCollapsed ? ' collapsed-btn' : ''}`}
                     >
-                        <LogOut size={17} className="shrink-0" />
-                        {!isCollapsed && <span className="font-medium">Cerrar Sesión</span>}
-                        {isCollapsed && (
-                            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-                                Cerrar Sesión
-                            </div>
-                        )}
+                        <LogOut size={17} style={{ flexShrink: 0 }} />
+                        {!isCollapsed && <span>Cerrar Sesión</span>}
+                        {isCollapsed && <div className="dl-tooltip">Cerrar Sesión</div>}
                     </button>
                 </div>
             </aside>
 
-            {/* Main Content Area (Topbar + Outlet) */}
-            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+            {/* ── Main area ── */}
+            <div className="dl-main-area">
+
                 {/* Topbar */}
-                <header className="h-[60px] bg-white border-b border-gray-200 flex items-center justify-end px-6 shrink-0 z-10">
-                    <div className="flex items-center gap-4">
-                        {/* Campana Notificaciones */}
-                        <div className="relative group/bell">
+                <header className="dl-topbar">
+                    <div className="dl-topbar-actions">
+
+                        {/* Campana */}
+                        <div className="dl-bell-wrapper">
                             <button
                                 onClick={() => navigate('/notificaciones')}
-                                className="relative p-2 text-gray-500 group-hover/bell:bg-gray-100 rounded-full transition-colors focus:outline-none"
+                                className="dl-bell-btn"
                                 title="Ver notificaciones"
                             >
                                 <Bell size={20} />
-                                {dotColor && (
-                                    <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${dotColor} border-2 border-white pointer-events-none`}></span>
-                                )}
+                                {dotColor && <span className={`dl-bell-dot ${dotColor}`} />}
                             </button>
 
-                            {/* Dropdown flotante (estilo oscuro) */}
-                            <div className="absolute top-full right-0 pt-2 w-80 opacity-0 invisible group-hover/bell:opacity-100 group-hover/bell:visible transition-all duration-300 z-50">
-                                <div
-                                    onClick={() => navigate('/notificaciones')}
-                                    className="bg-[#1e1e1e] text-gray-300 rounded-lg shadow-xl border border-[#333] pointer-events-none group-hover/bell:pointer-events-auto overflow-hidden cursor-pointer"
-                                >
-                                    <div className="flex items-center justify-between px-4 py-3 bg-[#18181b]">
-                                        <span className="text-[11px] font-semibold tracking-wider text-gray-300 uppercase">
-                                            {(unreadSistema + unreadGestion) > 0 ? `(${unreadGestion}) PACIENTES Y (${unreadSistema}) SISTEMA` : "SIN NOTIFICACIONES NUEVAS"}
+                            <div className="dl-notif-dropdown">
+                                <div onClick={() => navigate('/notificaciones')} className="dl-notif-panel">
+                                    <div className="dl-notif-header">
+                                        <span className="dl-notif-title">
+                                            {(unreadSistema + unreadGestion) > 0
+                                                ? `(${unreadGestion}) PACIENTES Y (${unreadSistema}) SISTEMA`
+                                                : 'SIN NOTIFICACIONES NUEVAS'}
                                         </span>
-                                        <div className="flex items-center gap-3 text-gray-400" onClick={(e) => e.stopPropagation()}>
-                                            <button className="hover:text-white transition-colors" title="Marcar todas como leídas">
-                                                <ListChecks size={15} />
-                                            </button>
-                                            <button className="hover:text-white transition-colors" title="Silenciar notificaciones">
-                                                <BellOff size={14} />
-                                            </button>
-                                            <button className="hover:text-white transition-colors">
-                                                <ChevronDown size={14} />
-                                            </button>
+                                        <div className="dl-notif-actions" onClick={e => e.stopPropagation()}>
+                                            <button title="Marcar todas como leídas"><ListChecks size={15} /></button>
+                                            <button title="Silenciar notificaciones"><BellOff size={14} /></button>
+                                            <button><ChevronDown size={14} /></button>
                                         </div>
                                     </div>
-
-                                    <div className="bg-[#18181b] border-t border-[#333] px-4 py-2 flex items-center justify-between">
-                                        <span className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer transition-colors" onClick={() => navigate('/notificaciones')}>
+                                    <div className="dl-notif-footer">
+                                        <button className="dl-notif-see-all" onClick={() => navigate('/notificaciones')}>
                                             Ver todas
-                                        </span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="h-6 w-px bg-gray-200 mx-2"></div>
+                        <div className="dl-topbar-divider" />
 
-                        {/* Perfil Usuario */}
+                        {/* Perfil */}
                         {user && (
-                            <div className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 py-1.5 px-3 rounded-xl transition-colors">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-semibold text-gray-800 truncate leading-none mb-1">
+                            <div onClick={() => navigate('/perfil')} className="dl-profile-chip">
+                                <div className="dl-profile-text">
+                                    <p className="dl-profile-name">
                                         {user?.nombre?.split(' ').slice(0, 2).join(' ') ?? '—'}
                                     </p>
-                                    <p className="text-[11px] text-gray-500 leading-none flex items-center gap-1 justify-end">
-                                        {isSuperAdmin && <Star size={10} className="text-amber-500" />}
+                                    <p className="dl-profile-role">
+                                        {isSuperAdmin && <Star size={10} className="dl-profile-star" />}
                                         {isSuperAdmin ? 'Super Admin' : 'Especialista'}
                                     </p>
                                 </div>
+
+                                {user?.foto_url ? (
+                                    <img
+                                        src={user.foto_url}
+                                        alt="Avatar"
+                                        className="dl-avatar"
+                                        onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                                    />
+                                ) : null}
+
                                 <div
-                                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm shadow-indigo-100 group-hover:scale-105 transition-transform"
+                                    className="dl-avatar-fallback"
                                     style={{
                                         background: isSuperAdmin
                                             ? 'linear-gradient(135deg,#f59e0b,#d97706)'
-                                            : 'linear-gradient(135deg,#3b82f6,#6d28d9)'
+                                            : 'linear-gradient(135deg,#3b82f6,#6d28d9)',
+                                        display: user?.foto_url ? 'none' : 'flex',
                                     }}
                                 >
                                     {getInitials(user.nombre)}
@@ -353,9 +293,9 @@ const DashboardLayout = () => {
                     </div>
                 </header>
 
-                {/* Page Content */}
-                <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-                    <div className="max-w-7xl mx-auto">
+                {/* Page content */}
+                <main className="dl-page-content">
+                    <div className="dl-page-inner">
                         <Outlet />
                     </div>
                 </main>
