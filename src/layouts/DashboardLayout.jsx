@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import LoadingScreen from '../components/LoadingScreen';
 import './DashboardLayout.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -126,6 +127,7 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
 
 // ── DashboardLayout ───────────────────────────────────────────────────────────
 const DashboardLayout = () => {
+    const [isAppLoading, setIsAppLoading] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { user, logout, isSuperAdmin } = useAuth();
     const { notifs = [] } = useNotifications();
@@ -152,6 +154,10 @@ const DashboardLayout = () => {
         logout();
         navigate('/login', { replace: true });
     };
+
+    if (isAppLoading) {
+        return <LoadingScreen onDone={() => setIsAppLoading(false)} />;
+    }
 
     return (
         <div className="dl-root">
