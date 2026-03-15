@@ -200,46 +200,155 @@
     transform-box: view-box;
 }
 
-/* Rosa – escala vertical desde la base (sin despegarse del suelo) */
-.pink-squish {
-    animation: pinkSquish 1.8s ease-in-out infinite;
-    transform-box: view-box;
-    transform-origin: 125px 380px;
+/* Rosa – Animaciones individuales para cuerpo, ojos y boca */
+.pink-body-anim {
+  animation: pinkBodyStretch 1.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom;
 }
 
-@keyframes pinkSquish {
+@keyframes pinkBodyStretch {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.2); }
+}
 
-    0%,
-    100% {
-        transform: scaleY(1) scaleX(1);
-    }
+.pink-mouth-anim {
+  animation: pinkFaceMove 1.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
 
-    30% {
-        transform: scaleY(1.18) scaleX(0.92);
-    }
+@keyframes pinkFaceMove {
+  0%, 100% { transform: translateY(0) scaleX(1.15) scaleY(0.85); }
+  50% { transform: translateY(-20px) scaleX(1) scaleY(1); }
+}
 
-    60% {
-        transform: scaleY(0.88) scaleX(1.06);
-    }
+.pink-eyes-anim {
+  animation: pinkEyesScale 1.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
 
-    80% {
-        transform: scaleY(1.06) scaleX(0.97);
-    }
+@keyframes pinkEyesScale {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.5); }
+}
+
+/* Verde – Parpadeo secuencial */
+.green-eye-left, .green-eye-right {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.green-eye-left {
+    animation: greenBlinkLeft 3s infinite;
+}
+
+.green-eye-right {
+    animation: greenBlinkRight 3s infinite;
+}
+
+@keyframes greenBlinkLeft {
+    0%, 10%, 26%, 100% { transform: scaleY(1); }
+    18% { transform: scaleY(0.1); }
+}
+
+@keyframes greenBlinkRight {
+    0%, 26%, 42%, 100% { transform: scaleY(1); }
+    34% { transform: scaleY(0.1); }
+}
+
+/* Verde – Pelo con sincronización de "shockwave" al paso de la bola */
+.green-hair-strand {
+    animation-duration: 6s;
+    animation-timing-function: cubic-bezier(.45, 0, .55, 1);
+    animation-iteration-count: infinite;
+    transform-origin: bottom;
+    transform-box: fill-box;
+}
+
+.green-hair-1 { animation-name: hairSway1; }
+.green-hair-2 { animation-name: hairSway2; }
+.green-hair-3 { animation-name: hairSway3; }
+.green-hair-4 { animation-name: hairSway4; }
+.green-hair-5 { animation-name: hairSway5; }
+.green-hair-6 { animation-name: hairSway6; }
+
+@keyframes hairSway1 {
+    0%, 14%, 22%, 78%, 86%, 100% { transform: skewX(0); }
+    18% { transform: skewX(35deg); }
+    82% { transform: skewX(-35deg); }
+}
+@keyframes hairSway2 {
+    0%, 16%, 24%, 76%, 84%, 100% { transform: skewX(0); }
+    20% { transform: skewX(35deg); }
+    80% { transform: skewX(-35deg); }
+}
+@keyframes hairSway3 {
+    0%, 18%, 26%, 74%, 82%, 100% { transform: skewX(0); }
+    22% { transform: skewX(35deg); }
+    78% { transform: skewX(-35deg); }
+}
+@keyframes hairSway4 {
+    0%, 21%, 29%, 71%, 79%, 100% { transform: skewX(0); }
+    25% { transform: skewX(35deg); }
+    75% { transform: skewX(-35deg); }
+}
+@keyframes hairSway5 {
+    0%, 24%, 32%, 68%, 76%, 100% { transform: skewX(0); }
+    28% { transform: skewX(35deg); }
+    72% { transform: skewX(-35deg); }
+}
+@keyframes hairSway6 {
+    0%, 27%, 35%, 65%, 73%, 100% { transform: skewX(0); }
+    31% { transform: skewX(35deg); }
+    69% { transform: skewX(-35deg); }
+}
+
+/* Bandeja – Ola de bolas azules */
+.tray-ball {
+    animation: trayBallWave 1.4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+@keyframes trayBallWave {
+    0%, 100% { transform: translateY(0) scaleX(1.15) scaleY(0.85); }
+    50% { transform: translateY(-18px) scaleX(1) scaleY(1); }
+}
+
+.tray-ball-shadow {
+    animation: trayShadowWave 1.4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+@keyframes trayShadowWave {
+    0%, 15%, 100% { transform: scale(1); opacity: 1; }
+    60% { transform: scale(0.7); opacity: 0.6; }
+}
+
+/* Bola Azul – Rodando sobre el verde */
+.blue-roll {
+    animation: blueRolling 6s cubic-bezier(.45, 0, .55, 1) infinite;
+    transform-origin: 0 0;
+}
+
+@keyframes blueRolling {
+    0%, 100% { transform: translate(210px, 105px) rotate(0deg); }
+    50% { transform: translate(510px, 105px) rotate(720deg); }
 }
 
 /* Rojo – rotación CSS (reemplaza animateTransform SMIL) */
 .red-spin {
-    animation: redRotate 2.2s linear infinite;
-    transform-box: view-box;
-    transform-origin: 95px 175px;
+  animation: spinRed 4s linear infinite;
 }
 
-@keyframes redRotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
+@keyframes spinRed {
+  from {
+    transform: translate(100px,100px) rotate(0deg) translate(-100px,-100px);
+  }
+  to {
+    transform: translate(100px,100px) rotate(360deg) translate(-100px,-100px);
+  }
 }
