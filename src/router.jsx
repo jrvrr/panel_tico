@@ -16,11 +16,6 @@ import LoadingScreen from './components/LoadingScreen';
 
 const router = createBrowserRouter([
     // Ruta pública — Login
-    {
-        path: '/loadingScreen',
-        element: <LoadingScreen />,
-    },
-
     // Rutas protegidas — Dashboard
     {
         element: <ProtectedRoute />,
@@ -44,6 +39,10 @@ const router = createBrowserRouter([
     },
 
     // 404 — pantalla completa, sin layout
+    {
+        path: '/login',
+        element: <LoginPage />,
+    },
     {
         path: '*',
         element: <NotFoundPage />,

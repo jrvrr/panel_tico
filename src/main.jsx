@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
@@ -6,8 +6,15 @@ import { Toaster } from 'sonner'
 import router from './router'
 import './index.css'
 import { NotificationProvider } from './context/NotificationContext'
+import LoadingScreen from './components/LoadingScreen'
 
 function App() {
+  const [initialLoading, setInitialLoading] = React.useState(true);
+
+  if (initialLoading) {
+    return <LoadingScreen onDone={() => setInitialLoading(false)} />;
+  }
+
   return (
     <>
       <AuthProvider>

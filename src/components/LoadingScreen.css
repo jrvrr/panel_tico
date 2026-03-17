@@ -32,37 +32,46 @@
     flex-direction: column;
     align-items: center;
     gap: 24px;
-    animation: lsFadeInUp 0.4s ease;
+    animation: lsFadeInScale 0.6s ease-out;
 }
 
-.ls-phase1.ls-explode {
-    animation: lsFlyUp 0.85s cubic-bezier(.36, .07, .19, .97) forwards;
+/* ---------- Fase 1: Zen ---------- */
+.zen-svg {
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.05));
 }
 
-.ls-thermo-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 0px;
-}
-
-.ls-percent {
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    font-size: 3rem;
-    font-weight: 800;
-    letter-spacing: -2px;
-    transition: color 0.5s ease;
-    line-height: 1;
+.zen-text-inner {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    letter-spacing: -1px;
 }
 
 .ls-cargando {
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    font-size: 0.8rem;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: #bbb;
-    margin-top: 4px;
+    font-family: 'Outfit', 'Segoe UI', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: .05em;
+    color: #666;
+    margin-top: -10px;
     text-align: center;
+    animation: lsPulseText 2s ease-in-out infinite;
 }
+
+@keyframes lsPulseText {
+    0%, 100% { opacity: 0.6; transform: scale(0.98); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes lsFadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 
 /* ==============================================
    FASE 2 – PERSONAJES
@@ -108,18 +117,6 @@
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-@keyframes lsFadeInScale {
-    from {
-        opacity: 0;
-        transform: scale(0.82);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
     }
 }
 
@@ -275,34 +272,34 @@
 .green-hair-6 { animation-name: hairSway6; }
 
 @keyframes hairSway1 {
-    0%, 14%, 22%, 78%, 86%, 100% { transform: skewX(0); }
-    18% { transform: skewX(35deg); }
-    82% { transform: skewX(-35deg); }
+    0%, 11%, 19%, 81%, 89%, 100% { transform: skewX(0); }
+    15% { transform: skewX(45deg); }
+    85% { transform: skewX(-45deg); }
 }
 @keyframes hairSway2 {
-    0%, 16%, 24%, 76%, 84%, 100% { transform: skewX(0); }
-    20% { transform: skewX(35deg); }
-    80% { transform: skewX(-35deg); }
+    0%, 13%, 21%, 79%, 87%, 100% { transform: skewX(0); }
+    17% { transform: skewX(45deg); }
+    83% { transform: skewX(-45deg); }
 }
 @keyframes hairSway3 {
-    0%, 18%, 26%, 74%, 82%, 100% { transform: skewX(0); }
-    22% { transform: skewX(35deg); }
-    78% { transform: skewX(-35deg); }
+    0%, 15%, 23%, 77%, 85%, 100% { transform: skewX(0); }
+    19% { transform: skewX(45deg); }
+    81% { transform: skewX(-45deg); }
 }
 @keyframes hairSway4 {
-    0%, 21%, 29%, 71%, 79%, 100% { transform: skewX(0); }
-    25% { transform: skewX(35deg); }
-    75% { transform: skewX(-35deg); }
+    0%, 17%, 25%, 75%, 83%, 100% { transform: skewX(0); }
+    21% { transform: skewX(45deg); }
+    79% { transform: skewX(-45deg); }
 }
 @keyframes hairSway5 {
-    0%, 24%, 32%, 68%, 76%, 100% { transform: skewX(0); }
-    28% { transform: skewX(35deg); }
-    72% { transform: skewX(-35deg); }
+    0%, 19%, 27%, 73%, 81%, 100% { transform: skewX(0); }
+    23% { transform: skewX(45deg); }
+    77% { transform: skewX(-45deg); }
 }
 @keyframes hairSway6 {
-    0%, 27%, 35%, 65%, 73%, 100% { transform: skewX(0); }
-    31% { transform: skewX(35deg); }
-    69% { transform: skewX(-35deg); }
+    0%, 21%, 29%, 71%, 79%, 100% { transform: skewX(0); }
+    25% { transform: skewX(45deg); }
+    75% { transform: skewX(-45deg); }
 }
 
 /* Bandeja – Ola de bolas azules */
@@ -351,4 +348,25 @@
   to {
     transform: translate(100px,100px) rotate(360deg) translate(-100px,-100px);
   }
+}
+
+/* Polígono Amarillo – Animación rítmica */
+.poli-anim {
+  animation: poliSway 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes poliSway {
+  0%, 100% { transform: rotate(-5deg) translateY(0); }
+  50% { transform: rotate(5deg) translateY(-5px); }
+}
+
+.poli-mouth-anim {
+  animation: poliMouth 1.5s ease-in-out infinite;
+}
+
+@keyframes poliMouth {
+  0%, 100% { d: path("M 300 305 Q 315 310 330 305"); }
+  50% { d: path("M 300 305 Q 315 325 330 305"); }
 }

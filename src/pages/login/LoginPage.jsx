@@ -62,7 +62,7 @@ const LoginPage = () => {
                 } else {
                     // Fallback por si la API en un futuro no requiere 2FA
                     complete2FA(data);
-                    // navigate('/', { replace: true });
+                    navigate('/', { replace: true });
                 }
             } catch (err) {
                 const msg = err.message || 'Credenciales inválidas';
@@ -92,7 +92,7 @@ const LoginPage = () => {
 
                 // Finalizar inicio de sesión en el frontend guardando estado
                 complete2FA(data);
-                // navigate('/', { replace: true });
+                navigate('/', { replace: true });
             } catch (err) {
                 const msg = err.message || 'Error al verificar código';
                 setError(msg);
