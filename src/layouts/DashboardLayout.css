@@ -374,6 +374,13 @@
 
 .dl-bell-btn:hover {
     background: #f3f4f6;
+    color: #3971b8;
+    transform: scale(1.1);
+}
+
+.dl-bell-btn.active {
+    background: #eff6ff;
+    color: #3971b8;
 }
 
 .dl-bell-dot {
@@ -403,21 +410,23 @@
     width: 320px;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
+    transform: translateY(-10px);
+    transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
     z-index: 50;
 }
 
 .dl-bell-wrapper:hover .dl-notif-dropdown {
     opacity: 1;
     visibility: visible;
+    transform: translateY(0);
 }
 
 .dl-notif-panel {
-    background: #1e1e1e;
-    color: #d1d5db;
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, .18);
-    border: 1px solid #333;
+    background: #ffffff;
+    color: #111827;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .12);
+    border: 1px solid #e5e7eb;
     overflow: hidden;
     cursor: pointer;
 }
@@ -427,14 +436,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: #18181b;
+    background: #f9fafb;
 }
 
 .dl-notif-title {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.08em;
-    color: #d1d5db;
+    color: #374151;
     text-transform: uppercase;
 }
 
@@ -442,7 +451,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #9ca3af;
+    color: #6b7280;
 }
 
 .dl-notif-actions button {
@@ -456,12 +465,12 @@
 }
 
 .dl-notif-actions button:hover {
-    color: #fff;
+    color: #111827;
 }
 
 .dl-notif-footer {
-    background: #18181b;
-    border-top: 1px solid #333;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
     padding: 8px 16px;
 }
 

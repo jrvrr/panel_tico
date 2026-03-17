@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import LoadingScreen from '../components/LoadingScreen';
+import PageLoader from '../components/PageLoader';
 import './DashboardLayout.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -129,9 +129,22 @@ const SidebarSubmenu = ({ icon: Icon, label, isCollapsed, children }) => {
 const DashboardLayout = () => {
     const [isAppLoading, setIsAppLoading] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
     const { user, logout, isSuperAdmin } = useAuth();
     const { notifs = [] } = useNotifications();
     const navigate = useNavigate();
+    const notifRef = useRef(null);
+
+    // Cerrar al hacer click afuera
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setIsNotifOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const CAT_MAP = {
         cita: 'gestion', pago: 'gestion', paciente: 'gestion',
@@ -155,8 +168,14 @@ const DashboardLayout = () => {
         navigate('/login', { replace: true });
     };
 
+    // Simular carga breve del layout (verificando sesión, etc.)
+    useEffect(() => {
+        const t = setTimeout(() => setIsAppLoading(false), 600);
+        return () => clearTimeout(t);
+    }, []);
+
     if (isAppLoading) {
-        return <LoadingScreen onDone={() => setIsAppLoading(false)} />;
+        return <PageLoader fullScreen message="Cargando panel..." />;
     }
 
     return (
@@ -199,10 +218,6 @@ const DashboardLayout = () => {
                         <SidebarItem to="/metricas" icon={Activity} label="Métricas" isCollapsed={isCollapsed} />
                     </div>
 
-                    <div className="dl-nav-section">
-                        {!isCollapsed && <span className="dl-nav-label">General</span>}
-                        <SidebarItem to="/configuracion" icon={Settings} label="Configuración" isCollapsed={isCollapsed} />
-                    </div>
                 </nav>
 
                 {/* Footer */}

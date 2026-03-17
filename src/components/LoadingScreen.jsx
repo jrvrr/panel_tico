@@ -6,12 +6,12 @@ import './LoadingScreen.css';
    Basado en la imagen: Rojo, Naranja, Amarillo, Púrpura oscuro
 ───────────────────────────────────────────── */
 const ZEN_COLORS = {
-    celeste: '#00FFFF', // Cian puro brillante
-    blue: '#2979FF',
-    green: '#00E676',
-    yellow: '#FFFF00', // Amarillo puro
-    orange: '#FFAB40',
-    pink: '#FF4081',
+    celeste: '#00FBFF',
+    blue: '#448AFF',
+    green: '#B2FF59',
+    yellow: '#FFEA00',
+    orange: '#FFB74D',
+    pink: '#FF80AB',
     red: '#FF1744',
     purple: '#4A148C'
 };
@@ -88,17 +88,16 @@ function ZenCircleSVG({ progress }) {
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (progress / 100) * circumference;
 
-    const startAngle = 40; // Ángulo de la punta delgada real (aprox. 2 en punto)
+    const brushStartAngle = -64; // Empezar justo arriba para asegurar que sea "lo más atrás" posible
     const conicGradient = `conic-gradient(
-        from ${startAngle}deg,
+        from ${brushStartAngle + 90}deg,
         ${ZEN_COLORS.celeste} 0%,
         ${ZEN_COLORS.blue} 15%,
         ${ZEN_COLORS.green} 30%,
         ${ZEN_COLORS.yellow} 45%,
         ${ZEN_COLORS.orange} 60%,
         ${ZEN_COLORS.pink} 75%,
-        ${ZEN_COLORS.red} 90%,
-        ${ZEN_COLORS.celeste} 100%
+        ${ZEN_COLORS.red} 90%
     )`;
 
     return (
@@ -116,7 +115,7 @@ function ZenCircleSVG({ progress }) {
                             strokeLinecap="round"
                             strokeDasharray={`${circumference} ${circumference}`}
                             strokeDashoffset={offset}
-                            transform={`rotate(${startAngle}, ${center}, ${middle})`}
+                            transform={`rotate(${brushStartAngle}, ${center}, ${middle})`}
                             style={{ transition: 'stroke-dashoffset 0.15s linear' }}
                         />
                     </mask>
@@ -188,13 +187,13 @@ function ZenCircleSVG({ progress }) {
                 <g opacity="0.05" transform="translate(-544.59 -370.38)">
                     {/* Render the same paths but in light gray to give a "ghost" effect of the final shape */}
                     <g fill="#000">
-                         {/* We can re-use the same paths here if we wanted, but keeping it light for now */}
+                        {/* We can re-use the same paths here if we wanted, but keeping it light for now */}
                     </g>
                 </g>
 
                 {/* The actual animated brush stroke */}
-                <foreignObject 
-                    mask="url(#brushShapeMask)" 
+                <foreignObject
+                    mask="url(#brushShapeMask)"
                     x="0" y="0" width="31.59" height="33.36"
                 >
                     <div style={{
@@ -372,26 +371,26 @@ function Phase2SVG() {
                 const AX = 295, AY = 490;
                 return (
                     <g transform={`translate(${AX - 315}, ${AY - 392}) scale(0.66)`}>
-                            <path d="M315 214 L426 298 L386 416 L244 416 L204 298 Z" fill="#324fa0" stroke="#324fa0" strokeWidth="20" strokeLinejoin="round" transform="translate(-15, 0)" />
-                            <path d="M315 214 L426 298 L386 416 L244 416 L204 298 Z" fill="#ffc605" stroke="#ffc605" strokeWidth="20" strokeLinejoin="round" />
-                            
-                            {/* Rostro Animado (Ojos, Boca, Pelo) */}
-                            <g className="poli-anim" style={{ transformOrigin: '315px 300px' }}>
-                                {/* Ojos */}
-                                <circle cx="285" cy="300" r="6" fill="#222" />
-                                <circle cx="345" cy="300" r="6" fill="#222" />
-                                
-                                {/* Boca */}
-                                <path className="poli-mouth-anim"
-                                    d="M 300 305 Q 315 315 330 305"
-                                    stroke="#222" strokeWidth="5" fill="none" strokeLinecap="round" />
+                        <path d="M315 214 L426 298 L386 416 L244 416 L204 298 Z" fill="#324fa0" stroke="#324fa0" strokeWidth="20" strokeLinejoin="round" transform="translate(-15, 0)" />
+                        <path d="M315 214 L426 298 L386 416 L244 416 L204 298 Z" fill="#ffc605" stroke="#ffc605" strokeWidth="20" strokeLinejoin="round" />
 
-                                {/* Pelo */}
-                                <g transform="translate(295, 215) scale(1.6)">
-                                    <path strokeWidth="3" fill="#222" d="M3.0,14.55 a13.78,13.78,0,0,1,2.07-6.3,10.79,10.79,0,0,1,3.8-3.46c.82-.46,2.7-1.61,3.69-1.08-.08,0,.07.14.13.48a6.33,6.33,0,0,1,0,1.22,16.24,16.24,0,0,1-.88,3.49,24.75,24.75,0,0,1-1.27,3c-.19.38-.4.75-.61,1.12-.05.08-.1.16-.16.24s-.09.14,0,0l-.12.13a1.25,1.25,0,0,1,.84-.32l1.06.44c.55.54.28.91.32.14,0-.25,0-.51.08-.77,0,.15.1-.45.15-.61a5.42,5.42,0,0,1,1-1.71,15,15,0,0,1,4.15-3.35,30.65,30.65,0,0,1,11.1-4,8.9,8.9,0,0,1,3.69.06c.12,0,.28.19.23.12.16.25-.06-.25,0-.13,0,.36,0,.05,0,0a.71.71,0,0,1,0,.29c-.08.33.13-.4,0,.07,0,.19-.34,1-.19.66a15.45,15.45,0,0,1-1.73,2.86c-3.35,4.59-7.7,8.54-11.85,12.38-1.42,1.32.7,3.43,2.12,2.12A115.51,115.51,0,0,0,31.19,10.83a19.54,19.54,0,0,0,3.76-5.84,3.51,3.51,0,0,0-.58-3.69c-1.82-1.82-5.27-1.25-7.51-.84a34.71,34.71,0,0,0-10.34,3.72c-2.82,1.55-5.88,3.69-7.11,6.79-.49,1.23-1.05,3.6,0,4.65,1.26,1.26,2.53-.12,3.17-1.18a20.28,20.28,0,0,0,3.12-9.64c0-1.8-.72-3.62-2.65-4-2.41-.53-5.19,1-7.07,2.35a15.25,15.25,0,0,0-6,11.47c-.14,1.93,2.86,1.92,3,0Z" />
-                                </g>
+                        {/* Rostro Animado (Ojos, Boca, Pelo) */}
+                        <g className="poli-anim" style={{ transformOrigin: '315px 300px' }}>
+                            {/* Ojos */}
+                            <circle cx="285" cy="300" r="6" fill="#222" />
+                            <circle cx="345" cy="300" r="6" fill="#222" />
+
+                            {/* Boca */}
+                            <path className="poli-mouth-anim"
+                                d="M 300 305 Q 315 315 330 305"
+                                stroke="#222" strokeWidth="5" fill="none" strokeLinecap="round" />
+
+                            {/* Pelo */}
+                            <g transform="translate(295, 215) scale(1.6)">
+                                <path strokeWidth="3" fill="#222" d="M3.0,14.55 a13.78,13.78,0,0,1,2.07-6.3,10.79,10.79,0,0,1,3.8-3.46c.82-.46,2.7-1.61,3.69-1.08-.08,0,.07.14.13.48a6.33,6.33,0,0,1,0,1.22,16.24,16.24,0,0,1-.88,3.49,24.75,24.75,0,0,1-1.27,3c-.19.38-.4.75-.61,1.12-.05.08-.1.16-.16.24s-.09.14,0,0l-.12.13a1.25,1.25,0,0,1,.84-.32l1.06.44c.55.54.28.91.32.14,0-.25,0-.51.08-.77,0,.15.1-.45.15-.61a5.42,5.42,0,0,1,1-1.71,15,15,0,0,1,4.15-3.35,30.65,30.65,0,0,1,11.1-4,8.9,8.9,0,0,1,3.69.06c.12,0,.28.19.23.12.16.25-.06-.25,0-.13,0,.36,0,.05,0,0a.71.71,0,0,1,0,.29c-.08.33.13-.4,0,.07,0,.19-.34,1-.19.66a15.45,15.45,0,0,1-1.73,2.86c-3.35,4.59-7.7,8.54-11.85,12.38-1.42,1.32.7,3.43,2.12,2.12A115.51,115.51,0,0,0,31.19,10.83a19.54,19.54,0,0,0,3.76-5.84,3.51,3.51,0,0,0-.58-3.69c-1.82-1.82-5.27-1.25-7.51-.84a34.71,34.71,0,0,0-10.34,3.72c-2.82,1.55-5.88,3.69-7.11,6.79-.49,1.23-1.05,3.6,0,4.65,1.26,1.26,2.53-.12,3.17-1.18a20.28,20.28,0,0,0,3.12-9.64c0-1.8-.72-3.62-2.65-4-2.41-.53-5.19,1-7.07,2.35a15.25,15.25,0,0,0-6,11.47c-.14,1.93,2.86,1.92,3,0Z" />
                             </g>
-                        </g>);
+                        </g>
+                    </g>);
             })()}
 
             {/* BANDEJA + bolas – acercada */}
@@ -441,13 +440,13 @@ export default function LoadingScreen({ onDone }) {
     useEffect(() => {
         // Fase de Carga Única: Progreso hasta 100% en 5 segundos
         const start = Date.now();
-        const duration = 5000; 
+        const duration = 5000;
 
         const animate = () => {
             const now = Date.now();
             const elapsed = now - start;
             const p = Math.min(100, (elapsed / duration) * 100);
-            
+
             setProgress(p);
 
             if (p < 100) {
@@ -463,13 +462,13 @@ export default function LoadingScreen({ onDone }) {
         if (progress >= 100 && phase === 1) {
             // Transición a Fase 2
             setTimeout(() => setExploding(true), 150);
-            setTimeout(() => { 
-                setPhase(2); 
-                setExploding(false); 
+            setTimeout(() => {
+                setPhase(2);
+                setExploding(false);
             }, 850);
 
             // Fase 2 dura 4.5 segundos reales (total ~10s)
-            setTimeout(() => setFadeOut(true), 4500); 
+            setTimeout(() => setFadeOut(true), 4500);
             setTimeout(() => onDone?.(), 5200);
         }
     }, [progress, phase, onDone]);

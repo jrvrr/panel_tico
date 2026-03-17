@@ -15,7 +15,6 @@
 .tico-container {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--tico-text);
-    background-color: transparent;
     min-height: 100%;
     padding: 1.5rem;
     border-radius: 12px;

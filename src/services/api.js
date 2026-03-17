@@ -210,3 +210,19 @@ export const deleteEspecialista = async (id) => {
     return data;
 };
 
+// ── MÉTRICAS IA ─────────────────────────────────────────────────────────────
+
+export const getMetricasIA = async () => {
+    const res = await fetch(`${BASE_URL}/metricas-ia`, { headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al obtener métricas');
+    return data;
+};
+
+export const getMetricasByPaciente = async (pacienteId) => {
+    const res = await fetch(`${BASE_URL}/metricas-ia/paciente/${pacienteId}`, { headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al obtener métricas del paciente');
+    return data;
+};
+

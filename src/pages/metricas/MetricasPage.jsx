@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react';
-import { X, AlertTriangle, TrendingDown, Activity, ChevronUp, ChevronDown, Search } from 'lucide-react';
-import { pacientesMetrics } from '../../data/mockMetricsData';
-import { procesarPacientes } from '../../utils/metricsEngine';
+import { useState, useEffect, useMemo } from 'react';
+import { X, Activity, Clock, Zap, AlertTriangle, Search, User, ChevronRight, BarChart3 } from 'lucide-react';
+import { getMetricasIA, getMetricasByPaciente } from '../../services/api';
 import './Metricas.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -11,180 +10,215 @@ const getInitials = (nombre = '') => {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-const gaugeColorMap = { green: '#22c55e', yellow: '#f59e0b', red: '#ef4444' };
-const badgeBgMap = { green: 'riesgo-badge--green', yellow: 'riesgo-badge--yellow', red: 'riesgo-badge--red' };
-const dotMap = { green: 'riesgo-badge__dot--green', yellow: 'riesgo-badge__dot--yellow', red: 'riesgo-badge__dot--red' };
+const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
 
-// Colores para factores de desglose (8 factores ahora)
-const factorColors = ['#ef4444', '#f97316', '#8b5cf6', '#a855f7', '#3b82f6', '#06b6d4', '#10b981', '#6b7280'];
+const formatMs = (ms) => {
+    if (ms == null) return '—';
+    if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${ms}ms`;
+};
+
+const getFrustColor = (nivel) => {
+    if (nivel <= 1) return '#22c55e';
+    if (nivel <= 2) return '#84cc16';
+    if (nivel <= 3) return '#f59e0b';
+    return '#ef4444';
+};
+
+const getFrustLabel = (nivel) => {
+    if (nivel <= 1) return 'Bajo';
+    if (nivel <= 2) return 'Moderado';
+    if (nivel <= 3) return 'Alto';
+    return 'Muy alto';
+};
 
 // ── Componente principal ─────────────────────────────────────────────────────
 const MetricasPage = () => {
+    const [metricas, setMetricas] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchText, setSearchText] = useState('');
-    const [sortConfig, setSortConfig] = useState({ key: 'riesgoScore', direction: 'desc' });
-    const [selectedPaciente, setSelectedPaciente] = useState(null);
+    const [selectedPacienteId, setSelectedPacienteId] = useState(null);
+    const [detailMetricas, setDetailMetricas] = useState([]);
+    const [detailLoading, setDetailLoading] = useState(false);
 
-    // Procesar datos con el motor de métricas
-    const pacientesProcesados = useMemo(() => procesarPacientes(pacientesMetrics), []);
-
-    // Filtrado y ordenamiento
-    const filteredData = useMemo(() => {
-        let items = [...pacientesProcesados];
-
-        if (searchText.trim()) {
-            const q = searchText.toLowerCase();
-            items = items.filter(p =>
-                p.nombre.toLowerCase().includes(q) ||
-                p.tutor.toLowerCase().includes(q)
-            );
-        }
-
-        items.sort((a, b) => {
-            let aVal, bVal;
-            if (sortConfig.key === 'riesgoScore') {
-                aVal = a.riesgo.score;
-                bVal = b.riesgo.score;
-            } else if (sortConfig.key === 'nombre') {
-                aVal = a.nombre;
-                bVal = b.nombre;
-            } else if (sortConfig.key === 'estadoTerapeutico') {
-                aVal = a.estadoTerapeutico.cambio;
-                bVal = b.estadoTerapeutico.cambio;
-            } else if (sortConfig.key === 'adherencia') {
-                const lastA = a.semanas[a.semanas.length - 1];
-                const lastB = b.semanas[b.semanas.length - 1];
-                aVal = lastA.frecuenciaSemanal;
-                bVal = lastB.frecuenciaSemanal;
-            } else {
-                return 0;
+    // Cargar todas las métricas
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const res = await getMetricasIA();
+                setMetricas(res.data || []);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
             }
-            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
+        };
+        fetchData();
+    }, []);
+
+    // Agrupar métricas por paciente
+    const pacientesAgrupados = useMemo(() => {
+        const map = {};
+        metricas.forEach(m => {
+            const pid = m.paciente_id;
+            if (!map[pid]) {
+                map[pid] = {
+                    id: pid,
+                    nombre: m.paciente_nombre || `Paciente #${pid}`,
+                    intentos: [],
+                };
+            }
+            map[pid].intentos.push(m);
         });
 
-        return items;
-    }, [pacientesProcesados, searchText, sortConfig]);
+        // Calcular resúmenes por paciente
+        return Object.values(map).map(p => {
+            const intentos = p.intentos;
+            const totalIntentos = intentos.length;
+            const avgFrustracion = totalIntentos > 0
+                ? (intentos.reduce((s, i) => s + (i.frustracion || 0), 0) / totalIntentos)
+                : 0;
+            const avgTiempoReaccion = totalIntentos > 0
+                ? Math.round(intentos.reduce((s, i) => s + (i.tiempo_reaccion_ms || 0), 0) / totalIntentos)
+                : 0;
+            const avgLatencia = totalIntentos > 0
+                ? Math.round(intentos.reduce((s, i) => s + (i.latencia_ms || 0), 0) / totalIntentos)
+                : 0;
+            const ultimoIntento = intentos.length > 0
+                ? intentos.reduce((a, b) => new Date(a.fecha_registro) > new Date(b.fecha_registro) ? a : b)
+                : null;
 
-    // Cards de resumen
-    const altoRiesgo = pacientesProcesados.filter(p => p.riesgo.nivel === 'Alto').length;
-    const inestables = pacientesProcesados.filter(p => p.estadoTerapeutico.estado === 'Inestable').length;
-    const scorePromedio = Math.round(
-        pacientesProcesados.reduce((s, p) => s + p.riesgo.score, 0) / pacientesProcesados.length
-    );
+            return {
+                ...p,
+                totalIntentos,
+                avgFrustracion: Math.round(avgFrustracion * 10) / 10,
+                avgTiempoReaccion,
+                avgLatencia,
+                ultimoIntento,
+            };
+        });
+    }, [metricas]);
 
-    // Sort
-    const handleSort = (key) => {
-        setSortConfig(prev => ({
-            key,
-            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc',
+    // Filtrado
+    const filteredPacientes = useMemo(() => {
+        if (!searchText.trim()) return pacientesAgrupados;
+        const q = searchText.toLowerCase();
+        return pacientesAgrupados.filter(p => p.nombre.toLowerCase().includes(q));
+    }, [pacientesAgrupados, searchText]);
+
+    // Cards de resumen global
+    const totalIntentos = metricas.length;
+    const avgFrustGlobal = totalIntentos > 0
+        ? Math.round((metricas.reduce((s, m) => s + (m.frustracion || 0), 0) / totalIntentos) * 10) / 10
+        : 0;
+    const avgReaccionGlobal = totalIntentos > 0
+        ? Math.round(metricas.reduce((s, m) => s + (m.tiempo_reaccion_ms || 0), 0) / totalIntentos)
+        : 0;
+
+    // Abrir detalle de un paciente
+    const openDetail = async (pacienteId) => {
+        setSelectedPacienteId(pacienteId);
+        setDetailLoading(true);
+        try {
+            const res = await getMetricasByPaciente(pacienteId);
+            setDetailMetricas(res.data || []);
+        } catch (err) {
+            setDetailMetricas([]);
+        } finally {
+            setDetailLoading(false);
+        }
+    };
+
+    const selectedPaciente = pacientesAgrupados.find(p => p.id === selectedPacienteId);
+
+    // Datos para la mini gráfica de barras del modal
+    const chartData = useMemo(() => {
+        if (!detailMetricas.length) return [];
+        // Tomar hasta los últimos 12 intentos
+        const slice = detailMetricas.slice(-12);
+        const maxReaccion = Math.max(...slice.map(m => m.tiempo_reaccion_ms || 0), 1);
+        return slice.map(m => ({
+            ...m,
+            reaccionPct: ((m.tiempo_reaccion_ms || 0) / maxReaccion) * 100,
+            frustPct: ((m.frustracion || 0) / 5) * 100,
         }));
-    };
-
-    const getSortIcon = (key) => {
-        if (sortConfig.key !== key) return <span style={{ opacity: 0.3, fontSize: '0.8em', marginLeft: '4px' }}>⇅</span>;
-        return sortConfig.direction === 'asc'
-            ? <ChevronUp size={14} style={{ display: 'inline', marginLeft: '4px' }} />
-            : <ChevronDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />;
-    };
-
-    // Adherencia helpers
-    const getAdherencia = (p) => {
-        const last = p.semanas[p.semanas.length - 1];
-        const pct = (last.frecuenciaSemanal / 5) * 100;
-        return { sesiones: last.frecuenciaSemanal, pct };
-    };
-
-    const getBarClass = (pct) => {
-        if (pct >= 80) return 'adherencia-bar__fill--high';
-        if (pct >= 50) return 'adherencia-bar__fill--mid';
-        return 'adherencia-bar__fill--low';
-    };
-
-    const getFactorBarColor = (valor, maximo) => {
-        const pct = (valor / maximo) * 100;
-        if (pct <= 30) return '#22c55e';
-        if (pct <= 60) return '#f59e0b';
-        return '#ef4444';
-    };
-
-    const getTendenciaClass = (tendencia) => {
-        if (tendencia.startsWith('↑')) return 'desglose-factor__tendencia--up';
-        if (tendencia.startsWith('↓')) return 'desglose-factor__tendencia--down';
-        return 'desglose-factor__tendencia--stable';
-    };
-
-    // Indica si la tendencia ↑ es buena o mala según el factor
-    const getTendenciaColorClass = (factor, tendencia) => {
-        // Para precisión ↑ es bueno (verde), para rabietas/abandonos/errores ↑ es malo (rojo)
-        const invertidos = ['Rabietas (Burbujas)', 'Abandonos (Laberinto)', 'Intentos fallidos (Laberinto)', 'Errores de Color (Globos)', 'Cancelaciones'];
-        const esInvertido = invertidos.includes(factor);
-
-        if (tendencia.startsWith('↑')) return esInvertido ? 'desglose-factor__tendencia--up' : 'desglose-factor__tendencia--down';
-        if (tendencia.startsWith('↓')) return esInvertido ? 'desglose-factor__tendencia--down' : 'desglose-factor__tendencia--up';
-        return 'desglose-factor__tendencia--stable';
-    };
-
-    // Helper para obtener resumen de rendimiento por juego en la tabla
-    const getJuegoDestacado = (p) => {
-        const last = p.semanas[p.semanas.length - 1];
-        const juegos = [
-            { nombre: '🫧', precision: last.burbujas.precision },
-            { nombre: '🧩', precision: last.laberinto.nivelesCompletados * 20 },
-            { nombre: '🎈', precision: last.globosColores.precisionColor },
-        ];
-        const mejor = juegos.reduce((a, b) => a.precision > b.precision ? a : b);
-        const peor = juegos.reduce((a, b) => a.precision < b.precision ? a : b);
-        return { mejor, peor };
-    };
+    }, [detailMetricas]);
 
     // ── Render ────────────────────────────────────────────────────────────────
+    if (loading) {
+        return (
+            <div className="tico-container">
+                <div className="metricas-loading">
+                    <div className="metricas-loading__spinner" />
+                    <p>Cargando métricas...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="tico-container">
+                <div className="metricas-error">
+                    <AlertTriangle size={32} />
+                    <p>Error al cargar métricas: {error}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="tico-container">
 
             {/* Header */}
             <header className="tico-header">
                 <div>
-                    <h1 className="tico-title">Métricas IA</h1>
-                    <p className="tico-subtitle">Evaluación conductual — Burbujas, Laberinto y Globos por Colores</p>
+                    <h1 className="tico-title">Métricas de Intentos</h1>
+                    <p className="tico-subtitle">Registro de intentos del paciente durante las sesiones terapéuticas</p>
                 </div>
             </header>
 
             {/* Cards de resumen */}
             <div className="metricas-cards">
-                <div className="metricas-card metricas-card--rojo">
-                    <div className="metricas-card__icon metricas-card__icon--rojo">
-                        <AlertTriangle size={22} />
+                <div className="metricas-card metricas-card--azul">
+                    <div className="metricas-card__icon metricas-card__icon--azul">
+                        <BarChart3 size={22} />
                     </div>
                     <div className="metricas-card__info">
-                        <span className="metricas-card__value">{altoRiesgo}</span>
-                        <span className="metricas-card__label">Pacientes alto riesgo</span>
+                        <span className="metricas-card__value">{totalIntentos}</span>
+                        <span className="metricas-card__label">Total de intentos</span>
                     </div>
                 </div>
 
                 <div className="metricas-card metricas-card--amarillo">
                     <div className="metricas-card__icon metricas-card__icon--amarillo">
-                        <TrendingDown size={22} />
+                        <AlertTriangle size={22} />
                     </div>
                     <div className="metricas-card__info">
-                        <span className="metricas-card__value">{inestables}</span>
-                        <span className="metricas-card__label">Pacientes inestables</span>
+                        <span className="metricas-card__value">{avgFrustGlobal}</span>
+                        <span className="metricas-card__label">Frustración promedio</span>
                     </div>
                 </div>
 
-                <div className="metricas-card metricas-card--azul">
-                    <div className="metricas-card__icon metricas-card__icon--azul">
-                        <Activity size={22} />
+                <div className="metricas-card metricas-card--rojo">
+                    <div className="metricas-card__icon metricas-card__icon--rojo">
+                        <Clock size={22} />
                     </div>
                     <div className="metricas-card__info">
-                        <span className="metricas-card__value">{scorePromedio}</span>
-                        <span className="metricas-card__label">Score promedio general</span>
+                        <span className="metricas-card__value">{formatMs(avgReaccionGlobal)}</span>
+                        <span className="metricas-card__label">Tiempo de reacción prom.</span>
                     </div>
                 </div>
             </div>
 
-            {/* Toolbar */}
-            <div className="tico-toolbar" style={{ marginBottom: '0.75rem' }}>
+            {/* Buscador */}
+            <div className="tico-toolbar" style={{ marginBottom: '1rem' }}>
                 <div className="tico-toolbar-left">
                     <div style={{ position: 'relative' }}>
                         <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
@@ -200,275 +234,180 @@ const MetricasPage = () => {
                 </div>
             </div>
 
-            {/* Tabla */}
-            <div className="metricas-table-container">
-                <table className="metricas-table">
-                    <thead>
-                        <tr>
-                            <th className="sortable" onClick={() => handleSort('nombre')}>
-                                Paciente {getSortIcon('nombre')}
-                            </th>
-                            <th className="sortable" onClick={() => handleSort('riesgoScore')}>
-                                Riesgo IA {getSortIcon('riesgoScore')}
-                            </th>
-                            <th className="sortable" onClick={() => handleSort('estadoTerapeutico')}>
-                                Estado Terapéutico {getSortIcon('estadoTerapeutico')}
-                            </th>
-                            <th>Rendimiento</th>
-                            <th>Última Sesión</th>
-                            <th className="sortable" onClick={() => handleSort('adherencia')}>
-                                Adherencia {getSortIcon('adherencia')}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredData.map((p) => {
-                            const adh = getAdherencia(p);
-                            const juego = getJuegoDestacado(p);
-                            return (
-                                <tr key={p.id} onClick={() => setSelectedPaciente(p)}>
-                                    <td>
-                                        <div className="paciente-info">
-                                            <span className="paciente-info__nombre">{p.nombre}</span>
-                                            <span className="paciente-info__edad">{p.edad} · {p.tutor}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`riesgo-badge ${badgeBgMap[p.riesgo.color]}`}>
-                                            <span className={`riesgo-badge__dot ${dotMap[p.riesgo.color]}`} />
-                                            {p.riesgo.nivel} ({p.riesgo.score})
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="estado-terapeutico">
-                                            <span className={`estado-terapeutico__icono estado-terapeutico__icono--${p.estadoTerapeutico.icono === '↑' ? 'up' : p.estadoTerapeutico.icono === '→' ? 'stable' : 'down'}`}>
-                                                {p.estadoTerapeutico.icono}
-                                            </span>
-                                            <span>{p.estadoTerapeutico.estado}</span>
-                                            <span className="estado-terapeutico__cambio">
-                                                ({p.estadoTerapeutico.cambio > 0 ? '+' : ''}{p.estadoTerapeutico.cambio}%)
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="rendimiento-juegos">
-                                            <span className="rendimiento-juegos__item rendimiento-juegos__item--mejor" title="Mejor juego">
-                                                {juego.mejor.nombre} {Math.round(juego.mejor.precision)}%
-                                            </span>
-                                            <span className="rendimiento-juegos__item rendimiento-juegos__item--peor" title="Juego a mejorar">
-                                                {juego.peor.nombre} {Math.round(juego.peor.precision)}%
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>{p.ultimaSesion}</td>
-                                    <td>
-                                        <div className="adherencia-visual">
-                                            <div className="adherencia-bar">
-                                                <div
-                                                    className={`adherencia-bar__fill ${getBarClass(adh.pct)}`}
-                                                    style={{ width: `${adh.pct}%` }}
-                                                />
-                                            </div>
-                                            <span className="adherencia-label">{adh.sesiones}/5</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                        {filteredData.length === 0 && (
-                            <tr>
-                                <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
-                                    No se encontraron pacientes.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            {/* Lista de pacientes como tarjetas */}
+            {filteredPacientes.length === 0 ? (
+                <div className="metricas-empty">
+                    <Activity size={40} strokeWidth={1.5} />
+                    <p>No se encontraron pacientes con métricas registradas.</p>
+                </div>
+            ) : (
+                <div className="metricas-pacientes-grid">
+                    {filteredPacientes.map(p => (
+                        <div
+                            key={p.id}
+                            className="metricas-paciente-card"
+                            onClick={() => openDetail(p.id)}
+                        >
+                            <div className="metricas-paciente-card__header">
+                                <div className="metricas-paciente-card__avatar">
+                                    {getInitials(p.nombre)}
+                                </div>
+                                <div className="metricas-paciente-card__name-section">
+                                    <span className="metricas-paciente-card__name">{p.nombre}</span>
+                                    <span className="metricas-paciente-card__subtitle">
+                                        {p.totalIntentos} intento{p.totalIntentos !== 1 ? 's' : ''} registrado{p.totalIntentos !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
+                                <ChevronRight size={18} className="metricas-paciente-card__chevron" />
+                            </div>
 
-            {/* ══ Modal de Desglose (Transparencia IA) ══ */}
-            {selectedPaciente && (
-                <div className="tico-modal-overlay" onClick={() => setSelectedPaciente(null)}>
+                            <div className="metricas-paciente-card__stats">
+                                <div className="metricas-paciente-card__stat">
+                                    <span className="metricas-paciente-card__stat-label">Frustración</span>
+                                    <div className="metricas-paciente-card__stat-bar-wrap">
+                                        <div
+                                            className="metricas-paciente-card__stat-bar"
+                                            style={{
+                                                width: `${Math.min((p.avgFrustracion / 5) * 100, 100)}%`,
+                                                backgroundColor: getFrustColor(p.avgFrustracion),
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="metricas-paciente-card__stat-value" style={{ color: getFrustColor(p.avgFrustracion) }}>
+                                        {p.avgFrustracion} — {getFrustLabel(p.avgFrustracion)}
+                                    </span>
+                                </div>
+
+                                <div className="metricas-paciente-card__stat-row">
+                                    <div className="metricas-paciente-card__stat-chip">
+                                        <Clock size={13} />
+                                        <span>Reacción: <strong>{formatMs(p.avgTiempoReaccion)}</strong></span>
+                                    </div>
+                                    <div className="metricas-paciente-card__stat-chip">
+                                        <Zap size={13} />
+                                        <span>Latencia: <strong>{formatMs(p.avgLatencia)}</strong></span>
+                                    </div>
+                                </div>
+
+                                {p.ultimoIntento && (
+                                    <div className="metricas-paciente-card__last">
+                                        Último: {formatDate(p.ultimoIntento.fecha_registro)}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* ══ Modal de Detalle del Paciente ══ */}
+            {selectedPacienteId && (
+                <div className="tico-modal-overlay" onClick={() => setSelectedPacienteId(null)}>
                     <div className="desglose-modal" onClick={(e) => e.stopPropagation()}>
-                        <button className="tico-modal-close" onClick={() => setSelectedPaciente(null)}>
+                        <button className="tico-modal-close" onClick={() => setSelectedPacienteId(null)}>
                             <X size={18} />
                         </button>
 
-                        {/* Header del modal */}
+                        {/* Header */}
                         <div className="desglose-header">
                             <div className="desglose-avatar">
-                                {getInitials(selectedPaciente.nombre)}
+                                {selectedPaciente ? getInitials(selectedPaciente.nombre) : '?'}
                             </div>
                             <div className="desglose-patient-info">
-                                <h2>{selectedPaciente.nombre}</h2>
-                                <span>{selectedPaciente.edad} · Tutor: {selectedPaciente.tutor}</span>
+                                <h2>{selectedPaciente?.nombre || 'Paciente'}</h2>
+                                <span>{selectedPaciente?.totalIntentos || 0} intentos registrados</span>
                             </div>
                         </div>
 
-                        {/* Gauge de riesgo */}
-                        <div className="desglose-gauge-section">
-                            <div
-                                className="gauge-circle"
-                                style={{
-                                    '--gauge-pct': selectedPaciente.riesgo.score,
-                                    '--gauge-color': gaugeColorMap[selectedPaciente.riesgo.color],
-                                }}
-                            >
-                                <div className="gauge-circle__bg" />
-                                <div className="gauge-circle__inner">
-                                    <div className="gauge-circle__score" style={{ color: gaugeColorMap[selectedPaciente.riesgo.color] }}>
-                                        {selectedPaciente.riesgo.score}
+                        {detailLoading ? (
+                            <div className="metricas-loading" style={{ padding: '3rem 0' }}>
+                                <div className="metricas-loading__spinner" />
+                                <p>Cargando intentos...</p>
+                            </div>
+                        ) : detailMetricas.length === 0 ? (
+                            <div className="metricas-empty" style={{ padding: '2rem 0' }}>
+                                <p>No hay intentos registrados para este paciente.</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Mini gráfica de evolución */}
+                                <div className="detail-section-title">Evolución de Intentos</div>
+                                <div className="detail-chart-wrapper">
+                                    <div className="detail-chart">
+                                        {chartData.map((m, i) => (
+                                            <div key={m.id} className="detail-chart__bar-group">
+                                                <div className="detail-chart__bars">
+                                                    <div
+                                                        className="detail-chart__bar detail-chart__bar--reaccion"
+                                                        style={{ height: `${m.reaccionPct}%` }}
+                                                        title={`Reacción: ${formatMs(m.tiempo_reaccion_ms)}`}
+                                                    />
+                                                    <div
+                                                        className="detail-chart__bar detail-chart__bar--frust"
+                                                        style={{ height: `${m.frustPct}%` }}
+                                                        title={`Frustración: ${m.frustracion}`}
+                                                    />
+                                                </div>
+                                                <span className="detail-chart__label">#{i + 1}</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="gauge-circle__label">de 100</div>
-                                </div>
-                            </div>
-                            <div className="gauge-info">
-                                <div
-                                    className={`gauge-info__level ${badgeBgMap[selectedPaciente.riesgo.color]}`}
-                                    style={{ borderRadius: '9999px' }}
-                                >
-                                    <span className={`riesgo-badge__dot ${dotMap[selectedPaciente.riesgo.color]}`} />
-                                    Riesgo {selectedPaciente.riesgo.nivel}
-                                </div>
-                                <p className="gauge-info__desc">
-                                    Score compuesto basado en rendimiento de 🫧 Burbujas, 🧩 Laberinto,
-                                    🎈 Globos por Colores y adherencia de las últimas 4 semanas.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Desglose por factores */}
-                        <div className="desglose-section-title">¿Por qué esta clasificación?</div>
-                        <div className="desglose-factors">
-                            {selectedPaciente.desglose.map((factor, i) => {
-                                const pct = (factor.valor / factor.maximo) * 100;
-                                const barColor = getFactorBarColor(factor.valor, factor.maximo);
-                                return (
-                                    <div
-                                        key={factor.factor}
-                                        className="desglose-factor"
-                                        style={{ borderLeftColor: factorColors[i] }}
-                                    >
-                                        <div className="desglose-factor__info">
-                                            <div className="desglose-factor__header">
-                                                <span className="desglose-factor__name">
-                                                    {factor.emoji} {factor.factor}
-                                                </span>
-                                                <span className="desglose-factor__weight">Peso: {factor.peso}</span>
-                                            </div>
-                                            <div className="desglose-factor__bar">
-                                                <div
-                                                    className="desglose-factor__bar-fill"
-                                                    style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
-                                                />
-                                            </div>
-                                            <div className="desglose-factor__detail">
-                                                <span>{factor.descripcion}</span>
-                                                <span className={`desglose-factor__tendencia ${getTendenciaColorClass(factor.factor, factor.tendencia)}`}>
-                                                    {factor.tendencia}
-                                                </span>
-                                            </div>
+                                    <div className="detail-chart__legend">
+                                        <div className="detail-chart__legend-item">
+                                            <span className="detail-chart__legend-dot" style={{ backgroundColor: '#3b82f6' }} />
+                                            Tiempo reacción
+                                        </div>
+                                        <div className="detail-chart__legend-item">
+                                            <span className="detail-chart__legend-dot" style={{ backgroundColor: '#f97316' }} />
+                                            Frustración
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Mini chart de tendencia por juego */}
-                        <div className="desglose-section-title">Tendencia semanal por juego (8 semanas)</div>
-                        <div className="tendencia-chart-wrapper">
-                            <div className="tendencia-chart">
-                                {selectedPaciente.tendencia.map((s, i) => (
-                                    <div key={s.semana} className="tendencia-bar-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <div className="tendencia-bars" style={{ height: '100%' }}>
-                                            <div
-                                                className="tendencia-bar tendencia-bar--burbujas"
-                                                style={{ height: `${s.burbujas}%` }}
-                                                title={`Burbujas: ${s.burbujas}%`}
-                                            />
-                                            <div
-                                                className="tendencia-bar tendencia-bar--laberinto"
-                                                style={{ height: `${s.laberinto}%` }}
-                                                title={`Laberinto: ${s.laberinto}%`}
-                                            />
-                                            <div
-                                                className="tendencia-bar tendencia-bar--globos"
-                                                style={{ height: `${s.globos}%` }}
-                                                title={`Globos: ${s.globos}%`}
-                                            />
-                                        </div>
-                                        <span className="tendencia-bar-label">S{s.semana}</span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="tendencia-legend">
-                                <div className="tendencia-legend__item">
-                                    <span className="tendencia-legend__dot" style={{ backgroundColor: '#3b82f6' }} />
-                                    🫧 Burbujas
                                 </div>
-                                <div className="tendencia-legend__item">
-                                    <span className="tendencia-legend__dot" style={{ backgroundColor: '#8b5cf6' }} />
-                                    🧩 Laberinto
-                                </div>
-                                <div className="tendencia-legend__item">
-                                    <span className="tendencia-legend__dot" style={{ backgroundColor: '#f97316' }} />
-                                    🎈 Globos
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* Estado terapéutico detallado */}
-                        <div className="desglose-section-title">
-                            Estado Terapéutico: {selectedPaciente.estadoTerapeutico.icono} {selectedPaciente.estadoTerapeutico.estado}
-                        </div>
-                        <div className="desglose-estado-section">
-                            <p style={{ fontSize: '0.78rem', color: '#6b7280', margin: 0 }}>
-                                Comparación de las últimas 4 semanas vs las 4 anteriores por juego
-                            </p>
-                            <div className="desglose-estado-grid">
-                                {Object.entries(selectedPaciente.estadoTerapeutico.detalle).map(([key, val]) => {
-                                    const labels = {
-                                        precisionBurbujas: '🫧 Precisión Burbujas',
-                                        nivelesLaberinto: '🧩 Niveles Laberinto',
-                                        precisionGlobos: '🎈 Precisión Globos',
-                                        adherencia: '📋 Adherencia (ses/sem)',
-                                        rabietasBurbujas: '🫧 Rabietas',
-                                        abandonosLaberinto: '🧩 Abandonos',
-                                    };
-                                    const unidades = {
-                                        precisionBurbujas: '%',
-                                        nivelesLaberinto: '',
-                                        precisionGlobos: '%',
-                                        adherencia: '',
-                                        rabietasBurbujas: '',
-                                        abandonosLaberinto: '',
-                                    };
-                                    // Para precisiones y adherencia: subir es bueno
-                                    // Para rabietas y abandonos: bajar es bueno
-                                    const invertidos = ['rabietasBurbujas', 'abandonosLaberinto'];
-                                    let changeClass;
-                                    if (invertidos.includes(key)) {
-                                        changeClass = val.cambio < 0 ? 'good' : val.cambio > 0 ? 'bad' : 'flat';
-                                    } else {
-                                        changeClass = val.cambio > 0 ? 'good' : val.cambio < 0 ? 'bad' : 'flat';
-                                    }
-                                    return (
-                                        <div key={key} className="desglose-estado-item">
-                                            <span className="desglose-estado-item__label">{labels[key]}</span>
-                                            <div className="desglose-estado-item__values">
-                                                <span className="desglose-estado-item__prev">{val.anterior}{unidades[key]}</span>
-                                                <span className="desglose-estado-item__arrow">→</span>
-                                                <span className="desglose-estado-item__curr">{val.actual}{unidades[key]}</span>
-                                                <span className={`desglose-estado-item__change desglose-estado-item__change--${changeClass}`}>
-                                                    {val.cambio > 0 ? '+' : ''}{val.cambio}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
+                                {/* Tabla de intentos */}
+                                <div className="detail-section-title">Historial de Intentos</div>
+                                <div className="detail-table-container">
+                                    <table className="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Fecha</th>
+                                                <th>Frustración</th>
+                                                <th>Latencia</th>
+                                                <th>Presión</th>
+                                                <th>T. Reacción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {detailMetricas.map((m, i) => (
+                                                <tr key={m.id}>
+                                                    <td className="detail-table__num">{i + 1}</td>
+                                                    <td>{formatDate(m.fecha_registro)}</td>
+                                                    <td>
+                                                        <span
+                                                            className="detail-frust-badge"
+                                                            style={{
+                                                                backgroundColor: getFrustColor(m.frustracion) + '20',
+                                                                color: getFrustColor(m.frustracion),
+                                                            }}
+                                                        >
+                                                            {m.frustracion}
+                                                        </span>
+                                                    </td>
+                                                    <td>{formatMs(m.latencia_ms)}</td>
+                                                    <td>{m.presion_toque != null ? Number(m.presion_toque).toFixed(2) : '—'}</td>
+                                                    <td>
+                                                        <span className="detail-reaccion-value">
+                                                            {formatMs(m.tiempo_reaccion_ms)}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

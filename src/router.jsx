@@ -12,7 +12,6 @@ import NotificacionesPage from './pages/notificaciones/NotificacionesPage';
 import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
 import PerfilPage from './pages/perfil/PerfilPage';
 import NotFoundPage from './pages/NotFoundPage';
-import LoadingScreen from './components/LoadingScreen';
 
 const router = createBrowserRouter([
     // Ruta pública — Login
