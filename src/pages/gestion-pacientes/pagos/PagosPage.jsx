@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import '../pacientes/Pacientes.css';
-import { ChevronUp, ChevronDown, Eye, CheckCircle, Trash2, X, Plus, DollarSign, Filter, FilterX } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, CheckCircle, Trash2, X, Plus, DollarSign, Filter, FilterX, Check } from 'lucide-react';
 import { useNotifications } from '../../../context/NotificationContext';
-import { getPacientes } from '../../../services/api';
+import { getPacientes, getPagos, createPago, updatePago, deletePago } from '../../../services/api';
+import PageLoader from '../../../components/PageLoader';
 
 
 const EMPTY_PAGO = {
@@ -27,30 +28,37 @@ const PagosPage = () => {
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [nextId, setNextId] = useState(9);
 
-    const [pagos, setPagos] = useState([
-        { id: 1, paciente_id: 1, monto: 1500.00, fecha_pago: '2024-01-10', metodo_pago: 'Efectivo', estado_pago: 'Pagado' },
-        { id: 2, paciente_id: 2, monto: 1200.00, fecha_pago: '2024-01-15', metodo_pago: 'Transferencia', estado_pago: 'Pagado' },
-        { id: 3, paciente_id: 3, monto: 1800.00, fecha_pago: '2024-02-05', metodo_pago: 'Tarjeta', estado_pago: 'Pendiente' },
-        { id: 4, paciente_id: 4, monto: 1500.00, fecha_pago: '2024-02-12', metodo_pago: 'Efectivo', estado_pago: 'Pagado' },
-        { id: 5, paciente_id: 5, monto: 900.00, fecha_pago: '2024-03-01', metodo_pago: 'Transferencia', estado_pago: 'Vencido' },
-        { id: 6, paciente_id: 6, monto: 1500.00, fecha_pago: '2024-03-18', metodo_pago: 'Efectivo', estado_pago: 'Pendiente' },
-        { id: 7, paciente_id: 7, monto: 1200.00, fecha_pago: '2024-04-02', metodo_pago: 'Tarjeta', estado_pago: 'Pagado' },
-        { id: 8, paciente_id: 8, monto: 1500.00, fecha_pago: '2024-04-20', metodo_pago: 'Efectivo', estado_pago: 'Vencido' },
-    ]);
+    const [pagos, setPagos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState('');
 
     // ── Pacientes Data ──
     const [pacientesList, setPacientesList] = useState([]);
 
+    const fetchPagos = async () => {
+        try {
+            setLoading(true);
+            const response = await getPagos();
+            setPagos(response.data || []);
+        } catch (error) {
+            console.error("Error fetching pagos:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchPacientes = async () => {
+        const fetchInitialData = async () => {
             try {
                 const response = await getPacientes();
                 setPacientesList(response.data || []);
+                await fetchPagos();
             } catch (error) {
-                console.error("Error fetching pacientes for payments:", error);
+                console.error("Error fetching data for payments:", error);
             }
         };
-        fetchPacientes();
+        fetchInitialData();
     }, []);
 
     // ── Helpers ──
@@ -115,37 +123,76 @@ const PagosPage = () => {
     // ── Acciones ──
     const handleVerDetalle = () => setModalDetalle(selectedSingle);
 
-    const handleMarcarPagado = () => {
-        setPagos(prev =>
-            prev.map(p => selectedRows.includes(p.id) && p.estado_pago !== 'Pagado'
-                ? { ...p, estado_pago: 'Pagado' } : p)
-        );
-        import('sonner').then(({ toast }) => toast.success(`Se registró el pago de ${selectedRows.length} factura(s)`));
-        addNotification({
-            tipo: 'pago',
-            titulo: 'Pagos completados',
-            mensaje: `Se registró el pago de ${selectedRows.length} factura(s) pendiente(s).`,
-            nivel: 'success'
-        });
-        setSelectedRows([]);
+    const handleMarcarPagado = async () => {
+        try {
+            setSaving(true);
+            const ids = pagos
+                .filter(p => selectedRows.includes(p.id) && p.estado_pago !== 'Pagado')
+                .map(p => p.id);
+
+            for (const id of ids) {
+                await updatePago(id, { estado_pago: 'Pagado' });
+            }
+
+            await fetchPagos();
+            import('sonner').then(({ toast }) => toast.success(`Se registró el pago de ${ids.length} factura(s)`));
+            addNotification({
+                tipo: 'pago',
+                titulo: 'Pagos completados',
+                mensaje: `Se registró el pago de ${ids.length} factura(s) pendiente(s).`,
+                nivel: 'success'
+            });
+            setSelectedRows([]);
+        } catch (err) {
+            import('sonner').then(({ toast }) => toast.error(err.message || "Error al actualizar pagos"));
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const handleEliminar = () => {
-        setPagos(prev => prev.filter(p => !selectedRows.includes(p.id)));
-        import('sonner').then(({ toast }) => toast.info(`Se eliminaron ${selectedRows.length} registro(s) de pago`));
-        addNotification({
-            tipo: 'pago',
-            titulo: 'Registros eliminados',
-            mensaje: `Se eliminaron ${selectedRows.length} registro(s) de pago del historial.`,
-            nivel: 'info'
-        });
-        setSelectedRows([]);
+    const handleEliminar = async () => {
+        if (!window.confirm(`¿Estás seguro de eliminar ${selectedRows.length} registro(s)?`)) return;
+        try {
+            setSaving(true);
+            for (const id of selectedRows) {
+                await deletePago(id);
+            }
+            await fetchPagos();
+            import('sonner').then(({ toast }) => toast.info(`Se eliminaron ${selectedRows.length} registro(s) de pago`));
+            addNotification({
+                tipo: 'pago',
+                titulo: 'Registros eliminados',
+                mensaje: `Se eliminaron ${selectedRows.length} registro(s) de pago del historial.`,
+                nivel: 'info'
+            });
+            setSelectedRows([]);
+        } catch (err) {
+            import('sonner').then(({ toast }) => toast.error(err.message || "Error al eliminar pagos"));
+        } finally {
+            setSaving(false);
+        }
     };
 
     // ── Form nuevo pago ──
     const handleFormChange = (field, value) => {
+        if (field === 'monto') {
+            // Solo permitir números y un punto decimal
+            if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+            if (value.length > 10) return;
+        }
         setFormNuevo(prev => ({ ...prev, [field]: value }));
-        setFormErrors(prev => ({ ...prev, [field]: undefined }));
+        const error = getFieldErrorPago(field, value);
+        setFormErrors(prev => ({ ...prev, [field]: error }));
+    };
+
+    const getFieldErrorPago = (field, value) => {
+        if (field === 'paciente_id' && !value) return 'Selecciona un paciente';
+        if (field === 'monto') {
+            if (!value) return 'El monto es obligatorio';
+            if (parseFloat(value) <= 0) return 'Monto debe ser mayor a 0';
+        }
+        if (field === 'fecha_pago' && !value) return 'La fecha es obligatoria';
+        return undefined;
     };
 
     const validateForm = () => {
@@ -157,21 +204,39 @@ const PagosPage = () => {
         return Object.keys(errors).length === 0;
     };
 
-    const handleRegistrarPago = () => {
+    const handleRegistrarPago = async () => {
         if (!validateForm()) return;
-        const nuevo = { id: nextId, ...formNuevo, monto: parseFloat(formNuevo.monto), paciente_id: parseInt(formNuevo.paciente_id) };
-        setPagos(prev => [...prev, nuevo]);
-        setNextId(id => id + 1);
-        import('sonner').then(({ toast }) => toast.success(`Nuevo pago registrado`));
-        addNotification({
-            tipo: 'pago',
-            titulo: 'Nuevo pago registrado',
-            mensaje: `Se emitió un recibo por $${nuevo.monto} MXN.`,
-            nivel: 'success'
-        });
-        setFormNuevo(EMPTY_PAGO);
-        setFormErrors({});
-        setModalNuevo(false);
+        const nuevo = {
+            ...formNuevo,
+            monto: parseFloat(formNuevo.monto),
+            paciente_id: parseInt(formNuevo.paciente_id)
+        };
+
+        try {
+            setSaving(true);
+            await createPago(nuevo);
+            await fetchPagos();
+
+            import('sonner').then(({ toast }) => toast.success(`Nuevo pago registrado`));
+            addNotification({
+                tipo: 'pago',
+                titulo: 'Nuevo pago registrado',
+                mensaje: `Se emitió un recibo por $${nuevo.monto} MXN.`,
+                nivel: 'success'
+            });
+
+            setSaving(false);
+            setSaveSuccess('Pago registrado correctamente');
+            setTimeout(() => {
+                setSaveSuccess('');
+                setFormNuevo(EMPTY_PAGO);
+                setFormErrors({});
+                setModalNuevo(false);
+            }, 1200);
+        } catch (err) {
+            setSaving(false);
+            import('sonner').then(({ toast }) => toast.error(err.message || "Error al registrar pago"));
+        }
     };
 
     // ── Badge ──
@@ -322,37 +387,47 @@ const PagosPage = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredData.map((p) => (
-                        <tr
-                            key={p.id}
-                            className={selectedRows.includes(p.id) ? 'selected' : ''}
-                            onClick={() => toggleRow(p.id)}
-                        >
-                            <td onClick={(e) => e.stopPropagation()}>
-                                <input
-                                    type="checkbox"
-                                    className="tico-checkbox"
-                                    checked={selectedRows.includes(p.id)}
-                                    onChange={() => toggleRow(p.id)}
-                                />
-                            </td>
-                            <td><strong>{getNombrePaciente(p.paciente_id)}</strong></td>
-                            <td style={{ fontWeight: 700, color: '#1f2937' }}>{formatMonto(p.monto)}</td>
-                            <td>{formatFecha(p.fecha_pago)}</td>
-                            <td>
-                                <span className="pagos-metodo-badge">{p.metodo_pago}</span>
-                            </td>
-                            <td>
-                                <span className={badgeClass(p.estado_pago)}>{p.estado_pago}</span>
-                            </td>
-                        </tr>
-                    ))}
-                    {filteredData.length === 0 && (
+                    {loading ? (
                         <tr>
                             <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
-                                No se encontraron pagos.
+                                <PageLoader message="Cargando historial de pagos..." />
                             </td>
                         </tr>
+                    ) : (
+                        <>
+                            {filteredData.map((p) => (
+                                <tr
+                                    key={p.id}
+                                    className={selectedRows.includes(p.id) ? 'selected' : ''}
+                                    onClick={() => toggleRow(p.id)}
+                                >
+                                    <td onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            className="tico-checkbox"
+                                            checked={selectedRows.includes(p.id)}
+                                            onChange={() => toggleRow(p.id)}
+                                        />
+                                    </td>
+                                    <td><strong>{getNombrePaciente(p.paciente_id)}</strong></td>
+                                    <td style={{ fontWeight: 700, color: '#1f2937' }}>{formatMonto(p.monto)}</td>
+                                    <td>{formatFecha(p.fecha_pago)}</td>
+                                    <td>
+                                        <span className="pagos-metodo-badge">{p.metodo_pago}</span>
+                                    </td>
+                                    <td>
+                                        <span className={badgeClass(p.estado_pago)}>{p.estado_pago}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredData.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+                                        No se encontraron pagos.
+                                    </td>
+                                </tr>
+                            )}
+                        </>
                     )}
                 </tbody>
             </table>
@@ -360,7 +435,7 @@ const PagosPage = () => {
             {/* ── Modal: Registrar Pago ── */}
             {modalNuevo && (
                 <div className="tico-modal-overlay" onClick={() => setModalNuevo(false)}>
-                    <div className="tico-modal" onClick={(e) => e.stopPropagation()} style={{ width: 'min(480px, 95vw)' }}>
+                    <div className="tico-modal" onClick={(e) => e.stopPropagation()} style={{ width: 'min(480px, 95vw)', position: 'relative' }}>
                         <button className="tico-modal-close" onClick={() => setModalNuevo(false)}>
                             <X size={18} />
                         </button>
@@ -375,6 +450,7 @@ const PagosPage = () => {
                                     className={`tico-edit-input${formErrors.paciente_id ? ' tico-input-error' : ''}`}
                                     value={formNuevo.paciente_id}
                                     onChange={(e) => handleFormChange('paciente_id', e.target.value)}
+                                    onBlur={(e) => handleFormChange('paciente_id', e.target.value)}
                                 >
                                     <option value="">— Seleccionar paciente —</option>
                                     {pacientesList.map(p => (
@@ -388,12 +464,12 @@ const PagosPage = () => {
                                 <label>Monto ($) *
                                     <input
                                         className={`tico-edit-input${formErrors.monto ? ' tico-input-error' : ''}`}
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
+                                        type="text"
+                                        inputMode="decimal"
                                         placeholder="0.00"
                                         value={formNuevo.monto}
                                         onChange={(e) => handleFormChange('monto', e.target.value)}
+                                        onBlur={(e) => handleFormChange('monto', e.target.value)}
                                     />
                                     {formErrors.monto && <span className="tico-field-error">{formErrors.monto}</span>}
                                 </label>
@@ -403,6 +479,7 @@ const PagosPage = () => {
                                         type="date"
                                         value={formNuevo.fecha_pago}
                                         onChange={(e) => handleFormChange('fecha_pago', e.target.value)}
+                                        onBlur={(e) => handleFormChange('fecha_pago', e.target.value)}
                                     />
                                     {formErrors.fecha_pago && <span className="tico-field-error">{formErrors.fecha_pago}</span>}
                                 </label>
@@ -428,9 +505,24 @@ const PagosPage = () => {
                             </div>
                         </div>
 
+                        {(saving || saveSuccess) && (
+                            <div className="tico-save-overlay">
+                                {saving ? (
+                                    <PageLoader message="Registrando pago..." />
+                                ) : (
+                                    <div className="tico-save-success">
+                                        <div className="tico-save-success__icon"><Check size={32} /></div>
+                                        <span>{saveSuccess}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="tico-edit-actions" style={{ marginTop: '1.5rem' }}>
-                            <button className="tico-btn tico-btn-outline" onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" onClick={handleRegistrarPago}>Registrar pago</button>
+                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
+                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleRegistrarPago}>
+                                {saving ? 'Registrando...' : 'Registrar pago'}
+                            </button>
                         </div>
                     </div>
                 </div>

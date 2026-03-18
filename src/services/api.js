@@ -155,6 +155,38 @@ export const getPagos = async () => {
     return data;
 };
 
+export const createPago = async (pago) => {
+    const res = await fetch(`${BASE_URL}/pagos`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(pago),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al registrar pago');
+    return data;
+};
+
+export const updatePago = async (id, pago) => {
+    const res = await fetch(`${BASE_URL}/pagos/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(pago),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al actualizar pago');
+    return data;
+};
+
+export const deletePago = async (id) => {
+    const res = await fetch(`${BASE_URL}/pagos/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al eliminar pago');
+    return data;
+};
+
 // ── TUTORES ──────────────────────────────────────────────────────────────────
 
 export const getTutores = async () => {

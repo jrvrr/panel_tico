@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import './Pacientes.css';
-import { ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck, X, Plus, Filter, FilterX } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck, X, Plus, Filter, FilterX, Check } from 'lucide-react';
 import { useNotifications } from '../../../context/NotificationContext';
 import { createPaciente, getPacientes, updatePaciente, createCita } from '../../../services/api';
+import PageLoader from '../../../components/PageLoader';
 
 const EMPTY_NUEVO = {
     nombre: '',
@@ -19,6 +20,7 @@ const EMPTY_NUEVO = {
     tutor_parentesco: '',
     tutor_email: '',
     tutor_telefono: '',
+    tutor_password: '',
     fecha_cita: '',
     hora_cita: '',
 };
@@ -41,6 +43,19 @@ const PacientesPage = () => {
 
     const [pacientes, setPacientes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);   // loader durante guardar/crear
+    const [saveSuccess, setSaveSuccess] = useState(''); // mensaje de éxito temporal
+
+    // Normalizar fecha ISO a YYYY-MM-DD para inputs de tipo date
+    const formatDateForInput = (dateStr) => {
+        if (!dateStr) return '';
+        // Si ya es YYYY-MM-DD, devolver tal cual
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        // Convertir ISO (2006-03-17T00:00:00.000Z) a YYYY-MM-DD
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        return d.toISOString().split('T')[0];
+    };
 
     const calcEdad = (fechaNac) => {
         if (!fechaNac) return '';
@@ -70,7 +85,8 @@ const PacientesPage = () => {
                     estado: p.estado_clinico || 'Estable',
                     active: p.estado_activo ?? true,
                     // Keep original data for editing
-                    ...p
+                    ...p,
+                    fecha_nacimiento: formatDateForInput(p.fecha_nacimiento)
                 }));
 
                 setPacientes(mappedPacientes);
@@ -145,7 +161,10 @@ const PacientesPage = () => {
 
     // ── Acciones ─────────────────────────────────────────────────────────────
     const handleVerPerfil = () => setModalPaciente(selectedSingle);
-    const handleEditar = () => setEditPaciente({ ...selectedSingle });
+    const handleEditar = () => setEditPaciente({
+        ...selectedSingle,
+        fecha_nacimiento: formatDateForInput(selectedSingle.fecha_nacimiento)
+    });
 
     // Inhabilitar uno o varios
     const handleInhabilitar = () => {
@@ -181,6 +200,7 @@ const PacientesPage = () => {
 
     const handleGuardarEdicion = async () => {
         try {
+            setSaving(true);
             // Preparar el mismo payload que espera el backend
             const payload = {
                 nombre: editPaciente.paciente || editPaciente.nombre,
@@ -201,15 +221,21 @@ const PacientesPage = () => {
 
             await updatePaciente(editPaciente.id, payload);
 
-            // Actualizar vista localmente    
-            setPacientes(prev => prev.map(p =>
-                p.id === editPaciente.id ? {
-                    ...p, ...editPaciente,
-                    paciente: payload.nombre,
-                    tutor: payload.tutor_nombre,
-                    edad: calcEdad(payload.fecha_nacimiento) // Recalcular edad
-                } : p
-            ));
+            // Refrescar datos completos desde el API para no perder información
+            const response = await getPacientes();
+            const fetchedPacientes = response.data || [];
+            const mappedPacientes = fetchedPacientes.map(p => ({
+                id: p.id,
+                paciente: p.nombre,
+                tutor: p.tutor_nombre || 'N/D',
+                edad: calcEdad(p.fecha_nacimiento),
+                cita: '',
+                observacion: p.observaciones || 'Bajo',
+                estado: p.estado_clinico || 'Estable',
+                active: p.estado_activo ?? true,
+                ...p
+            }));
+            setPacientes(mappedPacientes);
 
             import('sonner').then(({ toast }) => toast.success(`Paciente actualizado`));
             addNotification({
@@ -218,9 +244,16 @@ const PacientesPage = () => {
                 mensaje: `Se modificó la información de ${payload.nombre}.`,
                 nivel: 'info'
             });
-            setEditPaciente(null);
-            setSelectedRows([]);
+            // Mostrar éxito brevemente antes de cerrar
+            setSaving(false);
+            setSaveSuccess('Paciente actualizado correctamente');
+            setTimeout(() => {
+                setSaveSuccess('');
+                setEditPaciente(null);
+                setSelectedRows([]);
+            }, 1200);
         } catch (error) {
+            setSaving(false);
             import('sonner').then(({ toast }) => toast.error(error.message || 'Error al actualizar paciente'));
         }
     };
@@ -240,11 +273,88 @@ const PacientesPage = () => {
         return (p / (h * h)).toFixed(2);
     };
 
-    const handleFormNuevoChange = (field, value) => {
-        // Teléfono: solo números, espacios, +, - y paréntesis
-        if (field === 'tutor_telefono') {
-            if (!/^[\d\s+()\-]*$/.test(value)) return;
+    // ── Restricciones por campo ──────────────────────────────────────────────
+    const FIELD_RULES = {
+        nombre:          { maxLen: 30, onlyLetters: true, label: 'nombre' },
+        tutor_nombre:    { maxLen: 30, onlyLetters: true, label: 'nombre del tutor' },
+        alergias:        { maxLen: 120 },
+        tutor_telefono:  { maxLen: 10, onlyPhone: true },
+        tutor_email:     { maxLen: 80 },
+        tutor_password:  { maxLen: 40 },
+        monto_mensual:   { maxVal: 99999 },
+        peso_kg:         { maxVal: 300 },
+        altura_cm:       { maxVal: 250 },
+    };
+
+    // Validar un campo en tiempo real y devolver el error (o undefined)
+    const getFieldError = (field, value) => {
+        const rule = FIELD_RULES[field];
+
+        // ── Campos obligatorios ──
+        if (field === 'nombre' && !value.trim()) return 'El nombre es obligatorio';
+        if (field === 'tutor_nombre' && !value.trim()) return 'El nombre del tutor es obligatorio';
+        if (field === 'fecha_nacimiento' && !value) return 'La fecha de nacimiento es obligatoria';
+        if (field === 'tutor_password' && !value.trim()) return 'La contraseña es obligatoria';
+
+        // ── Longitud máxima ──
+        if (rule?.maxLen && value.length > rule.maxLen)
+            return `Máximo ${rule.maxLen} caracteres`;
+
+        // ── Solo letras + espacios + acentos ──
+        if (rule?.onlyLetters && value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]+$/.test(value))
+            return 'Solo se permiten letras y espacios';
+
+        // ── Nombre: mínimo 3 caracteres ──
+        if ((field === 'nombre' || field === 'tutor_nombre') && value.trim().length > 0 && value.trim().length < 3)
+            return 'Mínimo 3 caracteres';
+
+        // ── Teléfono ──
+        if (field === 'tutor_telefono' && value.length > 0) {
+            const soloDigitos = value.replace(/\D/g, '');
+            if (soloDigitos.length > 0 && soloDigitos.length < 7) return 'Mínimo 7 dígitos';
+            if (soloDigitos.length > 15) return 'Máximo 15 dígitos';
         }
+
+        // ── Correo ──
+        if (field === 'tutor_email' && value.length > 0) {
+            if (value.includes(' ')) return 'El correo no puede tener espacios';
+            if ((value.match(/@/g) || []).length > 1) return 'Solo se permite un @';
+            if (value.length > 3 && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value) && value.includes('@'))
+                return 'Formato inválido (ej: correo@dominio.com)';
+            if (value.length > 5 && !value.includes('@')) return 'Debe incluir @';
+            // Email único
+            const emailExiste = pacientes.some(
+                p => p.tutor_email && p.tutor_email.toLowerCase() === value.toLowerCase()
+            );
+            if (emailExiste) return 'Este correo ya está registrado';
+        }
+
+        // ── Contraseña ──
+        if (field === 'tutor_password' && value.length > 0 && value.length < 6)
+            return `Mínimo 6 caracteres (faltan ${6 - value.length})`;
+
+        // ── Peso / Altura / Monto: valor máximo ──
+        if (rule?.maxVal && parseFloat(value) > rule.maxVal)
+            return `Máximo permitido: ${rule.maxVal}`;
+        if ((field === 'peso_kg' || field === 'altura_cm' || field === 'monto_mensual') && parseFloat(value) < 0)
+            return 'No puede ser negativo';
+
+        return undefined;
+    };
+
+    const handleFormNuevoChange = (field, value) => {
+        const rule = FIELD_RULES[field];
+
+        // ── Filtrar caracteres no permitidos antes de actualizar ──
+        // Teléfono: solo números, espacios, +, - y paréntesis
+        if (rule?.onlyPhone && !/^[\d\s+()\-]*$/.test(value)) return;
+        // Nombres: bloquear números y caracteres especiales
+        if (rule?.onlyLetters && value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]*$/.test(value)) return;
+        // Max length: bloquear entrada silenciosamente
+        if (rule?.maxLen && value.length > rule.maxLen) return;
+        // Email: sin espacios
+        if (field === 'tutor_email' && value.includes(' ')) return;
+
         setFormNuevo(prev => {
             const updated = { ...prev, [field]: value };
             if (field === 'peso_kg' || field === 'altura_cm') {
@@ -255,54 +365,33 @@ const PacientesPage = () => {
             }
             return updated;
         });
-        // Limpiar error del campo al corregirlo
-        setFormErrors(prev => ({ ...prev, [field]: undefined }));
+
+        // ── Validación en tiempo real mientras escribe ──
+        const error = getFieldError(field, value);
+        setFormErrors(prev => ({ ...prev, [field]: error }));
     };
 
-    // Validación individual en tiempo real (al perder el foco)
+    // Validación al perder foco (complementa la de tiempo real)
     const handleBlur = (field) => {
-        let error = undefined;
         const value = formNuevo[field] || '';
-
-        if (field === 'nombre' && !value.trim()) {
-            error = 'El nombre es obligatorio';
-        } else if (field === 'tutor_nombre' && !value.trim()) {
-            error = 'El nombre del tutor es obligatorio';
-        } else if (field === 'fecha_nacimiento' && !value) {
-            error = 'La fecha de nacimiento es obligatoria';
-        }
-
-        if (error) {
-            setFormErrors(prev => ({ ...prev, [field]: error }));
-        }
+        const error = getFieldError(field, value);
+        setFormErrors(prev => ({ ...prev, [field]: error }));
     };
 
-    // Validación completa del formulario
+    // Validación completa del formulario (al enviar)
     const validateForm = () => {
         const errors = {};
-        if (!formNuevo.nombre.trim())
-            errors.nombre = 'El nombre es obligatorio';
-        if (!formNuevo.tutor_nombre.trim())
-            errors.tutor_nombre = 'El nombre del tutor es obligatorio';
-        if (!formNuevo.fecha_nacimiento)
-            errors.fecha_nacimiento = 'La fecha de nacimiento es obligatoria';
-        // Email: requiere @
-        if (formNuevo.tutor_email && !/^[^@]+@[^@]+\.[^@]+$/.test(formNuevo.tutor_email))
-            errors.tutor_email = 'Ingresa un correo válido (debe incluir @)';
-        // Email único
-        if (formNuevo.tutor_email) {
-            const emailExiste = pacientes.some(
-                p => p.tutor_email && p.tutor_email.toLowerCase() === formNuevo.tutor_email.toLowerCase()
-            );
-            if (emailExiste)
-                errors.tutor_email = 'Este correo ya está registrado';
-        }
-        // Teléfono: solo si tiene algo, mínimo 7 dígitos
-        if (formNuevo.tutor_telefono) {
-            const soloDigitos = formNuevo.tutor_telefono.replace(/\D/g, '');
-            if (soloDigitos.length < 7)
-                errors.tutor_telefono = 'El teléfono debe tener al menos 7 dígitos';
-        }
+        // Recorrer todos los campos y validar
+        const fieldsToCheck = [
+            'nombre', 'fecha_nacimiento', 'tutor_nombre', 'tutor_password',
+            'tutor_email', 'tutor_telefono', 'peso_kg', 'altura_cm', 'monto_mensual', 'alergias'
+        ];
+        fieldsToCheck.forEach(field => {
+            const val = formNuevo[field] || '';
+            const err = getFieldError(field, val);
+            if (err) errors[field] = err;
+        });
+
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -314,6 +403,7 @@ const PacientesPage = () => {
         if (!validateForm()) return;
 
         try {
+            setSaving(true);
             // Guardar en backend
             const payload = {
                 nombre: formNuevo.nombre,
@@ -328,27 +418,13 @@ const PacientesPage = () => {
                 tutor_parentesco: formNuevo.tutor_parentesco,
                 tutor_telefono: formNuevo.tutor_telefono,
                 tutor_email: formNuevo.tutor_email,
+                tutor_password: formNuevo.tutor_password,
                 monto_mensual: formNuevo.monto_mensual || null,
                 estado_activo: true
             };
 
             const res = await createPaciente(payload);
             const pacienteCreado = res.data || res;
-
-            // Adaptador para el frontend local (la BD devuelve diferentes nombres de columnas)
-            const nuevo = {
-                id: pacienteCreado.id,
-                paciente: pacienteCreado.nombre,
-                tutor: pacienteCreado.tutor_nombre,
-                edad: calcEdad(pacienteCreado.fecha_nacimiento) || calcEdad(formNuevo.fecha_nacimiento),
-                cita: '',
-                observacion: pacienteCreado.observaciones || formNuevo.observacion,
-                estado: pacienteCreado.estado_clinico || formNuevo.estado,
-                active: pacienteCreado.estado_activo ?? true,
-                ...formNuevo,
-            };
-
-            setPacientes(prev => [...prev, nuevo]);
 
             // Programando la cita inicial si especificaron fecha/hora
             if (formNuevo.fecha_cita && formNuevo.hora_cita) {
@@ -365,6 +441,22 @@ const PacientesPage = () => {
                     import('sonner').then(({ toast }) => toast.warning(`Paciente registrado, pero no se pudo agendar la cita`));
                 }
             }
+
+            // Refrescar datos completos desde el API
+            const fetchResponse = await getPacientes();
+            const fetchedPacientes = fetchResponse.data || [];
+            const mappedPacientes = fetchedPacientes.map(p => ({
+                id: p.id,
+                paciente: p.nombre,
+                tutor: p.tutor_nombre || 'N/D',
+                edad: calcEdad(p.fecha_nacimiento),
+                cita: '',
+                observacion: p.observaciones || 'Bajo',
+                estado: p.estado_clinico || 'Estable',
+                active: p.estado_activo ?? true,
+                ...p
+            }));
+            setPacientes(mappedPacientes);
 
             import('sonner').then(({ toast }) => toast.success(`Paciente registrado`));
             addNotification({
@@ -590,6 +682,7 @@ const PacientesPage = () => {
                                 <div className="tico-form-stack">
                                     <label>Nombre completo *
                                         <input className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`} placeholder="Nombre completo"
+                                            maxLength={30}
                                             value={formNuevo.nombre}
                                             onChange={(e) => handleFormNuevoChange('nombre', e.target.value)}
                                             onBlur={() => handleBlur('nombre')} />
@@ -611,14 +704,18 @@ const PacientesPage = () => {
                                     </label>
                                     <div className="tico-form-row2">
                                         <label>Peso (kg)
-                                            <input className="tico-edit-input" type="number" placeholder="peso en kg" min="0"
+                                            <input className={`tico-edit-input${formErrors.peso_kg ? ' tico-input-error' : ''}`} type="number" placeholder="peso en kg" min="0" max="300"
                                                 value={formNuevo.peso_kg}
-                                                onChange={(e) => handleFormNuevoChange('peso_kg', e.target.value)} />
+                                                onChange={(e) => handleFormNuevoChange('peso_kg', e.target.value)}
+                                                onBlur={() => handleBlur('peso_kg')} />
+                                            {formErrors.peso_kg && <span className="tico-field-error">{formErrors.peso_kg}</span>}
                                         </label>
                                         <label>Altura (cm)
-                                            <input className="tico-edit-input" type="number" placeholder="altura en cm" min="0"
+                                            <input className={`tico-edit-input${formErrors.altura_cm ? ' tico-input-error' : ''}`} type="number" placeholder="altura en cm" min="0" max="250"
                                                 value={formNuevo.altura_cm}
-                                                onChange={(e) => handleFormNuevoChange('altura_cm', e.target.value)} />
+                                                onChange={(e) => handleFormNuevoChange('altura_cm', e.target.value)}
+                                                onBlur={() => handleBlur('altura_cm')} />
+                                            {formErrors.altura_cm && <span className="tico-field-error">{formErrors.altura_cm}</span>}
                                         </label>
                                     </div>
                                     <label>IMC (auto-calculado)
@@ -626,9 +723,12 @@ const PacientesPage = () => {
                                             value={formNuevo.imc ? `${formNuevo.imc} kg/m²` : '—'} />
                                     </label>
                                     <label>Alergias
-                                        <input className="tico-edit-input" placeholder="(vacío si ninguna)"
+                                        <input className={`tico-edit-input${formErrors.alergias ? ' tico-input-error' : ''}`} placeholder="(vacío si ninguna)"
+                                            maxLength={120}
                                             value={formNuevo.alergias}
-                                            onChange={(e) => handleFormNuevoChange('alergias', e.target.value)} />
+                                            onChange={(e) => handleFormNuevoChange('alergias', e.target.value)}
+                                            onBlur={() => handleBlur('alergias')} />
+                                        {formErrors.alergias && <span className="tico-field-error">{formErrors.alergias}</span>}
                                     </label>
                                     <div className="tico-form-row2">
                                         <label>Observación
@@ -648,9 +748,11 @@ const PacientesPage = () => {
                                         </label>
                                     </div>
                                     <label>Monto mensual ($)
-                                        <input className="tico-edit-input" type="number" placeholder="500.00" min="0"
+                                        <input className={`tico-edit-input${formErrors.monto_mensual ? ' tico-input-error' : ''}`} type="number" placeholder="500.00" min="0" max="99999"
                                             value={formNuevo.monto_mensual}
-                                            onChange={(e) => handleFormNuevoChange('monto_mensual', e.target.value)} />
+                                            onChange={(e) => handleFormNuevoChange('monto_mensual', e.target.value)}
+                                            onBlur={() => handleBlur('monto_mensual')} />
+                                        {formErrors.monto_mensual && <span className="tico-field-error">{formErrors.monto_mensual}</span>}
                                     </label>
                                 </div>
                             </div>
@@ -664,6 +766,7 @@ const PacientesPage = () => {
                                 <div className="tico-form-stack">
                                     <label>Nombre del tutor *
                                         <input className={`tico-edit-input${formErrors.tutor_nombre ? ' tico-input-error' : ''}`} placeholder="Nombre del tutor"
+                                            maxLength={30}
                                             value={formNuevo.tutor_nombre}
                                             onChange={(e) => handleFormNuevoChange('tutor_nombre', e.target.value)}
                                             onBlur={() => handleBlur('tutor_nombre')} />
@@ -687,8 +790,10 @@ const PacientesPage = () => {
                                             className={`tico-edit-input${formErrors.tutor_telefono ? ' tico-input-error' : ''}`}
                                             placeholder="Ej. 555-1234"
                                             inputMode="numeric"
+                                            maxLength={10}
                                             value={formNuevo.tutor_telefono}
-                                            onChange={(e) => handleFormNuevoChange('tutor_telefono', e.target.value)} />
+                                            onChange={(e) => handleFormNuevoChange('tutor_telefono', e.target.value)}
+                                            onBlur={() => handleBlur('tutor_telefono')} />
                                         {formErrors.tutor_telefono && <span className="tico-field-error">{formErrors.tutor_telefono}</span>}
                                     </label>
                                     <label>Correo electrónico
@@ -696,9 +801,22 @@ const PacientesPage = () => {
                                             className={`tico-edit-input${formErrors.tutor_email ? ' tico-input-error' : ''}`}
                                             type="email"
                                             placeholder="tutor@correo.com"
+                                            maxLength={80}
                                             value={formNuevo.tutor_email}
-                                            onChange={(e) => handleFormNuevoChange('tutor_email', e.target.value)} />
+                                            onChange={(e) => handleFormNuevoChange('tutor_email', e.target.value)}
+                                            onBlur={() => handleBlur('tutor_email')} />
                                         {formErrors.tutor_email && <span className="tico-field-error">{formErrors.tutor_email}</span>}
+                                    </label>
+                                    <label>Contraseña *
+                                        <input
+                                            className={`tico-edit-input${formErrors.tutor_password ? ' tico-input-error' : ''}`}
+                                            type="password"
+                                            placeholder="Contraseña del tutor"
+                                            maxLength={40}
+                                            value={formNuevo.tutor_password}
+                                            onChange={(e) => handleFormNuevoChange('tutor_password', e.target.value)}
+                                            onBlur={() => handleBlur('tutor_password')} />
+                                        {formErrors.tutor_password && <span className="tico-field-error">{formErrors.tutor_password}</span>}
                                     </label>
 
                                     <div className="tico-form-divider" style={{ margin: '1rem 0' }} />
@@ -724,10 +842,24 @@ const PacientesPage = () => {
 
                         </div>{/* fin tico-form-two-cols */}
 
+                        {/* Overlay de carga / éxito */}
+                        {(saving || saveSuccess) && (
+                            <div className="tico-save-overlay">
+                                {saving ? (
+                                    <PageLoader message="Registrando paciente..." />
+                                ) : (
+                                    <div className="tico-save-success">
+                                        <div className="tico-save-success__icon"><Check size={32} /></div>
+                                        <span>{saveSuccess}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
-                            <button className="tico-btn tico-btn-outline" onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" onClick={handleAgregarPaciente}>
-                                Agregar paciente
+                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
+                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleAgregarPaciente}>
+                                {saving ? 'Guardando...' : 'Agregar paciente'}
                             </button>
                         </div>
                     </div>
@@ -737,21 +869,51 @@ const PacientesPage = () => {
             {/* ── Modal: Ver Perfil ── */}
             {modalPaciente && (
                 <div className="tico-modal-overlay" onClick={() => setModalPaciente(null)}>
-                    <div className="tico-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="tico-modal tico-modal-wide" onClick={(e) => e.stopPropagation()}>
                         <button className="tico-modal-close" onClick={() => setModalPaciente(null)}>
                             <X size={18} />
                         </button>
                         <div className="tico-modal-avatar">🧒</div>
                         <h2 className="tico-modal-title">{modalPaciente.paciente}</h2>
-                        <div className="tico-modal-grid">
-                            <div className="tico-modal-field"><span>Tutor</span><strong>{modalPaciente.tutor}</strong></div>
-                            <div className="tico-modal-field"><span>Edad</span><strong>{modalPaciente.edad}</strong></div>
-                            <div className="tico-modal-field"><span>Última cita</span><strong>{modalPaciente.cita || '—'}</strong></div>
-                            <div className="tico-modal-field"><span>Observación</span><strong>{modalPaciente.observacion}</strong></div>
-                            <div className="tico-modal-field"><span>Estado</span><strong>{modalPaciente.estado}</strong></div>
-                            <div className="tico-modal-field">
-                                <span>Activo</span>
-                                <strong>{modalPaciente.active ? '✅ Activo' : '❌ Inhabilitado'}</strong>
+
+                        <div className="tico-form-two-cols" style={{ marginTop: '1rem' }}>
+                            {/* Columna izquierda: Paciente */}
+                            <div className="tico-form-col">
+                                <p className="tico-form-section-label">Datos del Paciente</p>
+                                <div className="tico-modal-grid">
+                                    <div className="tico-modal-field"><span>Fecha de nacimiento</span><strong>{modalPaciente.fecha_nacimiento || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Edad</span><strong>{modalPaciente.edad || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Género</span><strong>{modalPaciente.genero || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Peso</span><strong>{modalPaciente.peso_kg ? `${modalPaciente.peso_kg} kg` : '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Altura</span><strong>{modalPaciente.altura_cm ? `${modalPaciente.altura_cm} cm` : '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>IMC</span><strong>{modalPaciente.imc ? `${modalPaciente.imc} kg/m²` : '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Alergias</span><strong>{modalPaciente.alergias || 'Ninguna'}</strong></div>
+                                    <div className="tico-modal-field"><span>Observación</span><strong>{modalPaciente.observacion || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Estado clínico</span><strong>{modalPaciente.estado || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Monto mensual</span><strong>{modalPaciente.monto_mensual ? `$${modalPaciente.monto_mensual}` : '—'}</strong></div>
+                                    <div className="tico-modal-field">
+                                        <span>Activo</span>
+                                        <strong>{modalPaciente.active ? '✅ Activo' : '❌ Inhabilitado'}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="tico-form-divider" />
+
+                            {/* Columna derecha: Tutor */}
+                            <div className="tico-form-col">
+                                <p className="tico-form-section-label">Datos del Tutor</p>
+                                <div className="tico-modal-grid">
+                                    <div className="tico-modal-field"><span>Nombre</span><strong>{modalPaciente.tutor || modalPaciente.tutor_nombre || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Parentesco</span><strong>{modalPaciente.tutor_parentesco || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Teléfono</span><strong>{modalPaciente.tutor_telefono || '—'}</strong></div>
+                                    <div className="tico-modal-field"><span>Correo</span><strong>{modalPaciente.tutor_email || '—'}</strong></div>
+                                </div>
+
+                                <p className="tico-form-section-label" style={{ marginTop: '1.5rem' }}>Próxima Cita</p>
+                                <div className="tico-modal-grid">
+                                    <div className="tico-modal-field"><span>Fecha</span><strong>{modalPaciente.cita || '—'}</strong></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -777,8 +939,13 @@ const PacientesPage = () => {
                                 <div className="tico-form-stack">
                                     <label>Nombre completo
                                         <input className="tico-edit-input" placeholder="Nombre completo"
+                                            maxLength={30}
                                             value={editPaciente.paciente || ''}
-                                            onChange={(e) => setEditPaciente({ ...editPaciente, paciente: e.target.value })} />
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                if (v.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]*$/.test(v)) return;
+                                                setEditPaciente({ ...editPaciente, paciente: v });
+                                            }} />
                                     </label>
                                     <label>Fecha de nacimiento
                                         <input className="tico-edit-input" type="date"
@@ -794,20 +961,22 @@ const PacientesPage = () => {
                                     </label>
                                     <div className="tico-form-row2">
                                         <label>Peso (kg)
-                                            <input className="tico-edit-input" type="number" placeholder="peso en kg" min="0"
+                                            <input className="tico-edit-input" type="number" placeholder="peso en kg" min="0" max="300"
                                                 value={editPaciente.peso_kg || ''}
                                                 onChange={(e) => {
                                                     const peso = e.target.value;
+                                                    if (parseFloat(peso) > 300) return;
                                                     const h = parseFloat(editPaciente.altura_cm) / 100;
                                                     const imc = peso && h ? (parseFloat(peso) / (h * h)).toFixed(2) : '';
                                                     setEditPaciente({ ...editPaciente, peso_kg: peso, imc });
                                                 }} />
                                         </label>
                                         <label>Altura (cm)
-                                            <input className="tico-edit-input" type="number" placeholder="altura en cm" min="0"
+                                            <input className="tico-edit-input" type="number" placeholder="altura en cm" min="0" max="250"
                                                 value={editPaciente.altura_cm || ''}
                                                 onChange={(e) => {
                                                     const altura = e.target.value;
+                                                    if (parseFloat(altura) > 250) return;
                                                     const h = parseFloat(altura) / 100;
                                                     const imc = editPaciente.peso_kg && h ? (parseFloat(editPaciente.peso_kg) / (h * h)).toFixed(2) : '';
                                                     setEditPaciente({ ...editPaciente, altura_cm: altura, imc });
@@ -820,6 +989,7 @@ const PacientesPage = () => {
                                     </label>
                                     <label>Alergias
                                         <input className="tico-edit-input" placeholder="(vacío si ninguna)"
+                                            maxLength={120}
                                             value={editPaciente.alergias || ''}
                                             onChange={(e) => setEditPaciente({ ...editPaciente, alergias: e.target.value })} />
                                     </label>
@@ -841,9 +1011,12 @@ const PacientesPage = () => {
                                         </label>
                                     </div>
                                     <label>Monto mensual ($)
-                                        <input className="tico-edit-input" type="number" placeholder="500.00" min="0"
+                                        <input className="tico-edit-input" type="number" placeholder="500.00" min="0" max="99999"
                                             value={editPaciente.monto_mensual || ''}
-                                            onChange={(e) => setEditPaciente({ ...editPaciente, monto_mensual: e.target.value })} />
+                                            onChange={(e) => {
+                                                if (parseFloat(e.target.value) > 99999) return;
+                                                setEditPaciente({ ...editPaciente, monto_mensual: e.target.value });
+                                            }} />
                                     </label>
                                 </div>
                             </div>
@@ -857,8 +1030,13 @@ const PacientesPage = () => {
                                 <div className="tico-form-stack">
                                     <label>Nombre del tutor
                                         <input className="tico-edit-input" placeholder="Nombre del tutor"
+                                            maxLength={30}
                                             value={editPaciente.tutor || editPaciente.tutor_nombre || ''}
-                                            onChange={(e) => setEditPaciente({ ...editPaciente, tutor: e.target.value, tutor_nombre: e.target.value })} />
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                if (v.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]*$/.test(v)) return;
+                                                setEditPaciente({ ...editPaciente, tutor: v, tutor_nombre: v });
+                                            }} />
                                     </label>
                                     <label>Parentesco
                                         <select className="tico-edit-input" value={editPaciente.tutor_parentesco || ''}
@@ -878,25 +1056,51 @@ const PacientesPage = () => {
                                             className="tico-edit-input"
                                             placeholder="Ej. 555-1234"
                                             inputMode="numeric"
+                                            maxLength={10}
                                             value={editPaciente.tutor_telefono || ''}
-                                            onChange={(e) => setEditPaciente({ ...editPaciente, tutor_telefono: e.target.value })} />
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                if (!/^[\d\s+()\-]*$/.test(v)) return;
+                                                setEditPaciente({ ...editPaciente, tutor_telefono: v });
+                                            }} />
                                     </label>
                                     <label>Correo electrónico
                                         <input
                                             className="tico-edit-input"
                                             type="email"
                                             placeholder="tutor@correo.com"
+                                            maxLength={80}
                                             value={editPaciente.tutor_email || ''}
-                                            onChange={(e) => setEditPaciente({ ...editPaciente, tutor_email: e.target.value })} />
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                if (v.includes(' ')) return;
+                                                setEditPaciente({ ...editPaciente, tutor_email: v });
+                                            }} />
                                     </label>
                                 </div>
                             </div>
 
                         </div>{/* fin tico-form-two-cols */}
 
+                        {/* Overlay de carga / éxito */}
+                        {(saving || saveSuccess) && (
+                            <div className="tico-save-overlay">
+                                {saving ? (
+                                    <PageLoader message="Actualizando paciente..." />
+                                ) : (
+                                    <div className="tico-save-success">
+                                        <div className="tico-save-success__icon"><Check size={32} /></div>
+                                        <span>{saveSuccess}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
-                            <button className="tico-btn tico-btn-outline" onClick={() => setEditPaciente(null)}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" onClick={handleGuardarEdicion}>Guardar Cambios</button>
+                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => setEditPaciente(null)}>Cancelar</button>
+                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarEdicion}>
+                                {saving ? 'Guardando...' : 'Guardar Cambios'}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -5,10 +5,11 @@ import { getEspecialistas, createEspecialista, updateEspecialista, deleteEspecia
 import {
     ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck,
     X, Plus, SlidersHorizontal, FilterX, ShieldCheck,
-    BadgeCheck, Camera, EyeOff, Loader2, Star
+    BadgeCheck, Camera, EyeOff, Loader2, Star, Check
 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
+import PageLoader from '../../components/PageLoader';
 
 // ── Roles (espejo de la BD) ──────────────────────────────────────────────────
 const ESPECIALIDADES = [
@@ -166,6 +167,7 @@ const FormBody = ({
     formData,
     formErrors,
     handleFormChange,
+    handleBlur,
     fileInputRef,
     handleFotoChange,
     showPassword,
@@ -205,6 +207,7 @@ const FormBody = ({
                 value={formData.nombre}
                 maxLength={30}
                 onChange={e => handleFormChange('nombre', e.target.value)}
+                onBlur={() => handleBlur && handleBlur('nombre')}
             />
             {formErrors.nombre && <span className="tico-field-error">{formErrors.nombre}</span>}
         </label>
@@ -216,21 +219,23 @@ const FormBody = ({
                     type="email"
                     placeholder="ejemplo@tico.mx"
                     value={formData.email}
-                    maxLength={20}
+                    maxLength={80}
                     onChange={e => handleFormChange('email', e.target.value)}
+                    onBlur={() => handleBlur && handleBlur('email')}
                 />
                 {formErrors.email && <span className="tico-field-error">{formErrors.email}</span>}
             </label>
             <label>Teléfono
                 <input
-                    className="tico-edit-input"
+                    className={`tico-edit-input${formErrors.telefono ? ' tico-input-error' : ''}`}
                     placeholder="55 0000-0000"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={formData.telefono}
-                    onChange={e => {
-                        if (!/^[\d\s+()\-]*$/.test(e.target.value)) return;
-                        handleFormChange('telefono', e.target.value);
-                    }}
+                    onChange={e => handleFormChange('telefono', e.target.value)}
+                    onBlur={() => handleBlur && handleBlur('telefono')}
                 />
+                {formErrors.telefono && <span className="tico-field-error">{formErrors.telefono}</span>}
             </label>
         </div>
 
@@ -241,8 +246,10 @@ const FormBody = ({
                         className={`tico-edit-input${formErrors.password ? ' tico-input-error' : ''}`}
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Mínimo 8 caracteres"
+                        maxLength={40}
                         value={formData.password}
                         onChange={e => handleFormChange('password', e.target.value)}
+                        onBlur={() => handleBlur && handleBlur('password')}
                     />
                     <button
                         type="button"
@@ -281,13 +288,15 @@ const FormBody = ({
 
         <label>Biografía
             <textarea
-                className="tico-edit-input"
+                className={`tico-edit-input${formErrors.biografia ? ' tico-input-error' : ''}`}
                 rows={3}
                 placeholder="Breve descripción profesional..."
                 style={{ resize: 'vertical', minHeight: '64px' }}
+                maxLength={300}
                 value={formData.biografia}
                 onChange={e => handleFormChange('biografia', e.target.value)}
             />
+            {formErrors.biografia && <span className="tico-field-error">{formErrors.biografia}</span>}
         </label>
 
         {/* Cédula profesional */}
@@ -336,6 +345,8 @@ const EspecialistasPage = () => {
     const [nextId, setNextId] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState('');
 
     // ── Cargar desde API ──
     useEffect(() => {
@@ -488,17 +499,60 @@ const EspecialistasPage = () => {
     };
 
     const handleFormChange = (field, value) => {
-        // Validaciones de longitud
+        // ── Filtrar caracteres no permitidos ──
+        // Nombre: solo letras, espacios, acentos
+        if (field === 'nombre' && value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]*$/.test(value)) return;
         if (field === 'nombre' && value.length > 30) return;
-        if (field === 'email' && value.length > 20) return;
+        // Email: sin espacios
+        if (field === 'email' && value.includes(' ')) return;
+        if (field === 'email' && value.length > 80) return;
+        // Teléfono: solo números y formato
         if (field === 'telefono') {
-            const digitCount = value.replace(/\D/g, '').length;
-            if (digitCount > 10) return;
+            if (!/^[\d\s+()\-]*$/.test(value)) return;
+            if (value.replace(/\D/g, '').length > 10) return;
         }
+        // Contraseña: máx 40
+        if (field === 'password' && value.length > 40) return;
+        // Biografía: máx 300
+        if (field === 'biografia' && value.length > 300) return;
 
         setFormData(prev => ({ ...prev, [field]: value }));
-        setFormErrors(prev => ({ ...prev, [field]: undefined }));
         if (field === 'cedula_profesional') resetCedula();
+
+        // ── Validación en tiempo real ──
+        const error = getFieldErrorEsp(field, value);
+        setFormErrors(prev => ({ ...prev, [field]: error }));
+    };
+
+    // ── Validación en tiempo real por campo ──
+    const getFieldErrorEsp = (field, value) => {
+        if (field === 'nombre') {
+            if (!value.trim()) return 'El nombre es obligatorio';
+            if (value.trim().length > 0 && value.trim().length < 3) return 'Mínimo 3 caracteres';
+            if (value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]+$/.test(value)) return 'Solo letras y espacios';
+        }
+        if (field === 'email') {
+            if (!value.trim()) return 'El email es obligatorio';
+            if (value.includes(' ')) return 'No puede tener espacios';
+            if ((value.match(/@/g) || []).length > 1) return 'Solo un @';
+            if (value.length > 3 && value.includes('@') && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
+                return 'Formato inválido (ej: correo@dominio.com)';
+            if (value.length > 5 && !value.includes('@')) return 'Debe incluir @';
+        }
+        if (field === 'password' && value.length > 0 && value.length < 8)
+            return `Mínimo 8 caracteres (faltan ${8 - value.length})`;
+        if (field === 'telefono' && value.length > 0) {
+            const soloDigitos = value.replace(/\D/g, '');
+            if (soloDigitos.length > 0 && soloDigitos.length < 7) return 'Mínimo 7 dígitos';
+        }
+        if (field === 'biografia' && value.length > 300) return 'Máximo 300 caracteres';
+        return undefined;
+    };
+
+    const handleBlur = (field) => {
+        const value = formData[field] || '';
+        const err = getFieldErrorEsp(field, value);
+        setFormErrors(prev => ({ ...prev, [field]: err }));
     };
 
     const handleFotoChange = (e) => {
@@ -546,10 +600,15 @@ const EspecialistasPage = () => {
             cedula_verificada: cedulaStatus === 'ok',
         };
         try {
+            setSaving(true);
             const res = await createEspecialista(nuevo);
             const especialistaCreado = res.data;
-            setEspecialistas(prev => [...prev, especialistaCreado]);
-            if (especialistaCreado.id) setNextId(Math.max(nextId, especialistaCreado.id + 1));
+
+            // Refrescar datos desde la API
+            const freshData = await getEspecialistas();
+            const list = Array.isArray(freshData) ? freshData : (freshData.data ?? []);
+            setEspecialistas(list);
+
             import('sonner').then(({ toast }) => toast.success(`Especialista ${especialistaCreado.nombre} registrado.`));
             addNotification({
                 tipo: 'sistema',
@@ -557,11 +616,17 @@ const EspecialistasPage = () => {
                 mensaje: `El especialista ${especialistaCreado.nombre} (${especialistaCreado.especialidad_principal}) se registró exitosamente.`,
                 nivel: 'success'
             });
-            setModalNuevo(false);
-            setFormData(EMPTY_FORM);
-            setFormErrors({});
-            resetCedula();
+            setSaving(false);
+            setSaveSuccess('Especialista registrado correctamente');
+            setTimeout(() => {
+                setSaveSuccess('');
+                setModalNuevo(false);
+                setFormData(EMPTY_FORM);
+                setFormErrors({});
+                resetCedula();
+            }, 1200);
         } catch (err) {
+            setSaving(false);
             import('sonner').then(({ toast }) => toast.error(err.message || 'Error al crear especialista'));
             setFormErrors({ ...formErrors, general: err.message });
         }
@@ -597,11 +662,14 @@ const EspecialistasPage = () => {
             cedula_verificada: cedulaStatus === 'ok'
         };
         try {
+            setSaving(true);
             const res = await updateEspecialista(modalEditar.id, cambios);
             const especialistaActualizado = res.data;
-            setEspecialistas(prev =>
-                prev.map(e => e.id === modalEditar.id ? especialistaActualizado : e)
-            );
+
+            // Refrescar datos desde la API
+            const freshData = await getEspecialistas();
+            const list = Array.isArray(freshData) ? freshData : (freshData.data ?? []);
+            setEspecialistas(list);
 
             // Si el especialista actualizado es el usuario logueado, actualizar el contexto global
             if (user && user.id === modalEditar.id) {
@@ -615,12 +683,18 @@ const EspecialistasPage = () => {
                 mensaje: `Se actualizaron los datos del especialista ${especialistaActualizado.nombre}.`,
                 nivel: 'info'
             });
-            setModalEditar(null);
-            setFormData(EMPTY_FORM);
-            setFormErrors({});
-            resetCedula();
-            setSelectedRows([]);
+            setSaving(false);
+            setSaveSuccess('Especialista actualizado correctamente');
+            setTimeout(() => {
+                setSaveSuccess('');
+                setModalEditar(null);
+                setFormData(EMPTY_FORM);
+                setFormErrors({});
+                resetCedula();
+                setSelectedRows([]);
+            }, 1200);
         } catch (err) {
+            setSaving(false);
             import('sonner').then(({ toast }) => toast.error(err.message || 'Error al actualizar especialista'));
             setFormErrors({ ...formErrors, general: err.message });
         }
@@ -638,6 +712,7 @@ const EspecialistasPage = () => {
         formData,
         formErrors,
         handleFormChange,
+        handleBlur,
         fileInputRef,
         handleFotoChange,
         showPassword,
@@ -942,16 +1017,32 @@ const EspecialistasPage = () => {
             {/* ── Modal: Nuevo Especialista ── */}
             {modalNuevo && (
                 <div className="tico-modal-overlay" onClick={() => setModalNuevo(false)}>
-                    <div className="tico-modal" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)', maxHeight: '92vh', overflowY: 'auto' }}>
+                    <div className="tico-modal" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)', maxHeight: '92vh', overflowY: 'auto', position: 'relative' }}>
                         <button className="tico-modal-close" onClick={() => setModalNuevo(false)}>
                             <X size={18} />
                         </button>
                         <h2 className="tico-modal-title">Nuevo Especialista</h2>
                         <p className="tico-form-hint" style={{ textAlign: 'left' }}>* Campos obligatorios</p>
                         <FormBody isEdit={false} {...formBodyProps} />
+
+                        {(saving || saveSuccess) && (
+                            <div className="tico-save-overlay">
+                                {saving ? (
+                                    <PageLoader message="Registrando especialista..." />
+                                ) : (
+                                    <div className="tico-save-success">
+                                        <div className="tico-save-success__icon"><Check size={32} /></div>
+                                        <span>{saveSuccess}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="tico-edit-actions" style={{ marginTop: '1.5rem' }}>
-                            <button className="tico-btn tico-btn-outline" onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" onClick={handleGuardarNuevo}>Registrar especialista</button>
+                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
+                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarNuevo}>
+                                {saving ? 'Guardando...' : 'Registrar especialista'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -960,15 +1051,31 @@ const EspecialistasPage = () => {
             {/* ── Modal: Editar Especialista ── */}
             {modalEditar && (
                 <div className="tico-modal-overlay" onClick={() => setModalEditar(null)}>
-                    <div className="tico-modal" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)', maxHeight: '92vh', overflowY: 'auto' }}>
+                    <div className="tico-modal" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)', maxHeight: '92vh', overflowY: 'auto', position: 'relative' }}>
                         <button className="tico-modal-close" onClick={() => setModalEditar(null)}>
                             <X size={18} />
                         </button>
                         <h2 className="tico-modal-title">Editar Especialista</h2>
                         <FormBody isEdit={true} {...formBodyProps} />
+
+                        {(saving || saveSuccess) && (
+                            <div className="tico-save-overlay">
+                                {saving ? (
+                                    <PageLoader message="Actualizando especialista..." />
+                                ) : (
+                                    <div className="tico-save-success">
+                                        <div className="tico-save-success__icon"><Check size={32} /></div>
+                                        <span>{saveSuccess}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="tico-edit-actions" style={{ marginTop: '1.5rem' }}>
-                            <button className="tico-btn tico-btn-outline" onClick={() => { setModalEditar(null); setFormErrors({}); }}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" onClick={handleGuardarEdicion}>Guardar cambios</button>
+                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalEditar(null); setFormErrors({}); }}>Cancelar</button>
+                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarEdicion}>
+                                {saving ? 'Guardando...' : 'Guardar cambios'}
+                            </button>
                         </div>
                     </div>
                 </div>
