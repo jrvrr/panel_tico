@@ -19,8 +19,12 @@ const PerfilPage = () => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         nombre: '',
+        apellido_paterno: '',
+        apellido_materno: '',
         email: '',
         telefono: '',
+        rol_id: null,
+        estado_activo: true,
         preferencia_modo_oscuro: false,
         preferencia_idioma: 'es',
         horario_atencion: '',
@@ -43,15 +47,19 @@ const PerfilPage = () => {
         if (user) {
             setFormData({
                 nombre: user.nombre || '',
+                apellido_paterno: user.apellido_paterno || '',
+                apellido_materno: user.apellido_materno || '',
                 email: user.email || '',
                 telefono: user.telefono || '',
+                rol_id: user.rol_id,
+                estado_activo: user.estado_activo ?? true,
                 preferencia_modo_oscuro: user.preferencia_modo_oscuro || false,
                 preferencia_idioma: user.preferencia_idioma || 'es',
                 horario_atencion: user.horario_atencion || '',
                 especialidad_principal: user.especialidad_principal || '',
                 cedula_profesional: user.cedula_profesional || '',
                 biografia: user.biografia || '',
-                fecha_nacimiento: user.fecha_nacimiento ? user.fecha_nacimiento.split('T')[0] : '',
+                fecha_nacimiento: user.fecha_nacimiento ? (user.fecha_nacimiento.includes('T') ? user.fecha_nacimiento.split('T')[0] : new Date(user.fecha_nacimiento).toISOString().split('T')[0]).split('T')[0] : '',
                 foto_url: user.foto_url || '',
                 firma_url: user.firma_url || ''
             });
@@ -149,16 +157,39 @@ const PerfilPage = () => {
                             </div>
 
                             <div className="perfil-form-grid">
-                                <div className="perfil-form-group perfil-form-grid-full">
-                                    <label className="perfil-label">Nombre Completo</label>
+                                <div className="perfil-form-group">
+                                    <label className="perfil-label">Nombre(s) *</label>
                                     <input
                                         type="text"
                                         name="nombre"
                                         value={formData.nombre}
                                         onChange={handleChange}
                                         className="perfil-input"
-                                        placeholder="Ej. Dr. Juan Pérez"
+                                        placeholder="Ej. Juan"
                                         required
+                                    />
+                                </div>
+                                <div className="perfil-form-group">
+                                    <label className="perfil-label">Apellido Paterno *</label>
+                                    <input
+                                        type="text"
+                                        name="apellido_paterno"
+                                        value={formData.apellido_paterno}
+                                        onChange={handleChange}
+                                        className="perfil-input"
+                                        placeholder="Ej. Pérez"
+                                        required
+                                    />
+                                </div>
+                                <div className="perfil-form-group perfil-form-grid-full">
+                                    <label className="perfil-label">Apellido Materno</label>
+                                    <input
+                                        type="text"
+                                        name="apellido_materno"
+                                        value={formData.apellido_materno}
+                                        onChange={handleChange}
+                                        className="perfil-input"
+                                        placeholder="Ej. García"
                                     />
                                 </div>
                                 <div className="perfil-form-group">
@@ -334,73 +365,69 @@ const PerfilPage = () => {
                             <div className="perfil-form-grid">
                                 <div className="perfil-form-group perfil-form-grid-full">
                                     <label className="perfil-label">Foto de Perfil</label>
-                                    <div className="perfil-file-preview flex-col items-start gap-3">
-                                        <div className="flex items-center gap-4 w-full">
-                                            <img
-                                                src={formData.foto_url || 'https://ui-avatars.com/api/?name=Usuario&background=e2e8f0'}
-                                                alt="Preview Avatar"
-                                                className="perfil-avatar-preview"
-                                                onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Error&background=fee2e2&color=ef4444' }}
+                                    <div className="perfil-file-preview">
+                                        <img
+                                            src={formData.foto_url || 'https://ui-avatars.com/api/?name=Usuario&background=e2e8f0'}
+                                            alt="Preview Avatar"
+                                            className="perfil-avatar-preview"
+                                            onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Error&background=fee2e2&color=ef4444' }}
+                                        />
+                                        <div className="perfil-upload-info">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                ref={fotoInputRef}
+                                                onChange={(e) => handleFileUpload(e, 'foto')}
+                                                style={{ display: 'none' }}
                                             />
-                                            <div className="flex flex-col gap-1 w-full relative">
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    ref={fotoInputRef}
-                                                    onChange={(e) => handleFileUpload(e, 'foto')}
-                                                    className="hidden"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => fotoInputRef.current?.click()}
-                                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg self-start transition-colors flex justify-center items-center h-10 min-w-[140px]"
-                                                    disabled={uploadingField === 'foto'}
-                                                >
-                                                    {uploadingField === 'foto' ? <Loader2 size={16} className="animate-spin" /> : 'Subir Foto'}
-                                                </button>
-                                                {formData.foto_url && (
-                                                    <span className="text-xs text-gray-400 break-all">{formData.foto_url}</span>
-                                                )}
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => fotoInputRef.current?.click()}
+                                                className="perfil-btn-upload"
+                                                disabled={uploadingField === 'foto'}
+                                            >
+                                                {uploadingField === 'foto' ? <Loader2 size={16} className="animate-spin" /> : <><ImageIcon size={16} /> Subir Foto de Perfil</>}
+                                            </button>
+                                            {formData.foto_url && (
+                                                <span className="perfil-upload-url">{formData.foto_url}</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="perfil-form-group perfil-form-grid-full">
                                     <label className="perfil-label">Firma Digital Escaneada</label>
-                                    <div className="perfil-file-preview flex-col items-start gap-3">
-                                        <div className="flex items-center gap-4 w-full">
-                                            {formData.firma_url ? (
-                                                <img
-                                                    src={formData.firma_url}
-                                                    alt="Firma Preview"
-                                                    className="perfil-firma-preview"
-                                                />
-                                            ) : (
-                                                <div className="perfil-firma-preview flex items-center justify-center bg-slate-50 text-slate-400 text-xs w-[150px]">
-                                                    Sin firma
-                                                </div>
-                                            )}
-                                            <div className="flex flex-col gap-1 w-full relative">
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    ref={firmaInputRef}
-                                                    onChange={(e) => handleFileUpload(e, 'firma')}
-                                                    className="hidden"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => firmaInputRef.current?.click()}
-                                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg self-start transition-colors flex justify-center items-center h-10 min-w-[140px]"
-                                                    disabled={uploadingField === 'firma'}
-                                                >
-                                                    {uploadingField === 'firma' ? <Loader2 size={16} className="animate-spin" /> : 'Subir Firma (PNG)'}
-                                                </button>
-                                                {formData.firma_url && (
-                                                    <span className="text-xs text-gray-400 break-all">{formData.firma_url}</span>
-                                                )}
+                                    <div className="perfil-file-preview">
+                                        {formData.firma_url ? (
+                                            <img
+                                                src={formData.firma_url}
+                                                alt="Firma Preview"
+                                                className="perfil-firma-preview"
+                                            />
+                                        ) : (
+                                            <div className="perfil-firma-preview" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem', background: '#f8fafc' }}>
+                                                Sin firma
                                             </div>
+                                        )}
+                                        <div className="perfil-upload-info">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                ref={firmaInputRef}
+                                                onChange={(e) => handleFileUpload(e, 'firma')}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => firmaInputRef.current?.click()}
+                                                className="perfil-btn-upload"
+                                                disabled={uploadingField === 'firma'}
+                                            >
+                                                {uploadingField === 'firma' ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Subir Firma (PNG)</>}
+                                            </button>
+                                            {formData.firma_url && (
+                                                <span className="perfil-upload-url">{formData.firma_url}</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

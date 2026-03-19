@@ -10,6 +10,14 @@
     border: 2px solid #e5e7eb;
 }
 
+/* ── Especialistas — Refinamiento del Modal ── */
+.esp-modal-content {
+    padding: 1.75rem 2.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
 .esp-avatar-initials {
     width: 38px;
     height: 38px;
@@ -40,12 +48,12 @@
 
 .esp-avatar-cell-name {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     color: #1f2937;
 }
 
 .esp-avatar-cell-email {
-    font-size: 0.73rem;
+    font-size: 0.75rem;
     color: #6b7280;
 }
 
@@ -308,10 +316,463 @@
     letter-spacing: 0.1em;
     color: white;
     background: var(--tico-primary);
-    padding: 0.4rem 1rem;
-    margin: 0.75rem 0 0.6rem;
-    border-radius: 0;
+    padding: 0.65rem 1.25rem;
+    margin: 1.5rem 0 1rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 8px rgba(57, 113, 184, 0.2);
+}
+
+.esp-form-section svg {
+    color: white;
+}
+
+/* ── Refined Modal Layout (Fixed Header/Footer + Scrollable Body) ── */
+.tico-modal-scrollable {
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+    border-radius: 24px !important;
+    box-shadow: 0 25px 50px -12px rgba(57, 113, 184, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.tico-modal-header {
+    padding: 0.65rem 1rem 0.5rem !important;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.tico-modal-header .tico-modal-title {
+    margin: 0 !important;
+    font-size: 1.25rem;
+    text-align: left;
+    color: var(--tico-primary);
+    font-weight: 800;
+}
+
+.tico-modal-header .tico-modal-close {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0;
+    width: 28px;
+    height: 28px;
+}
+
+.tico-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.25rem 0.85rem 0.75rem !important;
+    /* Firefox custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(57, 113, 184, 0.3) transparent;
+}
+
+/* Chrome, Edge, and Safari custom scrollbar */
+.tico-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tico-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tico-modal-body::-webkit-scrollbar-thumb {
+    background-color: rgba(57, 113, 184, 0.2);
+    border-radius: 20px;
+}
+
+/* ── Perfil Modal Premium ── */
+.esp-profile-card {
+    position: relative;
+    background: white;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.esp-profile-hero {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 2.5rem 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.esp-profile-hero-info {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.esp-profile-hero-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.025em;
+}
+
+.esp-profile-hero-specialty {
+    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 500;
+    margin: 0;
+}
+
+.esp-profile-grid-v2 {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.esp-field-box {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.esp-field-box:hover {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    transform: translateY(-2px);
+}
+
+.esp-field-box.full-width {
+    grid-column: 1 / -1;
+}
+
+.esp-field-box-label {
     display: flex;
     align-items: center;
     gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.esp-field-box-label svg {
+    color: var(--tico-primary);
+    opacity: 0.7;
+}
+
+.esp-field-box-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #334155;
+    word-break: break-word;
+}
+
+.esp-field-box-value.bio {
+    font-weight: 450;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #475569;
+    white-space: pre-wrap;
+}
+
+.esp-profile-status-pill {
+    margin-top: 8px;
+}
+
+.esp-admin-notice {
+    margin: 0 2rem 1rem;
+    padding: 1rem;
+    background: rgba(254, 243, 199, 0.4);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 16px;
+    font-size: 0.8rem;
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.esp-admin-notice-bold {
+    font-weight: 700;
+    color: #78350f;
+}
+
+.esp-modal-close-v2 {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 20;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.esp-modal-close-v2:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    transform: rotate(90deg);
+}
+
+.esp-profile-footer-v2 {
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid #f1f5f9;
+}
+
+@media (max-width: 480px) {
+    .esp-profile-grid-v2 {
+        grid-template-columns: 1fr;
+        padding: 1.5rem;
+    }
+    .esp-profile-hero {
+        padding: 2.5rem 1.5rem 1.25rem;
+    }
+}
+
+.tico-modal-body::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(57, 113, 184, 0.4);
+}
+
+.tico-modal-footer {
+    padding: 0.6rem 1rem !important;
+    border-top: 1px solid #f1f5f9;
+    background: white;
+}
+
+.esp-single-col-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.esp-foto-centered-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.esp-align-end {
+    align-items: flex-end;
+}
+
+/* Row Especial: Foto XXS + Nombre */
+.esp-foto-preview-wrap-xxs {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.esp-foto-preview-xxs, 
+.esp-foto-initials-xxs {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.esp-foto-initials-xxs {
+    background: linear-gradient(135deg, var(--tico-primary), #60a5fa);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.esp-foto-camera-btn-xxs {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: white;
+    color: var(--tico-primary);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+/* Labels Ultra-Compactos */
+.esp-label-compact {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.75rem !important;
+    font-size: 0.78rem !important;
+    font-weight: 700;
+    color: #475569;
+    flex: 1;
+}
+
+.esp-label-compact input, 
+.esp-label-compact select,
+.esp-label-compact textarea {
+    font-size: 0.95rem !important;
+    padding: 0.6rem 0.85rem !important;
+    margin-top: 4px !important;
+    border-radius: 12px !important;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1.5px solid #e2e8f0 !important;
+    background-color: #fbfcfd !important;
+    transition: all 0.2s ease !important;
+    color: #1e293b !important;
+}
+
+.esp-label-compact input:focus, 
+.esp-label-compact select:focus,
+.esp-label-compact textarea:focus {
+    border-color: var(--tico-primary) !important;
+    background-color: #fff !important;
+    box-shadow: 0 4px 12px rgba(57, 113, 184, 0.08) !important;
+    outline: none !important;
+}
+
+.esp-form-row {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    .esp-form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+}
+
+/* Password compact */
+.esp-password-wrap-sm {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.esp-password-toggle-sm {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+
+/* Cédula row compact */
+.esp-cedula-row-sm {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.esp-cedula-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.esp-cedula-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+.esp-btn-verificar-compact {
+    padding: 2px 12px;
+    height: 28px;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    color: #475569;
+    font-size: 0.65rem;
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+}
+
+.esp-btn-verificar-compact:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #1e293b;
+}
+
+.esp-btn-verificar-sm {
+    padding: 0 10px;
+    height: 32px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: var(--tico-primary);
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.esp-badge-xs {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+.esp-badge-xs.ok { background: #f0fdf4; color: #16a34a; }
+
+.esp-cedula-msg {
+    font-size: 0.65rem;
+    margin-top: 2px;
+}
+.esp-cedula-msg.ok { color: #16a34a; }
+.esp-cedula-msg.error { color: #ef4444; }
+
+/* Overlay de guardado */
+.tico-modal-scrollable .tico-save-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
 }

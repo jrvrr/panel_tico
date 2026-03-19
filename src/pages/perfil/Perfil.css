@@ -1,5 +1,5 @@
 .perfil-page-container {
-    padding: 2rem;
+    padding: 1rem;
     max-width: 1000px;
     margin: 0 auto;
     animation: fadeIn 0.4s ease-out;
@@ -8,7 +8,7 @@
 /* Header Perfil */
 .perfil-header {
     margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    /*padding-bottom: 1.5rem;*/
 }
 
 .perfil-title {
@@ -235,12 +235,68 @@
 }
 
 .perfil-firma-preview {
-    height: 40px;
+    height: 60px;
     object-fit: contain;
     background: white;
-    padding: 0.25rem;
-    border-radius: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.perfil-btn-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.65rem 1.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #3971b8;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 160px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.perfil-btn-upload:hover:not(:disabled) {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: #3971b8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(57, 113, 184, 0.15);
+}
+
+.perfil-btn-upload:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.perfil-btn-upload:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #f1f5f9;
+}
+
+.perfil-upload-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.perfil-upload-url {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-family: monospace;
+    background: #ffffff;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.4rem;
+    border: 1px solid #f1f5f9;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Profile Actions Bottom */

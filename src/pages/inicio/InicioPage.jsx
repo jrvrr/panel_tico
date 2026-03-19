@@ -40,7 +40,7 @@ const InicioPage = () => {
         crecimientoCitas: 0,
         totalIngresos: 0,
         crecimientoIngresos: 0,
-        citasCompletadas: 0,
+        citasConfirmadas: 0,
         citasPendientes: 0,
         citasCanceladas: 0
     });
@@ -71,10 +71,19 @@ const InicioPage = () => {
 
             // Procesamiento de Métricas Básicas (Simulado contra mes anterior para UI)
             const ingresosTotal = pagos.reduce((sum, p) => sum + Number(p.monto_pagado || 0), 0);
+            
+            // Filtros corregidos usando 'estado_cita' y normalizando a minúsculas
+            const confirmadas = citas.filter(c => {
+                const e = (c.estado_cita || '').toLowerCase();
+                return e === 'confirmada' || e === 'confirmado' || e === 'completada';
+            }).length;
 
-            const completadas = citas.filter(c => c.estado === 'completada').length;
-            const pendientes = citas.filter(c => c.estado === 'pendiente').length;
-            const canceladas = citas.filter(c => c.estado === 'cancelada').length;
+            const pendientes = citas.filter(c => {
+                const e = (c.estado_cita || '').toLowerCase();
+                return e === 'programada' || e === 'pendiente';
+            }).length;
+
+            const canceladas = citas.filter(c => (c.estado_cita || '').toLowerCase() === 'cancelada').length;
 
             setStats({
                 totalPacientes: pacientes.length,
@@ -83,7 +92,7 @@ const InicioPage = () => {
                 crecimientoCitas: 8.2,
                 totalIngresos: ingresosTotal,
                 crecimientoIngresos: -2.4,
-                citasCompletadas: completadas,
+                citasConfirmadas: confirmadas,
                 citasPendientes: pendientes,
                 citasCanceladas: canceladas
             });
@@ -99,15 +108,16 @@ const InicioPage = () => {
             limite.setDate(limite.getDate() + 7);
 
             const proximas = citas.filter(c => {
-                const estado = (c.estado || c.estado_cita || '').toLowerCase();
+                const estado = (c.estado_cita || '').toLowerCase();
                 if (estado === 'completada' || estado === 'cancelada') return false;
 
-                const f = c.fecha_cita || (c.fecha_hora ? c.fecha_hora.split('T')[0] : null);
+                const f = c.fecha_cita;
                 if (!f) return false;
 
                 const partes = f.split('-');
                 if (partes.length !== 3) return false;
                 const dDate = new Date(partes[0], partes[1] - 1, partes[2]);
+                dDate.setHours(0, 0, 0, 0);
                 return dDate >= hoy && dDate <= limite;
             }).sort((a, b) => {
                 const fA = a.fecha_cita || (a.fecha_hora ? a.fecha_hora.split('T')[0] : '');
@@ -143,9 +153,9 @@ const InicioPage = () => {
         });
 
         return dias.map(fecha => {
-            const count = citas.filter(c => c.fecha_hora && c.fecha_hora.startsWith(fecha)).length;
-            // Añadimos datos aleatorios para que la gráfica no se vea plana si hay pocas citas
-            const vistasFake = count * 5 + Math.floor(Math.random() * 20);
+            const count = citas.filter(c => c.fecha_cita === fecha).length;
+            // Reducimos el factor de data fake o lo quitamos para ver realidad
+            const vistasFake = count * 2 + Math.floor(Math.random() * 5);
 
             // Formatear label (ej: "01 May")
             const dateObj = new Date(fecha + 'T12:00:00Z');
@@ -436,9 +446,9 @@ const InicioPage = () => {
                             <div className="dash-status-card dash-status-emerald">
                                 <div className="dash-status-header emerald">
                                     <CheckCircle2 size={16} strokeWidth={2.5} />
-                                    <span className="dash-status-label emerald">Completadas</span>
+                                    <span className="dash-status-label emerald">Confirmadas</span>
                                 </div>
-                                <h4 className="dash-status-value">{stats.citasCompletadas}</h4>
+                                <h4 className="dash-status-value">{stats.citasConfirmadas}</h4>
                             </div>
 
                             {/* Pendientes */}

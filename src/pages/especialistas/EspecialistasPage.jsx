@@ -5,7 +5,8 @@ import { getEspecialistas, createEspecialista, updateEspecialista, deleteEspecia
 import {
     ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck,
     X, Plus, SlidersHorizontal, FilterX, ShieldCheck,
-    BadgeCheck, Camera, EyeOff, Loader2, Star, Check
+    BadgeCheck, Camera, EyeOff, Loader2, Star, Check,
+    Mail, Phone, Calendar, Hash, FileText, Save
 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +25,8 @@ const ESPECIALIDADES = [
 
 const EMPTY_FORM = {
     nombre: '',
+    apellido_paterno: '',
+    apellido_materno: '',
     email: '',
     password: '',
     especialidad_principal: 'Psiquiatría',
@@ -106,16 +109,33 @@ const INITIAL_DATA = [
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const getInitials = (nombre = '') => {
-    const parts = nombre.trim().split(' ');
-    if (parts.length === 1) return parts[0][0]?.toUpperCase() || '?';
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+const getInitials = (esp) => {
+    if (!esp) return '?';
+    const n = esp.nombre?.[0] || '';
+    const p = esp.apellido_paterno?.[0] || '';
+    if (!n && !p) return '?';
+    return (n + p).toUpperCase();
 };
 
 const formatFecha = (f) => {
     if (!f) return '—';
-    const [y, m, d] = f.split('-');
-    return `${d}/${m}/${y}`;
+    try {
+        // Si viene en formato ISO (con T) tomamos solo la fecha
+        const datePart = f.includes('T') ? f.split('T')[0] : f;
+        const [y, m, d] = datePart.split('-');
+        if (!y || !m || !d) return f;
+        return `${d}/${m}/${y}`;
+    } catch (e) {
+        return f;
+    }
+};
+
+const formatDateForInput = (dateStr) => {
+    if (!dateStr) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
 };
 
 // ── Cédulas conocidas para simulación ────────────────────────────────────────
@@ -143,7 +163,7 @@ const Avatar = ({ esp, size = 'sm' }) => {
     const clsInitials = size === 'lg' ? 'esp-foto-initials-lg' : 'esp-avatar-initials';
     if (esp.foto_url)
         return <img src={esp.foto_url} alt={esp.nombre} className={cls} />;
-    return <div className={clsInitials}>{getInitials(esp.nombre)}</div>;
+    return <div className={clsInitials}>{getInitials(esp)}</div>;
 };
 
 const RolBadge = ({ rolId }) => {
@@ -176,107 +196,94 @@ const FormBody = ({
     cedulaMensaje,
     handleVerificarCedula,
 }) => (
-    <div className="tico-form-stack">
+    <div className="tico-form-stack esp-single-col-compact">
+        <p className="esp-form-section" style={{ marginTop: '0' }}>
+            <ShieldCheck size={14} /> DATOS DEL ESPECIALISTA
+        </p>
 
-        {/* Foto */}
-        <div className="esp-foto-preview-wrap">
-            {formData.foto_url
-                ? <img src={formData.foto_url} alt="preview" className="esp-foto-preview" />
-                : <div className="esp-foto-initials-lg">{getInitials(formData.nombre) || '?'}</div>
-            }
-            <label className="esp-foto-label" onClick={() => fileInputRef.current?.click()}>
-                <Camera size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                {formData.foto_url ? 'Cambiar foto' : 'Subir foto de perfil'}
-            </label>
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleFotoChange}
-            />
+        {/* Foto centrada arriba */}
+        <div className="esp-foto-centered-wrap">
+            <div className="esp-foto-preview-wrap-xxs">
+                {formData.foto_url
+                    ? <img src={formData.foto_url} alt="preview" className="esp-foto-preview-xxs" />
+                    : <div className="esp-foto-initials-xxs">{getInitials(formData.nombre) || '?'}</div>
+                }
+                <label className="esp-foto-camera-btn-xxs" onClick={() => fileInputRef.current?.click()}>
+                    <Camera size={8} />
+                </label>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleFotoChange}
+                />
+            </div>
         </div>
 
-        {/* Datos personales */}
-        <p className="esp-form-section"><ShieldCheck size={13} /> Datos personales</p>
-
-        <label>Nombre completo *
+        <label className="esp-label-compact">Nombre(s) *
             <input
                 className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`}
-                placeholder="Nombre completo"
+                placeholder="Nombre"
                 value={formData.nombre}
-                maxLength={30}
+                maxLength={15}
                 onChange={e => handleFormChange('nombre', e.target.value)}
                 onBlur={() => handleBlur && handleBlur('nombre')}
             />
-            {formErrors.nombre && <span className="tico-field-error">{formErrors.nombre}</span>}
         </label>
+        {formErrors.nombre && <span className="tico-field-error" style={{ marginTop: '-4px' }}>{formErrors.nombre}</span>}
 
-        <div className="tico-form-row2">
-            <label>Email *
+        <div className="esp-form-row">
+            <label className="esp-label-compact">A. Paterno *
                 <input
-                    className={`tico-edit-input${formErrors.email ? ' tico-input-error' : ''}`}
-                    type="email"
-                    placeholder="ejemplo@tico.mx"
-                    value={formData.email}
-                    maxLength={80}
-                    onChange={e => handleFormChange('email', e.target.value)}
-                    onBlur={() => handleBlur && handleBlur('email')}
+                    className={`tico-edit-input${formErrors.apellido_paterno ? ' tico-input-error' : ''}`}
+                    placeholder="Apellido"
+                    value={formData.apellido_paterno}
+                    maxLength={15}
+                    onChange={e => handleFormChange('apellido_paterno', e.target.value)}
+                    onBlur={() => handleBlur && handleBlur('apellido_paterno')}
                 />
-                {formErrors.email && <span className="tico-field-error">{formErrors.email}</span>}
             </label>
-            <label>Teléfono
+            <label className="esp-label-compact">A. Materno
                 <input
-                    className={`tico-edit-input${formErrors.telefono ? ' tico-input-error' : ''}`}
-                    placeholder="55 0000-0000"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={formData.telefono}
-                    onChange={e => handleFormChange('telefono', e.target.value)}
-                    onBlur={() => handleBlur && handleBlur('telefono')}
+                    className={`tico-edit-input${formErrors.apellido_materno ? ' tico-input-error' : ''}`}
+                    placeholder="Apellido"
+                    value={formData.apellido_materno}
+                    maxLength={15}
+                    onChange={e => handleFormChange('apellido_materno', e.target.value)}
+                    onBlur={() => handleBlur && handleBlur('apellido_materno')}
                 />
-                {formErrors.telefono && <span className="tico-field-error">{formErrors.telefono}</span>}
             </label>
         </div>
+        <div className="esp-form-row" style={{ marginTop: '-4px' }}>
+            {formErrors.apellido_paterno && <span className="tico-field-error" style={{ width: '50%' }}>{formErrors.apellido_paterno}</span>}
+            {formErrors.apellido_materno && <span className="tico-field-error" style={{ width: '50%', textAlign: 'right' }}>{formErrors.apellido_materno}</span>}
+        </div>
 
-        {!isEdit && (
-            <label>Contraseña *
-                <div className="esp-password-wrap">
-                    <input
-                        className={`tico-edit-input${formErrors.password ? ' tico-input-error' : ''}`}
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Mínimo 8 caracteres"
-                        maxLength={40}
-                        value={formData.password}
-                        onChange={e => handleFormChange('password', e.target.value)}
-                        onBlur={() => handleBlur && handleBlur('password')}
-                    />
-                    <button
-                        type="button"
-                        className="esp-password-toggle"
-                        onClick={() => setShowPassword(s => !s)}
-                        tabIndex={-1}
-                    >
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                </div>
-                {formErrors.password && <span className="tico-field-error">{formErrors.password}</span>}
-            </label>
-        )}
+        {/* Los demás campos en una sola columna real */}
+        <label className="esp-label-compact">Email *
+            <input
+                className={`tico-edit-input${formErrors.email ? ' tico-input-error' : ''}`}
+                type="email"
+                placeholder="email@tico.mx"
+                value={formData.email}
+                onChange={e => handleFormChange('email', e.target.value)}
+            />
+        </label>
+        {formErrors.email && <span className="tico-field-error" style={{ marginTop: '-4px' }}>{formErrors.email}</span>}
 
-        <div className="tico-form-row2">
-            <label>Especialidad principal
-                <select
+        <div className="esp-form-row">
+            <label className="esp-label-compact">Teléfono
+                <input
                     className="tico-edit-input"
-                    value={formData.especialidad_principal}
-                    onChange={e => handleFormChange('especialidad_principal', e.target.value)}
-                >
-                    {ESPECIALIDADES.map(esp => (
-                        <option key={esp}>{esp}</option>
-                    ))}
-                </select>
+                    placeholder="+52 555 123 4567"
+                    maxLength={20}
+                    value={formData.telefono}
+                    onChange={e => handleFormChange('telefono', e.target.value)}
+                />
             </label>
-            <label>Fecha de nacimiento
+
+            <label className="esp-label-compact">Fecha de Nacimiento
                 <input
                     className="tico-edit-input"
                     type="date"
@@ -286,52 +293,60 @@ const FormBody = ({
             </label>
         </div>
 
-        <label>Biografía
+        {!isEdit ? (
+            <label className="esp-label-compact">Contraseña *
+                <div className="esp-password-wrap-sm">
+                    <input
+                        className={`tico-edit-input${formErrors.password ? ' tico-input-error' : ''}`}
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="8+ carac."
+                        value={formData.password}
+                        onChange={e => handleFormChange('password', e.target.value)}
+                    />
+                    <button type="button" className="esp-password-toggle-sm" onClick={() => setShowPassword(s => !s)}>
+                        {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                </div>
+                {formErrors.password && <span className="tico-field-error">{formErrors.password}</span>}
+            </label>
+        ) : null}
+
+        <label className="esp-label-compact">Especialidad
+            <select
+                className="tico-edit-input"
+                value={formData.especialidad_principal}
+                onChange={e => handleFormChange('especialidad_principal', e.target.value)}
+            >
+                {ESPECIALIDADES.map(esp => <option key={esp}>{esp}</option>)}
+            </select>
+        </label>
+
+        <label className="esp-label-compact">Biografía Profesional
             <textarea
-                className={`tico-edit-input${formErrors.biografia ? ' tico-input-error' : ''}`}
-                rows={3}
-                placeholder="Breve descripción profesional..."
-                style={{ resize: 'vertical', minHeight: '64px' }}
+                className="tico-edit-input"
+                rows={4}
+                placeholder="Describe brevemente la trayectoria, especialidad y enfoque del especialista..."
+                style={{ resize: 'vertical' }}
                 maxLength={300}
                 value={formData.biografia}
                 onChange={e => handleFormChange('biografia', e.target.value)}
             />
-            {formErrors.biografia && <span className="tico-field-error">{formErrors.biografia}</span>}
         </label>
 
-        {/* Cédula profesional */}
-        <p className="esp-form-section"><BadgeCheck size={13} /> Cédula profesional</p>
-
-        <label>Número de cédula
-            <div className="esp-cedula-row">
+        <label className="esp-label-compact">Cédula profesional
+            <div className="esp-cedula-row-sm">
                 <input
                     className="tico-edit-input"
-                    placeholder="Ej. 3214567 (7–10 dígitos)"
+                    placeholder="Cédula"
                     value={formData.cedula_profesional}
                     onChange={e => handleFormChange('cedula_profesional', e.target.value.replace(/\D/g, ''))}
-                    maxLength={10}
                 />
-                <button
-                    type="button"
-                    className="esp-btn-verificar"
-                    onClick={handleVerificarCedula}
-                    disabled={!formData.cedula_profesional || cedulaStatus === 'checking'}
-                >
-                    {cedulaStatus === 'checking'
-                        ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Verificando…</>
-                        : 'Verificar'}
+                <button type="button" className="esp-btn-verificar-compact" onClick={handleVerificarCedula}>
+                    {cedulaStatus === 'checking' ? <Loader2 size={10} className="spin" /> : 'Verificar'}
                 </button>
+                {cedulaStatus === 'ok' && <span className="esp-badge-xs ok"><BadgeCheck size={10} /></span>}
             </div>
-            {cedulaStatus === 'ok' && (
-                <div className="esp-cedula-result">
-                    <span className="esp-cedula-badge esp-cedula-verificada"><BadgeCheck size={11} /> {cedulaMensaje}</span>
-                </div>
-            )}
-            {cedulaStatus === 'error' && (
-                <div className="esp-cedula-result">
-                    <span className="esp-cedula-badge esp-cedula-error">✕ {cedulaMensaje}</span>
-                </div>
-            )}
+            {cedulaMensaje && <span className={`esp-cedula-msg ${cedulaStatus === 'ok' ? 'ok' : 'error'}`}>{cedulaMensaje}</span>}
         </label>
     </div>
 );
@@ -401,10 +416,10 @@ const EspecialistasPage = () => {
     const filteredData = useMemo(() => {
         let items = [...especialistas];
         if (searchText.trim())
-            items = items.filter(e =>
-                e.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
-                e.email.toLowerCase().includes(searchText.toLowerCase())
-            );
+            items = items.filter(e => {
+                const fullStr = `${e.nombre} ${e.apellido_paterno || ''} ${e.apellido_materno || ''} ${e.email}`.toLowerCase();
+                return fullStr.includes(searchText.toLowerCase());
+            });
         if (filterRol)
             items = items.filter(e => String(e.rol_id) === filterRol);
         if (filterEstado !== '')
@@ -499,17 +514,18 @@ const EspecialistasPage = () => {
     };
 
     const handleFormChange = (field, value) => {
-        // ── Filtrar caracteres no permitidos ──
-        // Nombre: solo letras, espacios, acentos
-        if (field === 'nombre' && value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]*$/.test(value)) return;
-        if (field === 'nombre' && value.length > 30) return;
+        // Nombre y apellidos: solo letras, espacios, acentos (máx 15)
+        if (['nombre', 'apellido_paterno', 'apellido_materno'].includes(field)) {
+            if (value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]*$/.test(value)) return;
+            if (value.length > 15) return;
+        }
         // Email: sin espacios
         if (field === 'email' && value.includes(' ')) return;
         if (field === 'email' && value.length > 80) return;
         // Teléfono: solo números y formato
         if (field === 'telefono') {
             if (!/^[\d\s+()\-]*$/.test(value)) return;
-            if (value.replace(/\D/g, '').length > 10) return;
+            if (value.replace(/\D/g, '').length > 15) return;
         }
         // Contraseña: máx 40
         if (field === 'password' && value.length > 40) return;
@@ -520,16 +536,16 @@ const EspecialistasPage = () => {
         if (field === 'cedula_profesional') resetCedula();
 
         // ── Validación en tiempo real ──
-        const error = getFieldErrorEsp(field, value);
-        setFormErrors(prev => ({ ...prev, [field]: error }));
+        const fieldError = getFieldErrorEsp(field, value);
+        setFormErrors(prev => ({ ...prev, [field]: fieldError }));
     };
 
     // ── Validación en tiempo real por campo ──
     const getFieldErrorEsp = (field, value) => {
-        if (field === 'nombre') {
-            if (!value.trim()) return 'El nombre es obligatorio';
-            if (value.trim().length > 0 && value.trim().length < 3) return 'Mínimo 3 caracteres';
-            if (value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]+$/.test(value)) return 'Solo letras y espacios';
+        if (['nombre', 'apellido_paterno'].includes(field)) {
+            if (!value.trim()) return 'Obligatorio';
+            if (value.trim().length > 0 && value.trim().length < 2) return 'Muy corto';
+            if (value.length > 0 && !/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s.'-]+$/.test(value)) return 'Solo letras';
         }
         if (field === 'email') {
             if (!value.trim()) return 'El email es obligatorio';
@@ -575,7 +591,8 @@ const EspecialistasPage = () => {
     // ── Validación ───────────────────────────────────────────────────────
     const validateForm = (isEdit = false) => {
         const errors = {};
-        if (!formData.nombre.trim()) errors.nombre = 'El nombre es obligatorio';
+        if (!formData.nombre.trim()) errors.nombre = 'Obligatorio';
+        if (!formData.apellido_paterno.trim()) errors.apellido_paterno = 'Obligatorio';
         if (!formData.email.trim()) errors.email = 'El email es obligatorio';
         else if (!/^[^@]+@[^@]+\.[^@]+$/.test(formData.email))
             errors.email = 'Ingresa un email válido';
@@ -637,10 +654,12 @@ const EspecialistasPage = () => {
         if (!selectedSingle || selectedSingle.rol_id === 1) return;
         setFormData({
             nombre: selectedSingle.nombre,
+            apellido_paterno: selectedSingle.apellido_paterno || '',
+            apellido_materno: selectedSingle.apellido_materno || '',
             email: selectedSingle.email,
             password: '',
             especialidad_principal: selectedSingle.especialidad_principal || 'Psiquiatría',
-            fecha_nacimiento: selectedSingle.fecha_nacimiento || '',
+            fecha_nacimiento: formatDateForInput(selectedSingle.fecha_nacimiento),
             telefono: selectedSingle.telefono || '',
             biografia: selectedSingle.biografia || '',
             foto_url: selectedSingle.foto_url || '',
@@ -901,13 +920,15 @@ const EspecialistasPage = () => {
                                 <div className="esp-avatar-cell">
                                     <Avatar esp={e} />
                                     <div className="esp-avatar-cell-info">
-                                        <span className="esp-avatar-cell-name">{e.nombre}</span>
+                                        <span className="esp-avatar-cell-name">
+                                            {e.nombre} {e.apellido_paterno || ''} {e.apellido_materno || ''}
+                                        </span>
                                         <span className="esp-avatar-cell-email">{e.email}</span>
                                     </div>
                                 </div>
                             </td>
                             <td><RolBadge rolId={e.rol_id} /></td>
-                            <td style={{ fontSize: '0.88rem' }}>{e.especialidad_principal || '—'}</td>
+                            <td style={{ fontSize: '0.8rem' }}>{e.especialidad_principal || '—'}</td>
                             <td><CedulaBadge verificada={e.cedula_verificada} /></td>
                             <td>
                                 {!e.estado_activo
@@ -929,101 +950,106 @@ const EspecialistasPage = () => {
                 </tbody>
             </table>
 
-            {/* ── Modal: Ver Perfil ── */}
+            {/* ── Modal: Ver Perfil Premium ── */}
             {modalPerfil && (
                 <div className="tico-modal-overlay" onClick={() => setModalPerfil(null)}>
-                    <div className="tico-modal" onClick={e => e.stopPropagation()} style={{ width: 'min(480px, 95vw)' }}>
-                        <button className="tico-modal-close" onClick={() => setModalPerfil(null)}>
-                            <X size={18} />
+                    <div className="esp-profile-card" onClick={e => e.stopPropagation()} style={{ width: 'min(500px, 95vw)' }}>
+                        <button className="esp-modal-close-v2" onClick={() => setModalPerfil(null)}>
+                            <X size={20} />
                         </button>
 
-                        <div className="esp-profile-header">
+                        <div className="esp-profile-hero">
                             <Avatar esp={modalPerfil} size="lg" />
-                            <div className="esp-profile-info">
-                                <p className="esp-profile-name">{modalPerfil.nombre}</p>
-                                <p className="esp-profile-specialty">{modalPerfil.especialidad_principal || '—'}</p>
-                                <div style={{ marginTop: '4px' }}>
+                            <div className="esp-profile-hero-info">
+                                <h2 className="esp-profile-hero-name">
+                                    {modalPerfil.nombre} {modalPerfil.apellido_paterno || ''} {modalPerfil.apellido_materno || ''}
+                                </h2>
+                                <p className="esp-profile-hero-specialty">{modalPerfil.especialidad_principal || 'Especialista'}</p>
+                                <div className="esp-profile-status-pill">
                                     <RolBadge rolId={modalPerfil.rol_id} />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="tico-modal-grid">
-                            <div className="tico-modal-field">
-                                <span>Email</span>
-                                <strong>{modalPerfil.email}</strong>
+                        <div className="esp-profile-grid-v2">
+                            <div className="esp-field-box">
+                                <span className="esp-field-box-label"><Mail size={12} /> Email</span>
+                                <span className="esp-field-box-value">{modalPerfil.email}</span>
                             </div>
-                            <div className="tico-modal-field">
-                                <span>Teléfono</span>
-                                <strong>{modalPerfil.telefono || '—'}</strong>
+                            <div className="esp-field-box">
+                                <span className="esp-field-box-label"><Phone size={12} /> Teléfono</span>
+                                <span className="esp-field-box-value">{modalPerfil.telefono || '—'}</span>
                             </div>
-                            <div className="tico-modal-field">
-                                <span>Fecha de nacimiento</span>
-                                <strong>{formatFecha(modalPerfil.fecha_nacimiento)}</strong>
+                            <div className="esp-field-box">
+                                <span className="esp-field-box-label"><Calendar size={12} /> Nacimiento</span>
+                                <span className="esp-field-box-value">{formatFecha(modalPerfil.fecha_nacimiento)}</span>
                             </div>
-                            <div className="tico-modal-field">
-                                <span>Estado</span>
-                                <strong>
+                            <div className="esp-field-box">
+                                <span className="esp-field-box-label"><ShieldCheck size={12} /> Estado</span>
+                                <div className="esp-field-box-value">
                                     {!modalPerfil.estado_activo
                                         ? <span className="esp-estado-inactivo">Inhabilitado</span>
                                         : modalPerfil.en_linea
                                             ? <span className="esp-estado-enlinea">En línea</span>
                                             : <span className="esp-estado-desconectado">Desconectado</span>
                                     }
-                                </strong>
+                                </div>
                             </div>
-                            <div className="tico-modal-field" style={{ gridColumn: '1 / -1' }}>
-                                <span>Cédula profesional</span>
-                                <strong style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div className="esp-field-box full-width">
+                                <span className="esp-field-box-label"><Hash size={12} /> Cédula profesional</span>
+                                <div className="esp-field-box-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     {modalPerfil.cedula_profesional || '—'}
                                     {modalPerfil.cedula_profesional && (
                                         <CedulaBadge verificada={modalPerfil.cedula_verificada} />
                                     )}
-                                </strong>
+                                </div>
                             </div>
                             {modalPerfil.biografia && (
-                                <div className="tico-modal-field" style={{ gridColumn: '1 / -1' }}>
-                                    <span>Biografía</span>
-                                    <strong style={{ fontWeight: 400, lineHeight: 1.5 }}>{modalPerfil.biografia}</strong>
+                                <div className="esp-field-box full-width">
+                                    <span className="esp-field-box-label"><FileText size={12} /> Biografía</span>
+                                    <span className="esp-field-box-value bio">{modalPerfil.biografia}</span>
                                 </div>
                             )}
                         </div>
 
                         {modalPerfil.rol_id === 1 && (
-                            <div style={{
-                                marginTop: '1rem',
-                                padding: '0.6rem 1rem',
-                                background: 'rgba(251,243,199,0.6)',
-                                borderRadius: '8px',
-                                border: '1px solid #f59e0b44',
-                                fontSize: '0.75rem',
-                                color: '#92400e',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}>
-                                <ShieldCheck size={14} />
-                                Este especialista es el <strong>Super Admin</strong> del sistema y tiene acceso total protegido.
+                            <div className="esp-admin-notice">
+                                <ShieldCheck size={18} />
+                                <span>Este especialista es el <span className="esp-admin-notice-bold">Super Admin</span> con acceso total.</span>
                             </div>
                         )}
 
-                        <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
-                            <button className="tico-btn tico-btn-outline" onClick={() => setModalPerfil(null)}>Cerrar</button>
+                        <div className="esp-profile-footer-v2">
+                            <button className="tico-btn tico-btn-outline" onClick={() => setModalPerfil(null)} style={{ borderRadius: '12px', padding: '0.6rem 2rem' }}>Cerrar</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ── Modal: Nuevo Especialista ── */}
             {modalNuevo && (
                 <div className="tico-modal-overlay" onClick={() => setModalNuevo(false)}>
-                    <div className="tico-modal" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)', maxHeight: '92vh', overflowY: 'auto', position: 'relative' }}>
-                        <button className="tico-modal-close" onClick={() => setModalNuevo(false)}>
-                            <X size={18} />
-                        </button>
-                        <h2 className="tico-modal-title">Nuevo Especialista</h2>
-                        <p className="tico-form-hint" style={{ textAlign: 'left' }}>* Campos obligatorios</p>
-                        <FormBody isEdit={false} {...formBodyProps} />
+                    <div className="tico-modal tico-modal-scrollable" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)' }}>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Nuevo Especialista</h2>
+                            <button className="tico-modal-close" onClick={() => setModalNuevo(false)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="tico-modal-body">
+                            <p className="tico-form-hint">* Campos obligatorios</p>
+                            <FormBody isEdit={false} {...formBodyProps} />
+                        </div>
+
+                        <div className="tico-modal-footer">
+                            <div className="tico-edit-actions">
+                                <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
+                                <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarNuevo}>
+                                    {saving ? <Loader2 size={16} className="spin" /> : <Save size={16} />}
+                                    {saving ? 'Guardando...' : 'Registrar especialista'}
+                                </button>
+                            </div>
+                        </div>
 
                         {(saving || saveSuccess) && (
                             <div className="tico-save-overlay">
@@ -1037,13 +1063,6 @@ const EspecialistasPage = () => {
                                 )}
                             </div>
                         )}
-
-                        <div className="tico-edit-actions" style={{ marginTop: '1.5rem' }}>
-                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarNuevo}>
-                                {saving ? 'Guardando...' : 'Registrar especialista'}
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}
@@ -1051,12 +1070,27 @@ const EspecialistasPage = () => {
             {/* ── Modal: Editar Especialista ── */}
             {modalEditar && (
                 <div className="tico-modal-overlay" onClick={() => setModalEditar(null)}>
-                    <div className="tico-modal" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)', maxHeight: '92vh', overflowY: 'auto', position: 'relative' }}>
-                        <button className="tico-modal-close" onClick={() => setModalEditar(null)}>
-                            <X size={18} />
-                        </button>
-                        <h2 className="tico-modal-title">Editar Especialista</h2>
-                        <FormBody isEdit={true} {...formBodyProps} />
+                    <div className="tico-modal tico-modal-scrollable" onClick={e => e.stopPropagation()} style={{ width: 'min(540px, 96vw)' }}>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Editar Especialista</h2>
+                            <button className="tico-modal-close" onClick={() => setModalEditar(null)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="tico-modal-body">
+                            <FormBody isEdit={true} {...formBodyProps} />
+                        </div>
+
+                        <div className="tico-modal-footer">
+                            <div className="tico-edit-actions">
+                                <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalEditar(null); setFormErrors({}); }}>Cancelar</button>
+                                <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarEdicion}>
+                                    {saving ? <Loader2 size={16} className="spin" /> : <Save size={16} />}
+                                    {saving ? 'Guardando...' : 'Guardar cambios'}
+                                </button>
+                            </div>
+                        </div>
 
                         {(saving || saveSuccess) && (
                             <div className="tico-save-overlay">
@@ -1070,13 +1104,6 @@ const EspecialistasPage = () => {
                                 )}
                             </div>
                         )}
-
-                        <div className="tico-edit-actions" style={{ marginTop: '1.5rem' }}>
-                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalEditar(null); setFormErrors({}); }}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarEdicion}>
-                                {saving ? 'Guardando...' : 'Guardar cambios'}
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}

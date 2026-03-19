@@ -1,7 +1,7 @@
 /* TICO Design System */
 :root {
-    --tico-primary: #3971b8;
-    --tico-primary-hover: #2c5a96;
+    --tico-primary: #4c7bc7;
+    --tico-primary-hover: #3a61a0;
     --tico-secondary: #c8d69b;
     --tico-accent: #f88cac;
     --tico-highlight: #f6e6a5;
@@ -236,20 +236,21 @@
     background-color: white;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .tico-table th {
     text-align: left;
-    padding: 0.85rem 1rem;
-    font-size: 0.72rem;
+    padding: 1.15rem 1.25rem;
+    font-size: 0.82rem;
     text-transform: uppercase;
-    color: #555;
+    color: #ffffff;
     font-weight: 700;
-    border-bottom: 2px solid var(--tico-secondary);
-    background-color: rgba(200, 214, 155, 0.18);
+    border-top: none;
+    border-bottom: none;
+    background-color: var(--tico-primary);
     user-select: none;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
 }
 
 .tico-table th.sortable {
@@ -263,11 +264,11 @@
 
 .tico-table tr {
     cursor: pointer;
-    transition: background-color 0.1s;
+    transition: all 0.2s ease;
 }
 
 .tico-table tr:hover td {
-    background-color: #f8fbff;
+    background-color: rgba(57, 113, 184, 0.06);
 }
 
 /* Fila seleccionada → azul suave */
@@ -286,37 +287,43 @@
 }
 
 .tico-table td {
-    padding: 0.9rem 1rem;
-    border-bottom: 1px solid #f3f4f6;
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
     font-size: 0.93rem;
-    color: var(--tico-text);
+    color: #445469;
     background-color: white;
-    transition: background-color 0.1s;
+    transition: background-color 0.2s ease;
 }
 
 /* ── Badges ── */
 .tico-badge {
-    padding: 0.22rem 0.7rem;
+    padding: 0.35rem 0.85rem;
     border-radius: 9999px;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    display: inline-block;
-    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+    line-height: 1;
 }
 
 .tico-badge-bajo {
-    background-color: var(--tico-secondary);
-    color: #4a5c2d;
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid rgba(6, 95, 70, 0.1);
 }
 
 .tico-badge-alto {
-    background-color: var(--tico-accent);
-    color: #8a2c4c;
+    background-color: #fff1f2;
+    color: #9f1239;
+    border: 1px solid rgba(159, 18, 57, 0.1);
 }
 
 .tico-badge-medio {
-    background-color: var(--tico-highlight);
-    color: #7a6a2a;
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid rgba(146, 64, 14, 0.1);
 }
 
 /* Checkbox */
@@ -366,6 +373,50 @@
     opacity: 0.2;
     margin: 0 1.25rem;
     flex-shrink: 0;
+}
+
+/* ── Modal Tabs ── */
+.tico-modal-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0 0.5rem;
+}
+
+.tico-tab-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--tico-text-muted);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tico-tab-btn:hover {
+    color: var(--tico-primary);
+    background: rgba(76, 123, 199, 0.05);
+}
+
+.tico-tab-btn.active {
+    color: var(--tico-primary);
+    border-bottom-color: var(--tico-primary);
+}
+
+.tico-tab-icon {
+    opacity: 0.8;
+}
+
+.tico-tab-btn.active .tico-tab-icon {
+    opacity: 1;
 }
 
 /* ── Stack de campos en columna ── */
@@ -466,10 +517,10 @@
 .tico-modal {
     background: white;
     border-radius: 20px;
-    padding: 2rem 2.5rem;
     box-shadow: 0 20px 60px rgba(57, 113, 184, 0.18);
     position: relative;
     animation: scaleIn 0.2s ease;
+    overflow: hidden;
 }
 
 @keyframes scaleIn {
@@ -486,8 +537,8 @@
 
 .tico-modal-close {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 1.25rem;
+    right: 1.25rem;
     background: #f3f4f6;
     border: none;
     border-radius: 50%;
@@ -499,6 +550,7 @@
     cursor: pointer;
     color: var(--tico-text-muted);
     transition: background 0.15s;
+    z-index: 20; /* Encima de todo */
 }
 
 .tico-modal-close:hover {
@@ -523,6 +575,10 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.8rem;
+}
+
+.tico-modal-grid-1col {
+    grid-template-columns: 1fr;
 }
 
 .tico-modal-field {
@@ -758,15 +814,23 @@
     box-shadow: 0 0 0 3px rgba(57, 113, 184, 0.08);
 }
 
-/* Indicador de filtros activos */
-.tico-filter-dot {
-    width: 8px;
-    height: 8px;
-    background-color: var(--tico-accent);
-    border-radius: 50%;
-    margin-left: 2px;
-    border: 2px solid white;
-    box-shadow: 0 0 4px rgba(248, 140, 172, 0.4);
+/* Badge de error en pestañas */
+.tico-tab-badge {
+    background-color: #fee2e2;
+    color: #ef4444;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    border: 1px solid #fecaca;
+    animation: tico-blink 2s infinite;
+}
+
+@keyframes tico-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 .tico-btn-filter {
@@ -935,7 +999,7 @@
     box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
 }
 
-.tico-save-success span {
+.tico-save-success {
     font-size: 0.95rem;
     font-weight: 700;
     color: #15803d;
@@ -958,4 +1022,262 @@
     opacity: 0.5;
     cursor: not-allowed;
     transform: none !important;
+}
+
+/* ── Animaciones para campos condicionales ── */
+.tico-form-anim-in {
+    animation: slideDownFade 0.3s ease-out;
+    margin-top: 0.5rem;
+}
+
+@keyframes slideDownFade {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Contenedor de Pasos del Modal ── */
+.tico-form-step-container {
+    display: flex;
+    width: 200%; /* Dos pasos */
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tico-form-step-container.step-2-active {
+    transform: translateX(-50%);
+}
+
+.tico-form-step {
+    width: 50%;
+    flex-shrink: 0;
+    padding: 2rem 2.5rem;
+    box-sizing: border-box;
+}
+
+/* ── Tarjeta Visual Premium ── */
+.tico-visual-card {
+    width: 100%;
+    aspect-ratio: 1.6 / 1;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-radius: 16px;
+    padding: 24px;
+    color: white;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tico-visual-card::before {
+    content: '';
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 150px;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 50%;
+}
+
+.tico-card-chip {
+    width: 45px;
+    height: 35px;
+    background: linear-gradient(135deg, #d4d4d8 0%, #a1a1aa 100%);
+    border-radius: 6px;
+    position: relative;
+}
+
+.tico-card-number {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    word-spacing: 8px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    margin: 20px 0;
+}
+
+.tico-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.tico-card-holder span,
+.tico-card-expiry span {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.tico-card-holder div,
+.tico-card-expiry div {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.tico-card-type {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 1.2rem;
+    opacity: 0.8;
+}
+
+/* ── Premium Modal System (Shared) ── */
+.tico-profile-card {
+    position: relative;
+    background: white;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    animation: scaleIn 0.2s ease;
+}
+
+.tico-profile-hero {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 2.5rem 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tico-profile-hero-info {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.tico-profile-hero-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.025em;
+}
+
+.tico-profile-hero-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 500;
+    margin: 0;
+}
+
+.tico-profile-grid {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.15rem;
+}
+
+.tico-field-box {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.tico-field-box:hover {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    transform: translateY(-2px);
+}
+
+.tico-field-box.full-width {
+    grid-column: 1 / -1;
+}
+
+.tico-field-box-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tico-field-box-label svg {
+    color: var(--tico-primary);
+    opacity: 0.7;
+}
+
+.tico-field-box-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #334155;
+    word-break: break-word;
+}
+
+.tico-field-box-value.text-small {
+    font-weight: 450;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: #475569;
+    white-space: pre-wrap;
+}
+
+.tico-modal-close-v2 {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 20;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.tico-modal-close-v2:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    transform: rotate(90deg);
+}
+
+.tico-profile-footer-v2 {
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid #f1f5f9;
+}
+
+@media (max-width: 480px) {
+    .tico-profile-grid {
+        grid-template-columns: 1fr;
+        padding: 1.5rem;
+    }
+    .tico-profile-hero {
+        padding: 2.5rem 1.5rem 1.25rem;
+    }
 }

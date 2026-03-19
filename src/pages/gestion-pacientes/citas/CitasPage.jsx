@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import '../pacientes/Pacientes.css';
-import { ChevronUp, ChevronDown, Eye, Pencil, X, Plus, XCircle, CheckCircle, Calendar, List } from 'lucide-react';
+import { 
+    ChevronUp, ChevronDown, Eye, Pencil, X, Plus, XCircle, CheckCircle, Calendar, List,
+    Clock, Activity, FileText, User, ShieldCheck, Mail, Phone
+} from 'lucide-react';
 import { useNotifications } from '../../../context/NotificationContext';
 import { getPacientes, getCitas, createCita, updateCita } from '../../../services/api';
 import CalendarioCitas from './CalendarioCitas';
@@ -487,38 +490,88 @@ const CitasPage = () => {
                 </div>
             )}
 
-            {/* ── Modal: Ver Detalle ── */}
+            {/* ── Modal: Ver Detalle Premium ── */}
             {modalCita && (
                 <div className="tico-modal-overlay" onClick={() => setModalCita(null)}>
-                    <div className="tico-modal" onClick={(e) => e.stopPropagation()}>
-                        <button className="tico-modal-close" onClick={() => setModalCita(null)}>
-                            <X size={18} />
+                    <div className="tico-profile-card" onClick={(e) => e.stopPropagation()} style={{ width: 'min(550px, 95vw)' }}>
+                        <button className="tico-modal-close-v2" onClick={() => setModalCita(null)}>
+                            <X size={20} />
                         </button>
-                        <div className="tico-modal-avatar">📋</div>
-                        <h2 className="tico-modal-title">{modalCita.paciente_nombre}</h2>
-                        <div className="tico-modal-grid">
-                            <div className="tico-modal-field"><span>Tutor</span><strong>{modalCita.tutor}</strong></div>
-                            <div className="tico-modal-field"><span>Fecha</span><strong>{formatFecha(modalCita.fecha_cita)}</strong></div>
-                            <div className="tico-modal-field"><span>Hora</span><strong>{modalCita.hora_cita}</strong></div>
-                            <div className="tico-modal-field"><span>Estado</span><strong>{modalCita.estado_cita}</strong></div>
-                            <div className="tico-modal-field">
-                                <span>Progreso terapia</span>
-                                <strong>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                                        <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '100px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${modalCita.progreso_terapia_pct}%`, background: 'var(--tico-primary)', borderRadius: '100px', transition: 'width 0.3s' }} />
-                                        </div>
-                                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--tico-primary)', minWidth: '32px', textAlign: 'right' }}>{modalCita.progreso_terapia_pct}%</span>
-                                    </div>
-                                </strong>
+
+                        <div className="tico-profile-hero">
+                            <div className="esp-foto-initials-lg" style={{ background: 'linear-gradient(135deg, #4c7bc7 0%, #7da0d9 100%)' }}>
+                                <Calendar size={32} color="white" />
                             </div>
-                            <div className="tico-modal-field">
-                                <span>Observación</span>
-                                <strong>{modalCita.observacion_clinica || '—'}</strong>
+                            <div className="tico-profile-hero-info">
+                                <h2 className="tico-profile-hero-name">{modalCita.paciente_nombre}</h2>
+                                <p className="tico-profile-hero-subtitle">Detalles de la Cita</p>
                             </div>
                         </div>
-                        <div className="tico-edit-actions">
-                            <button className="tico-btn tico-btn-outline" onClick={() => setModalCita(null)}>Cerrar</button>
+
+                        <div className="tico-profile-grid">
+                            <div className="tico-field-box">
+                                <span className="tico-field-box-label"><Calendar size={12} /> Fecha</span>
+                                <span className="tico-field-box-value">{formatFecha(modalCita.fecha_cita)}</span>
+                            </div>
+                            <div className="tico-field-box">
+                                <span className="tico-field-box-label"><Clock size={12} /> Hora</span>
+                                <span className="tico-field-box-value">{modalCita.hora_cita}</span>
+                            </div>
+
+                            <div className="tico-field-box">
+                                <span className="tico-field-box-label"><Activity size={12} /> Estado</span>
+                                <div className="tico-field-box-value">
+                                    <span className={badgeClass(modalCita.estado_cita)}>
+                                        {badgeLabel(modalCita.estado_cita)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="tico-field-box">
+                                <span className="tico-field-box-label"><Activity size={12} /> Progreso</span>
+                                <div className="tico-field-box-value">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '100px', overflow: 'hidden' }}>
+                                            <div style={{ 
+                                                height: '100%', 
+                                                width: `${modalCita.progreso_terapia_pct}%`, 
+                                                background: 'var(--tico-primary)', 
+                                                borderRadius: '100px',
+                                                transition: 'width 0.4s ease'
+                                            }} />
+                                        </div>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--tico-primary)', minWidth: '35px' }}>
+                                            {modalCita.progreso_terapia_pct}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="tico-field-box full-width" style={{ background: 'rgba(76, 123, 199, 0.05)', border: '1px solid rgba(76, 123, 199, 0.1)' }}>
+                                <span className="tico-field-box-label"><User size={12} /> Información de Contacto</span>
+                                <div className="tico-field-box-value" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Tutor</div>
+                                        <div>{modalCita.tutor || '—'}</div>
+                                    </div>
+                                    {modalCita.telefono && (
+                                        <div>
+                                            <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Teléfono</div>
+                                            <div>{modalCita.telefono}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="tico-field-box full-width">
+                                <span className="tico-field-box-label"><FileText size={12} /> Observación Clínica</span>
+                                <span className="tico-field-box-value text-small">
+                                    {modalCita.observacion_clinica || 'Sin observaciones para esta cita.'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="tico-profile-footer-v2">
+                            <button className="tico-btn tico-btn-outline" onClick={() => setModalCita(null)} style={{ borderRadius: '12px', padding: '0.6rem 2.5rem' }}>Cerrar</button>
                         </div>
                     </div>
                 </div>

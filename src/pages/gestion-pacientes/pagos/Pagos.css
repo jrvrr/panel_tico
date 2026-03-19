@@ -1,0 +1,232 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TICO Pagos — Premium Card Grid (Fichas)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.pagos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.pago-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.pago-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    border-color: var(--tico-primary);
+}
+
+.pago-card--selected {
+    border-color: var(--tico-primary);
+    background: rgba(57, 113, 184, 0.03);
+    box-shadow: 0 0 0 2px var(--tico-primary);
+}
+
+.pago-card--pending {
+    border-style: dashed;
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.pago-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.pago-card__paciente {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.pago-card__fecha {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.pago-card__menu-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.pago-card__menu-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.pago-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pago-card__monto-section {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #edf2f7;
+}
+
+.pago-card__monto-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.pago-card__monto-value {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #1e293b;
+}
+
+.pago-card__metodo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.pago-card__footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px dashed #e2e8f0;
+}
+
+/* Status specific colors */
+.pago-card__status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status--pagado { background: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.3); }
+.status--pendiente { background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+.status--vencido { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+
+/* Menu Dropdown */
+.pago-card__dropdown {
+    position: absolute;
+    top: 3rem;
+    right: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    z-index: 10;
+    width: 160px;
+    overflow: hidden;
+    animation: fadeInScale 0.2s ease-out;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95) translateY(-5px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background: #f8fafc;
+    color: var(--tico-primary);
+}
+
+.dropdown-item--danger {
+    color: #ef4444;
+}
+
+.dropdown-item--danger:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Editing Style */
+.pago-card__edit-input {
+    width: 100px;
+    padding: 4px 8px;
+    border: 2px solid var(--tico-primary);
+    border-radius: 6px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-align: right;
+    outline: none;
+}
+/* Summary Card Menus */
+.metricas-card, .pagos-resumen-card {
+    position: relative !important;
+    overflow: visible !important; /* Allow dropdown to overflow */
+}
+
+.metricas-card-menu {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 50;
+}
+
+.metricas-menu-btn {
+    background: rgba(255, 255, 255, 0.4);
+    border: none;
+    color: #475569;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.metricas-menu-btn:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.metricas-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}

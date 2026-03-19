@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Activity, Clock, Zap, AlertTriangle, Search, User, ChevronRight, BarChart3 } from 'lucide-react';
+import { X, Activity, Clock, Zap, AlertTriangle, Search, User, ChevronRight, BarChart3, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react';
 import { getMetricasIA, getMetricasByPaciente } from '../../services/api';
+import { calculateStdDev, calculateTrend, classifyPatientState, detectFatigue, generateInsights } from '../../utils/metricsCalculations';
 import './Metricas.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -17,9 +18,29 @@ const formatDate = (dateStr) => {
 };
 
 const formatMs = (ms) => {
-    if (ms == null) return '—';
+    if (ms == null || isNaN(ms)) return '—';
     if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
     return `${ms}ms`;
+};
+
+// ── Mini Sparkline Component ──────────────────────────────────────────
+const Sparkline = ({ data = [], color = '#3b82f6' }) => {
+    if (data.length < 2) return <div className="sparkline-empty">Sin datos</div>;
+    const max = Math.max(...data, 1);
+    const min = Math.min(...data, 0);
+    const range = max - min || 1;
+    const width = 80;
+    const height = 24;
+    const points = data.map((v, i) => ({
+        x: (i / (data.length - 1)) * width,
+        y: height - ((v - min) / range) * height
+    }));
+    const pathData = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
+    return (
+        <svg width={width} height={height} className="sparkline-svg">
+            <path d={pathData} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
 };
 
 const getFrustColor = (nivel) => {
@@ -42,6 +63,7 @@ const MetricasPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchText, setSearchText] = useState('');
+    const [sortOrder, setSortOrder] = useState('risk'); // 'risk', 'name', 'date', 'attempts'
     const [selectedPacienteId, setSelectedPacienteId] = useState(null);
     const [detailMetricas, setDetailMetricas] = useState([]);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -79,8 +101,10 @@ const MetricasPage = () => {
 
         // Calcular resúmenes por paciente
         return Object.values(map).map(p => {
-            const intentos = p.intentos;
+            const intentos = [...p.intentos].sort((a, b) => new Date(a.fecha_registro) - new Date(b.fecha_registro)); // Orden cronológico
             const totalIntentos = intentos.length;
+            
+            // Averages
             const avgFrustracion = totalIntentos > 0
                 ? (intentos.reduce((s, i) => s + (i.frustracion || 0), 0) / totalIntentos)
                 : 0;
@@ -90,27 +114,74 @@ const MetricasPage = () => {
             const avgLatencia = totalIntentos > 0
                 ? Math.round(intentos.reduce((s, i) => s + (i.latencia_ms || 0), 0) / totalIntentos)
                 : 0;
-            const ultimoIntento = intentos.length > 0
-                ? intentos.reduce((a, b) => new Date(a.fecha_registro) > new Date(b.fecha_registro) ? a : b)
-                : null;
+            const avgPresion = totalIntentos > 0
+                ? (intentos.reduce((s, i) => s + Number(i.presion_toque || 0), 0) / totalIntentos)
+                : 0;
 
-            return {
+            // Consistency & Trends
+            const reaccionTimes = intentos.map(i => i.tiempo_reaccion_ms || 0);
+            const consistencia = calculateStdDev(reaccionTimes);
+            
+            // Trend (Last attempt vs historical average)
+            let trendReaccion = 0;
+            let trendFrustracion = 0;
+            if (totalIntentos > 1) {
+                const ultimo = intentos[totalIntentos - 1];
+                const anteriores = intentos.slice(0, -1);
+                const avgAnteriorReaccion = anteriores.reduce((s, i) => s + (i.tiempo_reaccion_ms || 0), 0) / anteriores.length;
+                const avgAnteriorFrust = anteriores.reduce((s, i) => s + (i.frustracion || 0), 0) / anteriores.length;
+                
+                trendReaccion = calculateTrend(ultimo.tiempo_reaccion_ms, avgAnteriorReaccion);
+                trendFrustracion = calculateTrend(ultimo.frustracion, avgAnteriorFrust);
+            }
+
+            const estado = classifyPatientState(avgFrustracion, avgTiempoReaccion, consistencia);
+            const fatigue = detectFatigue(intentos);
+            const ultimoIntento = intentos[totalIntentos - 1];
+
+            const summary = {
                 ...p,
                 totalIntentos,
                 avgFrustracion: Math.round(avgFrustracion * 10) / 10,
                 avgTiempoReaccion,
                 avgLatencia,
+                avgPresion: Math.round(avgPresion * 100) / 100,
+                consistencia: Math.round(consistencia),
+                trendReaccion: Math.round(trendReaccion),
+                trendFrustracion: Math.round(trendFrustracion),
+                estado,
+                fatigue,
                 ultimoIntento,
+            };
+
+            return {
+                ...summary,
+                insights: generateInsights(summary)
             };
         });
     }, [metricas]);
 
-    // Filtrado
-    const filteredPacientes = useMemo(() => {
-        if (!searchText.trim()) return pacientesAgrupados;
-        const q = searchText.toLowerCase();
-        return pacientesAgrupados.filter(p => p.nombre.toLowerCase().includes(q));
-    }, [pacientesAgrupados, searchText]);
+    // Filtrado y Ordenamiento Inteligente
+    const processedPacientes = useMemo(() => {
+        let list = [...pacientesAgrupados];
+        
+        // Filtro
+        if (searchText.trim()) {
+            const q = searchText.toLowerCase();
+            list = list.filter(p => p.nombre.toLowerCase().includes(q));
+        }
+
+        // Orden
+        list.sort((a, b) => {
+            if (sortOrder === 'risk') return (b.estado.level || 0) - (a.estado.level || 0);
+            if (sortOrder === 'name') return a.nombre.localeCompare(b.nombre);
+            if (sortOrder === 'attempts') return b.totalIntentos - a.totalIntentos;
+            if (sortOrder === 'date') return new Date(b.ultimoIntento?.fecha_registro) - new Date(a.ultimoIntento?.fecha_registro);
+            return 0;
+        });
+
+        return list;
+    }, [pacientesAgrupados, searchText, sortOrder]);
 
     // Cards de resumen global
     const totalIntentos = metricas.length;
@@ -187,7 +258,7 @@ const MetricasPage = () => {
             {/* Cards de resumen */}
             <div className="metricas-cards">
                 <div className="metricas-card metricas-card--azul">
-                    <div className="metricas-card__icon metricas-card__icon--azul">
+                    <div className="metricas-card__icon">
                         <BarChart3 size={22} />
                     </div>
                     <div className="metricas-card__info">
@@ -197,7 +268,7 @@ const MetricasPage = () => {
                 </div>
 
                 <div className="metricas-card metricas-card--amarillo">
-                    <div className="metricas-card__icon metricas-card__icon--amarillo">
+                    <div className="metricas-card__icon">
                         <AlertTriangle size={22} />
                     </div>
                     <div className="metricas-card__info">
@@ -207,7 +278,7 @@ const MetricasPage = () => {
                 </div>
 
                 <div className="metricas-card metricas-card--rojo">
-                    <div className="metricas-card__icon metricas-card__icon--rojo">
+                    <div className="metricas-card__icon">
                         <Clock size={22} />
                     </div>
                     <div className="metricas-card__info">
@@ -217,86 +288,112 @@ const MetricasPage = () => {
                 </div>
             </div>
 
-            {/* Buscador */}
-            <div className="tico-toolbar" style={{ marginBottom: '1rem' }}>
-                <div className="tico-toolbar-left">
-                    <div style={{ position: 'relative' }}>
-                        <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
-                        <input
-                            type="text"
-                            placeholder="Buscar paciente..."
-                            className="tico-search"
-                            style={{ paddingLeft: '34px' }}
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                        />
-                    </div>
+            {/* Buscador y Filtros */}
+            <div className="tico-toolbar" style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>
+                    <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre de paciente..."
+                        className="tico-search"
+                        style={{ paddingLeft: '34px', width: '100%', borderRadius: '12px' }}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                    />
+                </div>
+                
+                <div className="sort-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b' }}>Ordenar por:</span>
+                    <button 
+                        className={`sort-btn ${sortOrder === 'risk' ? 'active' : ''}`} 
+                        onClick={() => setSortOrder('risk')}
+                    >✨ Riesgo</button>
+                    <button 
+                        className={`sort-btn ${sortOrder === 'date' ? 'active' : ''}`} 
+                        onClick={() => setSortOrder('date')}
+                    >Reciente</button>
+                    <button 
+                        className={`sort-btn ${sortOrder === 'attempts' ? 'active' : ''}`} 
+                        onClick={() => setSortOrder('attempts')}
+                    >Intentos</button>
                 </div>
             </div>
 
             {/* Lista de pacientes como tarjetas */}
-            {filteredPacientes.length === 0 ? (
+            {processedPacientes.length === 0 ? (
                 <div className="metricas-empty">
                     <Activity size={40} strokeWidth={1.5} />
-                    <p>No se encontraron pacientes con métricas registradas.</p>
+                    <p>No se encontraron pacientes registrados.</p>
                 </div>
             ) : (
                 <div className="metricas-pacientes-grid">
-                    {filteredPacientes.map(p => (
-                        <div
-                            key={p.id}
-                            className="metricas-paciente-card"
-                            onClick={() => openDetail(p.id)}
-                        >
-                            <div className="metricas-paciente-card__header">
-                                <div className="metricas-paciente-card__avatar">
-                                    {getInitials(p.nombre)}
-                                </div>
-                                <div className="metricas-paciente-card__name-section">
-                                    <span className="metricas-paciente-card__name">{p.nombre}</span>
-                                    <span className="metricas-paciente-card__subtitle">
-                                        {p.totalIntentos} intento{p.totalIntentos !== 1 ? 's' : ''} registrado{p.totalIntentos !== 1 ? 's' : ''}
-                                    </span>
-                                </div>
-                                <ChevronRight size={18} className="metricas-paciente-card__chevron" />
-                            </div>
-
-                            <div className="metricas-paciente-card__stats">
-                                <div className="metricas-paciente-card__stat">
-                                    <span className="metricas-paciente-card__stat-label">Frustración</span>
-                                    <div className="metricas-paciente-card__stat-bar-wrap">
-                                        <div
-                                            className="metricas-paciente-card__stat-bar"
-                                            style={{
-                                                width: `${Math.min((p.avgFrustracion / 5) * 100, 100)}%`,
-                                                backgroundColor: getFrustColor(p.avgFrustracion),
-                                            }}
-                                        />
+                    {processedPacientes.map(p => {
+                        const criticalInsight = p.insights.find(i => i.type === 'danger' || i.type === 'warning');
+                        const reaccionData = p.intentos.map(i => i.tiempo_reaccion_ms || 0).slice(-10);
+                        
+                        return (
+                            <div
+                                key={p.id}
+                                className={`metricas-paciente-card metricas-paciente-card--state-${p.estado.label.toLowerCase()}`}
+                                onClick={() => openDetail(p.id)}
+                            >
+                                <div className="metricas-paciente-card__state-marker" style={{ backgroundColor: p.estado.color }} />
+                                
+                                <div className="metricas-paciente-card__header">
+                                    <div className="metricas-paciente-card__avatar">
+                                        {getInitials(p.nombre)}
                                     </div>
-                                    <span className="metricas-paciente-card__stat-value" style={{ color: getFrustColor(p.avgFrustracion) }}>
-                                        {p.avgFrustracion} — {getFrustLabel(p.avgFrustracion)}
-                                    </span>
-                                </div>
-
-                                <div className="metricas-paciente-card__stat-row">
-                                    <div className="metricas-paciente-card__stat-chip">
-                                        <Clock size={13} />
-                                        <span>Reacción: <strong>{formatMs(p.avgTiempoReaccion)}</strong></span>
+                                    <div className="metricas-paciente-card__name-section">
+                                        <div className="metricas-paciente-card__name">{p.nombre}</div>
+                                        <div className="metricas-paciente-card__info-row">
+                                            <span className="info-chip">{p.totalIntentos} Int.</span>
+                                            <span className="info-chip" style={{ color: p.estado.color, fontWeight: '800' }}>{p.estado.label}</span>
+                                        </div>
                                     </div>
-                                    <div className="metricas-paciente-card__stat-chip">
-                                        <Zap size={13} />
-                                        <span>Latencia: <strong>{formatMs(p.avgLatencia)}</strong></span>
+                                    <div className="card-sparkline">
+                                        <Sparkline data={reaccionData} color={p.estado.color} />
                                     </div>
                                 </div>
 
-                                {p.ultimoIntento && (
-                                    <div className="metricas-paciente-card__last">
-                                        Último: {formatDate(p.ultimoIntento.fecha_registro)}
+                                <div className="metricas-paciente-card__grid">
+                                    <div className="metric-item">
+                                        <span className="metric-item__label">Prom. Reacción</span>
+                                        <div className="metric-item__value-row">
+                                            <span className="metric-item__value">{formatMs(p.avgTiempoReaccion)}</span>
+                                            {p.trendReaccion !== 0 && (
+                                                <span className={`metric-item__trend ${p.trendReaccion > 0 ? 'bad' : 'good'}`}>
+                                                    {p.trendReaccion > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="metric-item">
+                                        <span className="metric-item__label">Frustración</span>
+                                        <div className="metric-item__value-row">
+                                            <span className="metric-item__value">{p.avgFrustracion}</span>
+                                            {p.trendFrustracion !== 0 && (
+                                                <span className={`metric-item__trend ${p.trendFrustracion > 0 ? 'bad' : 'good'}`}>
+                                                    {p.trendFrustracion > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {criticalInsight && (
+                                    <div className={`card-insight-bar insight--${criticalInsight.type}`}>
+                                        <AlertTriangle size={12} />
+                                        <span>{criticalInsight.text}</span>
                                     </div>
                                 )}
+
+                                <div className="metricas-paciente-card__footer">
+                                    <span>Último: {formatDate(p.ultimoIntento?.fecha_registro).split(',')[0]}</span>
+                                    <ChevronRight size={14} />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -330,79 +427,124 @@ const MetricasPage = () => {
                             </div>
                         ) : (
                             <>
-                                {/* Mini gráfica de evolución */}
-                                <div className="detail-section-title">Evolución de Intentos</div>
-                                <div className="detail-chart-wrapper">
-                                    <div className="detail-chart">
-                                        {chartData.map((m, i) => (
-                                            <div key={m.id} className="detail-chart__bar-group">
-                                                <div className="detail-chart__bars">
-                                                    <div
-                                                        className="detail-chart__bar detail-chart__bar--reaccion"
-                                                        style={{ height: `${m.reaccionPct}%` }}
-                                                        title={`Reacción: ${formatMs(m.tiempo_reaccion_ms)}`}
-                                                    />
-                                                    <div
-                                                        className="detail-chart__bar detail-chart__bar--frust"
-                                                        style={{ height: `${m.frustPct}%` }}
-                                                        title={`Frustración: ${m.frustracion}`}
-                                                    />
-                                                </div>
-                                                <span className="detail-chart__label">#{i + 1}</span>
+                                {/* Resumen de KPIs */}
+                                <div className="desglose-kpis">
+                                    <div className="desglose-kpi">
+                                        <span className="desglose-kpi__label">Prom. Reacción</span>
+                                        <span className="desglose-kpi__value">{formatMs(selectedPaciente?.avgTiempoReaccion)}</span>
+                                    </div>
+                                    <div className="desglose-kpi">
+                                        <span className="desglose-kpi__label">Consistencia</span>
+                                        <span className="desglose-kpi__value" style={{ color: selectedPaciente?.consistencia > 500 ? '#f59e0b' : '#22c55e' }}>
+                                            {selectedPaciente?.consistencia > 500 ? 'Baja' : 'Alta'}
+                                        </span>
+                                    </div>
+                                    <div className="desglose-kpi">
+                                        <span className="desglose-kpi__label">Frustración</span>
+                                        <span className="desglose-kpi__value">{selectedPaciente?.avgFrustracion} / 5</span>
+                                    </div>
+                                    <div className="desglose-kpi">
+                                        <span className="desglose-kpi__label">Estado Actual</span>
+                                        <span className="desglose-kpi__badge" style={{ backgroundColor: selectedPaciente?.estado.color }}>
+                                            {selectedPaciente?.estado.label}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Recomendaciones / Insights */}
+                                {selectedPaciente?.insights.length > 0 && (
+                                    <div className="desglose-insights">
+                                        {selectedPaciente.insights.map((insight, idx) => (
+                                            <div key={idx} className={`desglose-insight desglose-insight--${insight.type}`}>
+                                                {insight.type === 'success' ? <Activity size={14} /> : <AlertTriangle size={14} />}
+                                                <span>{insight.text}</span>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="detail-chart__legend">
-                                        <div className="detail-chart__legend-item">
-                                            <span className="detail-chart__legend-dot" style={{ backgroundColor: '#3b82f6' }} />
-                                            Tiempo reacción
+                                )}
+
+                                {/* Gráficas Separadas */}
+                                <div className="desglose-charts-grid">
+                                    <div className="desglose-chart-container">
+                                        <div className="detail-section-title">Tiempo de Reacción (ms)</div>
+                                        <div className="detail-chart-wrapper">
+                                            <div className="detail-chart detail-chart--reaccion">
+                                                {chartData.map((m, i) => (
+                                                    <div key={m.id} className="detail-chart__bar-group">
+                                                        <div
+                                                            className="detail-chart__bar detail-chart__bar--reaccion"
+                                                            style={{ height: `${m.reaccionPct}%` }}
+                                                            title={`Reacción: ${formatMs(m.tiempo_reaccion_ms)}`}
+                                                        />
+                                                        <span className="detail-chart__label">#{i + 1}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="detail-chart__legend-item">
-                                            <span className="detail-chart__legend-dot" style={{ backgroundColor: '#f97316' }} />
-                                            Frustración
+                                    </div>
+                                    <div className="desglose-chart-container">
+                                        <div className="detail-section-title">Nivel de Frustración</div>
+                                        <div className="detail-chart-wrapper">
+                                            <div className="detail-chart detail-chart--frust">
+                                                {chartData.map((m, i) => (
+                                                    <div key={m.id} className="detail-chart__bar-group">
+                                                        <div
+                                                            className="detail-chart__bar detail-chart__bar--frust"
+                                                            style={{ height: `${m.frustPct}%`, backgroundColor: getFrustColor(m.frustracion) }}
+                                                            title={`Frustración: ${m.frustracion}`}
+                                                        />
+                                                        <span className="detail-chart__label">#{i + 1}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Tabla de intentos */}
-                                <div className="detail-section-title">Historial de Intentos</div>
+                                <div className="detail-section-title">Historial Detallado</div>
                                 <div className="detail-table-container">
                                     <table className="detail-table">
                                         <thead>
                                             <tr>
-                                                <th>#</th>
-                                                <th>Fecha</th>
-                                                <th>Frustración</th>
-                                                <th>Latencia</th>
+                                                <th>Intento</th>
+                                                <th>Fecha / Hora</th>
+                                                <th>Frust.</th>
                                                 <th>Presión</th>
                                                 <th>T. Reacción</th>
+                                                <th>Estado</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {detailMetricas.map((m, i) => (
-                                                <tr key={m.id}>
-                                                    <td className="detail-table__num">{i + 1}</td>
-                                                    <td>{formatDate(m.fecha_registro)}</td>
-                                                    <td>
-                                                        <span
-                                                            className="detail-frust-badge"
-                                                            style={{
-                                                                backgroundColor: getFrustColor(m.frustracion) + '20',
-                                                                color: getFrustColor(m.frustracion),
-                                                            }}
-                                                        >
-                                                            {m.frustracion}
-                                                        </span>
-                                                    </td>
-                                                    <td>{formatMs(m.latencia_ms)}</td>
-                                                    <td>{m.presion_toque != null ? Number(m.presion_toque).toFixed(2) : '—'}</td>
-                                                    <td>
-                                                        <span className="detail-reaccion-value">
-                                                            {formatMs(m.tiempo_reaccion_ms)}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {detailMetricas.map((m, i) => {
+                                                const isCritical = m.frustracion >= 4 || (m.tiempo_reaccion_ms > 2000);
+                                                return (
+                                                    <tr key={m.id} className={isCritical ? 'row-critical' : ''}>
+                                                        <td className="detail-table__num">#{i + 1}</td>
+                                                        <td>{formatDate(m.fecha_registro)}</td>
+                                                        <td>
+                                                            <span
+                                                                className="detail-frust-badge"
+                                                                style={{
+                                                                    backgroundColor: getFrustColor(m.frustracion) + '20',
+                                                                    color: getFrustColor(m.frustracion),
+                                                                }}
+                                                            >
+                                                                {m.frustracion}
+                                                            </span>
+                                                        </td>
+                                                        <td>{m.presion_toque != null ? Number(m.presion_toque).toFixed(2) : '—'}</td>
+                                                        <td className="detail-reaccion-value">{formatMs(m.tiempo_reaccion_ms)}</td>
+                                                        <td>
+                                                            {isCritical ? (
+                                                                <span className="critico-badge">Atención</span>
+                                                            ) : (
+                                                                <span className="normal-badge">Normal</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
