@@ -484,7 +484,7 @@ const CitasPage = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
+                        <div className="tico-edit-actions">
                             <button className="tico-btn tico-btn-outline" onClick={() => { setModalNueva(false); setFormErrors({}); }}>Cancelar</button>
                             <button className="tico-btn tico-btn-primary" onClick={handleAgregarCita}>
                                 Agregar cita

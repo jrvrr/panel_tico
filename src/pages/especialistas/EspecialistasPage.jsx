@@ -201,15 +201,15 @@ const FormBody = ({
     handleVerificarCedula,
 }) => (
     <div className="tico-form-stack esp-single-col-compact">
-        {/* Header Compacto con Foto */}
-        <div className="esp-form-row esp-align-center" style={{ marginBottom: '0.5rem' }}>
+        {/* Foto Centrada */}
+        <div className="esp-foto-centered-wrap">
             <div className="esp-foto-preview-wrap-xxs">
                 {formData.foto_url
                     ? <img src={formData.foto_url} alt="preview" className="esp-foto-preview-xxs" />
                     : <div className="esp-foto-initials-xxs">{getInitials(formData.nombre) || '?'}</div>
                 }
                 <label className="esp-foto-camera-btn-xxs" onClick={() => fileInputRef.current?.click()}>
-                    <Camera size={8} />
+                    <Camera size={14} />
                 </label>
                 <input
                     ref={fileInputRef}
@@ -219,17 +219,20 @@ const FormBody = ({
                     onChange={handleFotoChange}
                 />
             </div>
-            <label className="esp-label-compact" style={{ marginBottom: 0 }}>Nombre(s) *
-                <input
-                    className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`}
-                    placeholder="Nombre"
-                    value={formData.nombre}
-                    maxLength={20}
-                    onChange={e => handleFormChange('nombre', e.target.value)}
-                    onBlur={() => handleBlur && handleBlur('nombre')}
-                />
-            </label>
+            <p className="tico-form-hint" style={{ marginTop: '0.2rem' }}>Toca para cambiar foto</p>
         </div>
+
+        <label className="esp-label-compact">Nombre(s) *
+            <input
+                className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`}
+                placeholder="Nombre"
+                value={formData.nombre}
+                maxLength={20}
+                onChange={e => handleFormChange('nombre', e.target.value)}
+                onBlur={() => handleBlur && handleBlur('nombre')}
+            />
+        </label>
+
         {formErrors.nombre && <span className="tico-field-error" style={{ marginTop: '-4px' }}>{formErrors.nombre}</span>}
 
         <div className="esp-form-row">
@@ -1043,6 +1046,9 @@ const EspecialistasPage = () => {
                         </div>
 
                         <div className="tico-modal-body">
+                            <div className="esp-modal-banner-blue">
+                                <span>Registrar especialista</span>
+                            </div>
                             <p className="tico-form-hint">* Campos obligatorios</p>
                             <FormBody isEdit={false} {...formBodyProps} />
                         </div>

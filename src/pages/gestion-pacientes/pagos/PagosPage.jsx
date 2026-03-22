@@ -684,9 +684,9 @@ const PagosPage = () => {
                 <div className="tico-modal-overlay" onClick={() => { setModalNuevo(false); setFormStep(1); }}>
                     <div className="tico-modal tico-payment-modal-width" onClick={(e) => e.stopPropagation()}>
                         
-                        <div className="tico-payment-modal-header">
-                            <h2 className="tico-payment-modal-title">Registrar Pago</h2>
-                            <button className="tico-payment-modal-close" onClick={() => { setModalNuevo(false); setFormStep(1); }}>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Registrar Pago</h2>
+                            <button className="tico-modal-close" onClick={() => setModalNuevo(false)}>
                                 <X size={20} />
                             </button>
                         </div>
@@ -908,9 +908,9 @@ const PagosPage = () => {
                 <div className="tico-modal-overlay" onClick={() => setModalDetalle(null)}>
                     <div className="tico-modal tico-payment-modal-width" onClick={(e) => e.stopPropagation()}>
                         
-                        <div className="tico-payment-modal-header">
-                            <h2 className="tico-payment-modal-title">Detalle de Pago</h2>
-                            <button className="tico-payment-modal-close" onClick={() => setModalDetalle(null)}>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Detalle de Pago</h2>
+                            <button className="tico-modal-close" onClick={() => setModalDetalle(null)}>
                                 <X size={20} />
                             </button>
                         </div>

@@ -55,8 +55,8 @@
 }
 
 .cita-btn-nuevo:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 16px rgba(57, 113, 184, 0.32);
+    transform: none !important;
+    box-shadow: 0 5px 16px rgba(57, 113, 184, 0.32) !important;
 }
 
 /* ── Toolbar ── */

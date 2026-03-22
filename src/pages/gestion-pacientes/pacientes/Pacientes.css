@@ -60,8 +60,9 @@
 }
 
 .tico-btn-nuevo:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(57, 113, 184, 0.50);
+    background: #3971b8 !important;
+    box-shadow: 0 4px 10px rgba(57, 113, 184, 0.3) !important;
+    transform: none !important;
 }
 
 .tico-btn-nuevo:active {
@@ -134,6 +135,9 @@
     background-color: var(--tico-primary);
     color: white;
     box-shadow: 0 4px 6px -1px rgba(57, 113, 184, 0.3);
+    padding: 0.8rem 2.2rem !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
 }
 
 .tico-btn-primary:hover {
@@ -145,6 +149,9 @@
     background-color: white;
     border: 1.5px solid var(--tico-border);
     color: var(--tico-text-muted);
+    padding: 0.8rem 2.2rem !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
 }
 
 .tico-btn-outline:hover {
@@ -174,8 +181,9 @@
 }
 
 .tico-btn-ver:hover {
-    background-color: var(--tico-primary-hover);
-    transform: translateY(-1px);
+    background: #f1f5f9 !important;
+    color: #3971b8 !important;
+    transform: none !important;
 }
 
 .tico-btn-edit {
@@ -196,8 +204,9 @@
 }
 
 .tico-btn-inhabilitar:hover {
-    background-color: #fecaca;
-    transform: translateY(-1px);
+    background: #fef2f2 !important;
+    color: #ef4444 !important;
+    transform: none !important;
 }
 
 .tico-btn-reactivar {
@@ -338,10 +347,10 @@
 .tico-modal-wide {
     width: min(900px, 96vw);
     max-height: 95vh;
-    overflow-y: auto;
-    padding: 1.75rem 2rem;
-    border-radius: 0;
+    overflow: hidden; /* Prevent padding issues */
+    border-radius: 20px !important;
     box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+    background: white;
 }
 
 /* Inputs rectangulares y compactos dentro del modal */
@@ -538,51 +547,99 @@
 }
 
 .tico-modal-header {
-    background: linear-gradient(135deg, #3971b8 0%, #5c93c9 100%);
-    padding: 1.5rem 2rem;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 1.5rem;
+    background: white !important;
+    padding: 1.5rem 2rem 0.5rem !important;
+    position: relative !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 !important;
+    min-height: 70px !important;
+    width: 100% !important;
+    z-index: 10 !important;
 }
 
+/* Specific selector to ensure title is visible */
+.tico-modal-header h2.tico-modal-title,
 .tico-modal-title {
-    text-align: center;
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: #ffffff;
-    margin: 0;
-    letter-spacing: -0.01em;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    text-align: center !important;
+    font-size: 1.75rem !important;
+    font-weight: 800 !important;
+    color: #4c7bc7 !important; /* Force the exact blue color */
+    margin: 0 auto !important;
+    padding: 0 !important;
+    letter-spacing: -0.01em !important;
+    flex: 1 !important;
 }
 
+.tico-btn-outline {
+    background: white !important;
+    color: var(--tico-text-muted) !important;
+    padding: 0.8rem 2.22rem !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    transform: none !important;
+}
+
+.tico-btn-outline:hover {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: var(--tico-text) !important;
+    transform: none !important; /* No movement on hover */
+}
+
+.tico-btn-outline:active {
+    transform: translateY(1px) scale(0.99) !important; /* Very subtle sink on click */
+}
 .tico-modal-close {
-    position: absolute;
-    top: 50%;
-    right: 1.5rem;
-    transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: #ffffff;
-    transition: all 0.2s;
-    z-index: 20;
+    position: absolute !important;
+    top: 50% !important;
+    right: 1.5rem !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    color: #94a3b8 !important;
+    z-index: 100 !important;
+}
+
+.tico-modal-close svg {
+    stroke-width: 3px !important;
+    color: #94a3b8 !important;
+    width: 18px !important;
+    height: 18px !important;
 }
 
 .tico-modal-close:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-50%) scale(1.1);
+    background: #e2e8f0 !important;
+    color: #64748b !important;
+    transform: scale(1.1) !important;
+}
+
+.tico-modal-close:hover svg {
+    color: #64748b !important;
 }
 
 .tico-modal-content {
-    padding: 0 2rem 2rem;
+    padding: 0.5rem 2rem 2rem !important;
     overflow-y: auto;
+    flex: 1;
 }
 
 .tico-modal-grid {
@@ -661,9 +718,10 @@
 }
 
 .tico-edit-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
+    display: flex !important;
+    gap: 1.5rem !important;
+    justify-content: center !important; /* Centered buttons */
+    padding: 1rem 0 !important;
 }
 
 /* ── Badges de estado (compartidos) ── */
@@ -1216,7 +1274,7 @@
 .tico-field-box:hover {
     background: #f1f5f9;
     border-color: #e2e8f0;
-    transform: translateY(-2px);
+    transform: none !important;
 }
 
 .tico-field-box.full-width {
@@ -1255,34 +1313,61 @@
 }
 
 .tico-modal-close-v2 {
-    position: absolute;
-    top: 1.25rem;
-    right: 1.25rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: white;
-    border: 1px solid #e2e8f0;
-    color: #64748b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    z-index: 20;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    position: absolute !important;
+    top: 1.25rem !important;
+    right: 1.25rem !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: white !important;
+    border: 1.5px solid #e2e8f0 !important;
+    color: #1e293b !important; /* Darker color for better visibility */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    z-index: 9999 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
+.tico-btn-primary {
+    background: linear-gradient(135deg, var(--tico-primary) 0%, #5c93c9 100%) !important;
+    color: white !important;
+    padding: 0.8rem 2.22rem !important;
+    border: 1.5px solid transparent !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    box-shadow: 0 4px 15px rgba(57, 113, 184, 0.2) !important;
+    transform: none !important; /* Stable by default */
+}
+
+.tico-btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(57, 113, 184, 0.3) !important;
+    transform: none !important; /* No movement on hover */
+    background: linear-gradient(135deg, #3d67a8 0%, #4c7bc7 100%) !important;
+}
+
+.tico-btn-primary:active {
+    transform: translateY(1px) scale(0.99) !important; /* Very subtle sink on click */
+    box-shadow: 0 2px 8px rgba(57, 113, 184, 0.2) !important;
+}
 .tico-modal-close-v2:hover {
-    background: #f8fafc;
-    color: #0f172a;
-    transform: rotate(90deg);
+    background: #f1f5f9 !important;
+    color: var(--tico-primary) !important;
+    transform: rotate(90deg) scale(1.1) !important;
 }
 
 .tico-profile-footer-v2 {
     padding: 1.5rem 2rem;
     display: flex;
-    justify-content: center;
     border-top: 1px solid #f1f5f9;
 }
 
