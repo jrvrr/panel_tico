@@ -7,12 +7,11 @@
 
 /* Header Perfil */
 .perfil-header {
-    margin-bottom: 2rem;
-    /*padding-bottom: 1.5rem;*/
+    margin-bottom: 1rem;
 }
 
 .perfil-title {
-    font-size: 1.75rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: #1e293b;
     letter-spacing: -0.025em;
@@ -47,13 +46,13 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
+    padding: 0.65rem 1.15rem;
     border: 2px solid transparent;
     border-bottom: none;
     background: transparent;
     color: #64748b;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     border-radius: 0.75rem 0.75rem 0 0;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -82,9 +81,9 @@
     border: 1px solid #e2e8f0;
     border-top: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
-    padding: 2.5rem;
-    margin-bottom: 2rem;
-    min-height: 400px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    min-height: 250px;
 }
 
 /* Secciones individuales (por pestaña) */
@@ -108,9 +107,9 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 1rem;
+    padding-bottom: 0.75rem;
 }
 
 .perfil-section-icon {
@@ -140,7 +139,7 @@
 .perfil-form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .perfil-form-grid-full {
@@ -167,12 +166,12 @@
 
 .perfil-input {
     width: 100%;
-    padding: 0.75rem 1rem;
-    border-radius: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.6rem;
     border: 1px solid #cbd5e1;
     background: #fff;
     color: #1e293b;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
@@ -183,10 +182,28 @@
     box-shadow: 0 0 0 3px rgba(57, 113, 184, 0.15);
 }
 
+.perfil-input:-webkit-autofill,
+.perfil-input:-webkit-autofill:hover,
+.perfil-input:-webkit-autofill:focus,
+.perfil-input:-webkit-autofill:active {
+    transition: background-color 5000s ease-in-out 0s;
+    -webkit-text-fill-color: #1e293b !important;
+}
+
 .perfil-input:disabled {
     background: #f8fafc;
     color: #94a3b8;
     cursor: not-allowed;
+}
+
+select.perfil-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.2em;
+    padding-right: 2.5rem;
+    background-color: #ffffff;
 }
 
 /* Toggle Switches */
@@ -210,6 +227,58 @@
 .perfil-toggle-info span {
     font-size: 0.8rem;
     color: #64748b;
+}
+
+/* Tico Switch Custom Checkbox */
+.tico-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+}
+
+.tico-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.tico-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .3s;
+    border-radius: 24px;
+}
+
+.tico-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tico-switch input:checked+.tico-slider {
+    background-color: #3971b8;
+}
+
+.tico-switch input:focus+.tico-slider {
+    box-shadow: 0 0 0 3px rgba(57, 113, 184, 0.2);
+}
+
+.tico-switch input:checked+.tico-slider:before {
+    transform: translateX(22px);
 }
 
 /* Fotos y URLs de Archivo */
@@ -241,7 +310,7 @@
     padding: 0.5rem;
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .perfil-btn-upload {
@@ -259,7 +328,7 @@
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     min-width: 160px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .perfil-btn-upload:hover:not(:disabled) {
@@ -302,11 +371,11 @@
 /* Profile Actions Bottom */
 .perfil-actions-bar {
     position: sticky;
-    bottom: 2rem;
+    bottom: 1rem;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(8px);
     border: 1px solid #e2e8f0;
-    padding: 1.25rem 2rem;
+    padding: 1rem 1.75rem;
     border-radius: 1rem;
     display: flex;
     align-items: center;
@@ -314,8 +383,7 @@
     gap: 1rem;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     z-index: 40;
-    margin-top: -1rem;
-    /* Acercar al content box */
+    margin-top: 0;
 }
 
 .perfil-btn-save {

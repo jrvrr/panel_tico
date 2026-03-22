@@ -6,12 +6,12 @@ import './LoadingScreen.css';
    Basado en la imagen: Rojo, Naranja, Amarillo, Púrpura oscuro
 ───────────────────────────────────────────── */
 const ZEN_COLORS = {
-    celeste: '#00FBFF',
-    blue: '#448AFF',
-    green: '#B2FF59',
+    celeste: '#6FBBB9',
+    blue: '#648688',
+    green: '#B9D2B1',
     yellow: '#FFEA00',
     orange: '#FFB74D',
-    pink: '#FF80AB',
+    pink: '#E7AFB5',
     red: '#FF1744',
     purple: '#4A148C'
 };
@@ -256,7 +256,7 @@ function Phase2SVG() {
 
 
             {/* ROSA – Animado (estiramiento desde el suelo) */}
-            <g transform="translate(50, 0)">
+            <g transform="translate(60, 0)">
                 <rect className="pink-body-anim" x="-120" y="175" width="185" height="205" rx="10" fill="#f990b3" />
 
                 {/* Ojos - escalan un poquito */}
@@ -278,43 +278,80 @@ function Phase2SVG() {
             </g>
 
             {/* ROJO – Encima del rosa, pero debajo del resto */}
-            <g className="red-spin" transform="translate(300 200) rotate(0) translate(-300 -200)">
-                <g fill="#fd312d">
-                    <g transform="translate(-50, -175) scale(11.5)">
-                        <path transform="translate(-568.24, -179.44)" d="M592.24,209.45c-7.81-.35-7.79-11.65,0-12,11.54-.52,11.61-18.52,0-18-13.09.58-23.87,10.52-24,24s11.09,23.42,24,24c11.59.52,11.56-17.48,0-18Z" />
-                        <rect x="21" y="0.25" width="11.55" height="17.50" rx="3.57" stroke="#fd312d" strokeWidth="0.5" />
-                        <rect x="21" y="30.29" width="11.55" height="17.50" rx="3.57" stroke="#fd312d" strokeWidth="0.5" />
-                    </g>
-                </g>
+            {/* ROJO – órbita tipo planeta */}
+            <g transform="" className="orbit-spin relative rounded-2xl overflow-hidden">
 
-                {/* Cara kawaii */}
-                <g transform="translate(180, 100)">
-                    {/* Ojos */}
-                    <circle cx="23" cy="-220" r="5" fill="#222" />
-                    <circle cx="90" cy="-220" r="5" fill="#222" />
+                {/* Distancia desde el centro → radio de la órbita */}
+                <g transform="translate(0 0)" className='red-spin'>
 
-                    {/* Boca */}
-                    <g transform="translate(56, -205)">
-                        <path
-                            d="M -15 -10 Q 0 10 15 -10"
-                            stroke="#222"
-                            strokeWidth="4.5"
+                    {/* <g fill="#fd312d">
+                        <g transform="translate(-50, -175) scale(11.5)">
+                            <path transform="translate(-568.24, -179.44)" d="M592.24,209.45c-7.81-.35-7.79-11.65,0-12,11.54-.52,11.61-18.52,0-18-13.09.58-23.87,10.52-24,24s11.09,23.42,24,24c11.59.52,11.56-17.48,0-18Z" />
+                            <rect x="21" y="0.25" width="11.55" height="17.50" rx="3.57" stroke="#fd312d" strokeWidth="0.5" />
+                            <rect x="21" y="30.29" width="11.55" height="17.50" rx="3.57" stroke="#fd312d" strokeWidth="0.5" />
+                        </g>
+                    </g> */}
+
+                    <g transform="translate(0,0)" className=''>
+                        <path className=''
+                            d="M -150 0 A 150 150 0 0 1 150 0"
                             fill="none"
-                            strokeLinecap="round"
+                            stroke="#fd312d"
+                            strokeWidth="200"
                         />
+
+                        {/* <circle cx="75" cy="0" r="25" fill="#fd312d" />
+                        <circle cx="225" cy="0" r="25" fill="#fd312d" /> */}
+                        <rect
+                            x="50"
+                            y="-25"
+                            width="200"
+                            height="50"
+                            rx="20"
+                            ry="20"
+                            fill="#fd312d"
+                        />
+
+                        <rect
+                            x="-250"
+                            y="-25"
+                            width="200"
+                            height="50"
+                            rx="20"
+                            ry="20"
+                            fill="#fd312d"
+                        />
+
+
                     </g>
 
-                    {/* Pelo */}
-                    <g transform="translate(-32, -85) scale(1.20)">
-                        <path
-                            fill="#222"
-                            stroke="#222"
-                            strokeWidth="0.09"
-                            strokeLinejoin="round"
-                            d="M693.19,314.69c-7.61,2.41-17.36,4-24.68-.18a11.7,11.7,0,0,1-5.33-6.27,5,5,0,0,1,.28-4.5,7.16,7.16,0,0,1,2.91-2.25,24.31,24.31,0,0,1,9.82-1.9,44.68,44.68,0,0,1,11,1,41.65,41.65,0,0,1,6.73,2.1,18.07,18.07,0,0,1,2.34,1.14c.24.14.46.31.69.45.44.25.12.34.3-.43s.26-.47,0-.48a4.19,4.19,0,0,0-.76.18,16,16,0,0,1-2.48.2,38.3,38.3,0,0,1-4.91-.15c-7.65-.74-15.13-4.57-21-9.38a34.09,34.09,0,0,1-6.92-7.27c-1.24-1.84-2.56-4.15-2.34-6.44.2-2.06,2.39-3.49,4.28-4.28a28,28,0,0,1,10.29-1.77,36.69,36.69,0,0,1,21.92,6.36c8.39,6,13.93,15.76,16.56,25.58.1.38.2.76.29,1.15.44,1.88,3.33,1.08,2.89-.8-2.41-10.37-8.24-20.75-16.67-27.35a39.26,39.26,0,0,0-24.45-7.95,31.54,31.54,0,0,0-11.75,1.94c-2.68,1.09-5.49,2.93-6.19,5.94-.64,2.78.48,5.67,1.88,8a34,34,0,0,0,7.31,8.34c6.61,5.63,14.86,9.92,23.58,10.87a38.23,38.23,0,0,0,5.56.17c1.52-.06,3.46-.07,4.78-.94a2.17,2.17,0,0,0,.14-3.52A15.26,15.26,0,0,0,694,299.5c-7.9-3-17.5-4.07-25.74-1.85-3,.81-6.4,2.34-7.81,5.33-1.59,3.39-.11,7.33,2,10.14,5.32,7.07,15.51,7.58,23.52,6.37a51.28,51.28,0,0,0,8-1.91c1.83-.58,1-3.47-.8-2.89Z"
-                            transform="translate(-620.79 -455.44)"
-                        />
+                    {/* Cara kawaii */}
+                    <g transform="translate(-100, 100)" className='face-rotating rotate-90'>
+                        <circle cx="23" cy="-220" r="5" fill="#222" />
+                        <circle cx="90" cy="-220" r="5" fill="#222" />
+
+                        <g transform="translate(56, -205) ">
+                            <path
+                                d="M -15 -10 Q 0 10 15 -10"
+                                stroke="#222"
+                                strokeWidth="4.5"
+                                fill="none"
+                                strokeLinecap="round"
+                            />
+                        </g>
+
+                        <g transform="translate(-32, -85) scale(1.20) ">
+                            <path
+                                fill="#222"
+                                stroke="#222"
+                                strokeWidth="0.09"
+                                strokeLinejoin="round"
+                                d="M693.19,314.69c-7.61,2.41-17.36,4-24.68-.18a11.7,11.7,0,0,1-5.33-6.27,5,5,0,0,1,.28-4.5,7.16,7.16,0,0,1,2.91-2.25,24.31,24.31,0,0,1,9.82-1.9,44.68,44.68,0,0,1,11,1,41.65,41.65,0,0,1,6.73,2.1,18.07,18.07,0,0,1,2.34,1.14c.24.14.46.31.69.45.44.25.12.34.3-.43s.26-.47,0-.48a4.19,4.19,0,0,0-.76.18,16,16,0,0,1-2.48.2,38.3,38.3,0,0,1-4.91-.15c-7.65-.74-15.13-4.57-21-9.38a34.09,34.09,0,0,1-6.92-7.27c-1.24-1.84-2.56-4.15-2.34-6.44.2-2.06,2.39-3.49,4.28-4.28a28,28,0,0,1,10.29-1.77,36.69,36.69,0,0,1,21.92,6.36c8.39,6,13.93,15.76,16.56,25.58.1.38.2.76.29,1.15.44,1.88,3.33,1.08,2.89-.8-2.41-10.37-8.24-20.75-16.67-27.35a39.26,39.26,0,0,0-24.45-7.95,31.54,31.54,0,0,0-11.75,1.94c-2.68,1.09-5.49,2.93-6.19,5.94-.64,2.78.48,5.67,1.88,8a34,34,0,0,0,7.31,8.34c6.61,5.63,14.86,9.92,23.58,10.87a38.23,38.23,0,0,0,5.56.17c1.52-.06,3.46-.07,4.78-.94a2.17,2.17,0,0,0,.14-3.52A15.26,15.26,0,0,0,694,299.5c-7.9-3-17.5-4.07-25.74-1.85-3,.81-6.4,2.34-7.81,5.33-1.59,3.39-.11,7.33,2,10.14,5.32,7.07,15.51,7.58,23.52,6.37a51.28,51.28,0,0,0,8-1.91c1.83-.58,1-3.47-.8-2.89Z"
+                                transform="translate(-620.79 -455.44)"
+                            />
+                        </g>
                     </g>
+
                 </g>
             </g>
 
@@ -439,8 +476,21 @@ export default function LoadingScreen({ onDone }) {
 
     useEffect(() => {
         // Fase de Carga Única: Progreso hasta 100% en 5 segundos
+        document.body.style.overflow = "hidden";
+        window.scrollTo(0, 0);
+
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "auto"
+        });
+
+        if ("scrollRestoration" in history) {
+            history.scrollRestoration = "manual";
+        }
+
         const start = Date.now();
-        const duration = 5000;
+        const duration = 6000;
 
         const animate = () => {
             const now = Date.now();
@@ -468,8 +518,23 @@ export default function LoadingScreen({ onDone }) {
             }, 850);
 
             // Fase 2 dura 4.5 segundos reales (total ~10s)
+
             setTimeout(() => setFadeOut(true), 4500);
             setTimeout(() => onDone?.(), 5200);
+            setTimeout(() => {
+                document.body.style.overflow = "inherit";
+                window.scrollTo(0, 0);
+
+                window.scrollTo({
+                    top: 0,
+                    left: 0,
+                    behavior: "auto"
+                });
+
+                if ("scrollRestoration" in history) {
+                    history.scrollRestoration = "manual";
+                }
+            }, 4500);
         }
     }, [progress, phase, onDone]);
 
@@ -478,17 +543,23 @@ export default function LoadingScreen({ onDone }) {
             {phase === 1 && (
                 <div className={`ls-phase1${exploding ? ' ls-explode' : ''}`}>
                     <ZenCircleSVG progress={progress} />
-                    <div className="ls-cargando">conectando con tu espacio</div>
+                    <div className="ls-cargando lg:text-3xl!">Conectando con tu espacio</div>
                 </div>
             )}
             {phase === 2 && (
                 <div className="ls-phase2">
-                    <Phase2SVG />
-                    <div className="ls-phase2-label">
-                        Preparando tu panel&nbsp;
-                        <span className="ls-dots">
-                            <span>.</span><span>.</span><span>.</span>
-                        </span>
+                    <div className='relative top-16 flex flex-wrap justify-center items-start w-full gap-8'>
+                        <div className='w-full flex flex-wrap justify-center'>
+                            <div className='relative *:relative *:left-30 scale-50 lg:scale-none'>
+                                <Phase2SVG />
+                                <div className="ls-phase2-label left-0! w-full text-center visible  mt-10">
+                                    <span className='opacity-70 text-3xl'>Preparando todo</span>&nbsp;
+                                    <span className="ls-dots">
+                                        <span>.</span><span>.</span><span>.</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

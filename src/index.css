@@ -1,3 +1,9 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: ["light"];
+}
+
 /* CSS Reset básico (reemplazo de Tailwind Preflight) */
 *,
 *::before,
@@ -43,4 +49,17 @@ button,
   appearance: button;
   -webkit-appearance: button;
   background-image: none;
+}
+
+/* Restore native appearance for checkboxes and radios that tailwind/daisyui resets */
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+  accent-color: #3971b8 !important;
+  cursor: pointer;
+  /* Reset DaisyUI specific properties that might stay black */
+  background-image: none !important;
+  background-color: transparent !important;
+  border: 1px solid #ccc !important;
 }

@@ -68,19 +68,19 @@
     margin-bottom: 0.75rem;
     padding: 0.6rem 0.8rem;
     background: white;
-    border: 1px solid var(--cita-border);
-    border-radius: 10px;
+    border: 1px solid rgb(185 185 185 / 90%);
+    border-radius: 15px;
 }
 
 .cita-search {
     flex: 1;
     min-width: 140px;
     padding: 0.42rem 0.9rem;
-    border: 1px solid var(--cita-border);
-    border-radius: 20px;
+    border: 1px solid rgb(185 185 185 / 90%);
+    border-radius: 15px;
     font-size: 0.82rem;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
 }
 
 .cita-search:focus {
@@ -89,8 +89,8 @@
 
 .cita-filter-select {
     padding: 0.42rem 0.7rem;
-    border: 1px solid var(--cita-border);
-    border-radius: 8px;
+    border: 1px solid rgb(185 185 185 / 90%);
+    border-radius: 15px;
     font-size: 0.8rem;
     color: var(--cita-text);
     background: white;
@@ -399,13 +399,13 @@
 
 .cita-edit-input {
     width: 100%;
-    padding: 0.42rem 0.65rem;
-    border: 1px solid var(--cita-border);
-    border-radius: 4px;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid rgb(185 185 185 / 90%);
+    border-radius: 15px;
     font-size: 0.83rem;
     font-family: inherit;
     color: var(--cita-text);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
 }
 
 .cita-edit-input:focus {

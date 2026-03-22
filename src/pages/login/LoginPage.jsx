@@ -44,11 +44,11 @@ const LoginPage = () => {
 
         if (step === 1) {
             if (!email.trim() || !password) {
-                setError('Completa todos los campos');
+                setError("Completa todos los campos");
                 return;
             }
             if (!captchaValido) {
-                setError('Por favor, completa el ReCAPTCHA verificando que no eres un robot');
+                setError("Por favor, completa el ReCAPTCHA verificando que no eres un robot");
                 return;
             }
 
@@ -68,7 +68,7 @@ const LoginPage = () => {
                 const msg = err.message || 'Credenciales inválidas';
                 setError(msg);
                 addNotification({
-                    titulo: 'Error de inicio de sesión',
+                    titulo: "Error en el inicio de sesión",
                     mensaje: msg,
                     nivel: 'error'
                 });
@@ -80,7 +80,7 @@ const LoginPage = () => {
         } else {
             // Paso 2: Autenticación de doble factor
             if (!code2fa || code2fa.length < 6) {
-                setError('Ingresa el código de 6 dígitos');
+                setError("Ingresa el código de 6 dígitos");
                 return;
             }
 
@@ -127,17 +127,16 @@ const LoginPage = () => {
                     </h1>
 
                     <p className="login-desc">
-                        Plataforma integral para el seguimiento de pacientes,
-                        citas, pagos y especialistas del Centro Terapéutico.
+                        Plataforma integral para el seguimiento de pacientes, citas, pagos y especialistas del Centro Terapéutico.
                     </p>
                 </div>
 
                 <div className="login-right">
                     <div className="login-form-area">
                         <div className="login-card-header">
-                            <h2 className="login-card-title">{step === 1 ? 'Iniciar sesión' : 'Doble factor'}</h2>
+                            <h2 className="login-card-title">{step === 1 ? "Iniciar sesión" : "Doble factor"}</h2>
                             <p className="login-card-subtitle">
-                                {step === 1 ? 'Centro Terapéutico' : 'Paso adicional de seguridad'}
+                                {step === 1 ? "Centro Terapéutico" : "Paso adicional de seguridad"}
                             </p>
                         </div>
 
@@ -154,6 +153,7 @@ const LoginPage = () => {
                                                 type="email"
                                                 className={`login-input${error ? ' error' : ''}`}
                                                 placeholder="ejemplo@tico.mx"
+                                                maxLength={30}
                                                 value={email}
                                                 onChange={e => { setEmail(e.target.value); setError(''); }}
                                                 autoComplete="email"
@@ -172,6 +172,7 @@ const LoginPage = () => {
                                                 type={showPwd ? 'text' : 'password'}
                                                 className={`login-input${error ? ' error' : ''}`}
                                                 placeholder="Tu contraseña"
+                                                maxLength={15}
                                                 value={password}
                                                 onChange={e => { setPassword(e.target.value); setError(''); }}
                                                 autoComplete="current-password"
@@ -241,8 +242,8 @@ const LoginPage = () => {
 
                             <button type="submit" className="login-submit" disabled={loading || (step === 1 && !captchaValido)}>
                                 {loading
-                                    ? <><div className="login-spinner" /> Verificando…</>
-                                    : (step === 1 ? 'Iniciar sesión' : 'Verificar código')
+                                    ? <><div className="login-spinner" /> Verificando...</>
+                                    : (step === 1 ? "Iniciar sesión" : "Verificar código")
                                 }
                             </button>
                         </form>

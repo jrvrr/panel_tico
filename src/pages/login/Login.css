@@ -357,6 +357,14 @@
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus,
+.login-input:-webkit-autofill:active {
+    transition: background-color 5000s ease-in-out 0s;
+    -webkit-text-fill-color: #111827 !important;
+}
+
 .login-input.error {
     background: rgba(254, 226, 226, 0.6);
     border-color: rgba(239, 68, 68, 0.5);
@@ -570,6 +578,39 @@
     margin-top: 1.75rem;
     font-size: 0.7rem;
     color: rgba(17, 24, 39, 0.35);
+}
+
+.login-lang-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.login-lang-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(17, 24, 39, 0.4);
+    transition: all 0.2s;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.login-lang-btn:hover {
+    color: #111827;
+}
+
+.login-lang-btn.active {
+    color: #367fdf;
+    background: rgba(54, 127, 223, 0.1);
+}
+
+.login-lang-divider {
+    color: rgba(17, 24, 39, 0.2);
 }
 
 /* ─── Responsive ─── */

@@ -1,0 +1,170 @@
+/* ── HorarioEditor ─────────────────────────────────────────── */
+
+.horario-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Fila por día */
+.horario-dia-row {
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.horario-dia-activo {
+    background: #f0f6ff;
+    border-color: #bfdbfe;
+}
+
+.horario-dia-cerrado {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    opacity: 0.85;
+}
+
+/* Header del día: toggle + nombre */
+.horario-dia-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.horario-switch {
+    flex-shrink: 0;
+}
+
+.horario-dia-nombre {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e293b;
+    min-width: 90px;
+}
+
+.horario-dia-nombre-off {
+    color: #94a3b8;
+}
+
+.horario-cerrado-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94a3b8;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+
+/* Área de turnos */
+.horario-turnos {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-left: 0.25rem;
+}
+
+/* Una fila de turno: Desde --- Hasta [x] */
+.horario-turno-fila {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.horario-time-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.horario-time-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.horario-time-input {
+    padding: 0.45rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: #1e293b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 110px;
+    cursor: pointer;
+}
+
+.horario-time-input:focus {
+    outline: none;
+    border-color: #3971b8;
+    box-shadow: 0 0 0 3px rgba(57, 113, 184, 0.15);
+}
+
+.horario-separator {
+    font-size: 1rem;
+    color: #94a3b8;
+    padding-bottom: 0.45rem;
+}
+
+/* Botón eliminar turno */
+.horario-btn-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #fecaca;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: #ef4444;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
+    margin-bottom: 0.1rem;
+}
+
+.horario-btn-remove:hover {
+    background: #fee2e2;
+    transform: scale(1.05);
+}
+
+/* Botón agregar turno */
+.horario-btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #3971b8;
+    background: transparent;
+    border: 1px dashed #93c5fd;
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    margin-top: 0.15rem;
+    width: fit-content;
+}
+
+.horario-btn-add:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+    .horario-turno-fila {
+        gap: 0.4rem;
+    }
+    .horario-time-input {
+        min-width: 95px;
+    }
+}

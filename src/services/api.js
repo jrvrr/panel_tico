@@ -228,7 +228,12 @@ export const updateEspecialista = async (id, especialista) => {
         body: JSON.stringify(especialista),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Error al actualizar especialista');
+    if (!res.ok) {
+        if (data.errors && data.errors.length > 0) {
+            throw new Error(data.errors[0].msg || 'Error de validación');
+        }
+        throw new Error(data.message || 'Error al actualizar especialista');
+    }
     return data;
 };
 

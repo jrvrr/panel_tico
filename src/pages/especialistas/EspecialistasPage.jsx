@@ -11,6 +11,10 @@ import {
 import { useNotifications } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import PageLoader from '../../components/PageLoader';
+import { normalizeDateInput } from '../../utils/dateHelper';
+import TicoDateInput from '../../components/TicoDateInput';
+
+
 
 // ── Roles (espejo de la BD) ──────────────────────────────────────────────────
 const ESPECIALIDADES = [
@@ -197,12 +201,8 @@ const FormBody = ({
     handleVerificarCedula,
 }) => (
     <div className="tico-form-stack esp-single-col-compact">
-        <p className="esp-form-section" style={{ marginTop: '0' }}>
-            <ShieldCheck size={14} /> DATOS DEL ESPECIALISTA
-        </p>
-
-        {/* Foto centrada arriba */}
-        <div className="esp-foto-centered-wrap">
+        {/* Header Compacto con Foto */}
+        <div className="esp-form-row esp-align-center" style={{ marginBottom: '0.5rem' }}>
             <div className="esp-foto-preview-wrap-xxs">
                 {formData.foto_url
                     ? <img src={formData.foto_url} alt="preview" className="esp-foto-preview-xxs" />
@@ -219,18 +219,17 @@ const FormBody = ({
                     onChange={handleFotoChange}
                 />
             </div>
+            <label className="esp-label-compact" style={{ marginBottom: 0 }}>Nombre(s) *
+                <input
+                    className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`}
+                    placeholder="Nombre"
+                    value={formData.nombre}
+                    maxLength={20}
+                    onChange={e => handleFormChange('nombre', e.target.value)}
+                    onBlur={() => handleBlur && handleBlur('nombre')}
+                />
+            </label>
         </div>
-
-        <label className="esp-label-compact">Nombre(s) *
-            <input
-                className={`tico-edit-input${formErrors.nombre ? ' tico-input-error' : ''}`}
-                placeholder="Nombre"
-                value={formData.nombre}
-                maxLength={15}
-                onChange={e => handleFormChange('nombre', e.target.value)}
-                onBlur={() => handleBlur && handleBlur('nombre')}
-            />
-        </label>
         {formErrors.nombre && <span className="tico-field-error" style={{ marginTop: '-4px' }}>{formErrors.nombre}</span>}
 
         <div className="esp-form-row">
@@ -255,98 +254,105 @@ const FormBody = ({
                 />
             </label>
         </div>
-        <div className="esp-form-row" style={{ marginTop: '-4px' }}>
-            {formErrors.apellido_paterno && <span className="tico-field-error" style={{ width: '50%' }}>{formErrors.apellido_paterno}</span>}
-            {formErrors.apellido_materno && <span className="tico-field-error" style={{ width: '50%', textAlign: 'right' }}>{formErrors.apellido_materno}</span>}
-        </div>
-
-        {/* Los demás campos en una sola columna real */}
-        <label className="esp-label-compact">Email *
-            <input
-                className={`tico-edit-input${formErrors.email ? ' tico-input-error' : ''}`}
-                type="email"
-                placeholder="email@tico.mx"
-                value={formData.email}
-                onChange={e => handleFormChange('email', e.target.value)}
-            />
-        </label>
-        {formErrors.email && <span className="tico-field-error" style={{ marginTop: '-4px' }}>{formErrors.email}</span>}
 
         <div className="esp-form-row">
+            <label className="esp-label-compact">Email *
+                <input
+                    className={`tico-edit-input${formErrors.email ? ' tico-input-error' : ''}`}
+                    type="email"
+                    placeholder="email@tico.mx"
+                    value={formData.email}
+                    onChange={e => handleFormChange('email', e.target.value)}
+                />
+            </label>
             <label className="esp-label-compact">Teléfono
                 <input
                     className="tico-edit-input"
-                    placeholder="+52 555 123 4567"
+                    placeholder="555-123-4567"
                     maxLength={20}
                     value={formData.telefono}
                     onChange={e => handleFormChange('telefono', e.target.value)}
                 />
             </label>
+        </div>
 
-            <label className="esp-label-compact">Fecha de Nacimiento
-                <input
+        <div className="esp-form-row">
+            <label className="esp-label-compact">F. Nacimiento
+                <TicoDateInput
                     className="tico-edit-input"
-                    type="date"
                     value={formData.fecha_nacimiento}
-                    onChange={e => handleFormChange('fecha_nacimiento', e.target.value)}
+                    onChange={val => handleFormChange('fecha_nacimiento', val)}
                 />
+            </label>
+            <label className="esp-label-compact">Especialidad
+                <select
+                    className="tico-edit-input"
+                    value={formData.especialidad_principal}
+                    onChange={e => handleFormChange('especialidad_principal', e.target.value)}
+                >
+                    {ESPECIALIDADES.map(esp => <option key={esp}>{esp}</option>)}
+                </select>
             </label>
         </div>
 
         {!isEdit ? (
-            <label className="esp-label-compact">Contraseña *
-                <div className="esp-password-wrap-sm">
+            <div className="esp-form-row">
+                <label className="esp-label-compact">Contraseña *
+                    <div className="esp-password-wrap-sm">
+                        <input
+                            className={`tico-edit-input${formErrors.password ? ' tico-input-error' : ''}`}
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="8+ carac."
+                            value={formData.password}
+                            onChange={e => handleFormChange('password', e.target.value)}
+                        />
+                        <button type="button" className="esp-password-toggle-sm" onClick={() => setShowPassword(s => !s)}>
+                            {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
+                        </button>
+                    </div>
+                </label>
+                <label className="esp-label-compact">Cédula profesional
+                    <div className="esp-cedula-row-sm">
+                        <input
+                            className="tico-edit-input"
+                            placeholder="Cédula"
+                            value={formData.cedula_profesional}
+                            onChange={e => handleFormChange('cedula_profesional', e.target.value.replace(/\D/g, ''))}
+                        />
+                        <button type="button" className="esp-btn-verificar-compact" onClick={handleVerificarCedula}>
+                            {cedulaStatus === 'checking' ? <Loader2 size={10} className="spin" /> : 'Verificar'}
+                        </button>
+                    </div>
+                </label>
+            </div>
+        ) : (
+            <label className="esp-label-compact">Cédula profesional
+                <div className="esp-cedula-row-sm">
                     <input
-                        className={`tico-edit-input${formErrors.password ? ' tico-input-error' : ''}`}
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="8+ carac."
-                        value={formData.password}
-                        onChange={e => handleFormChange('password', e.target.value)}
+                        className="tico-edit-input"
+                        placeholder="Cédula"
+                        value={formData.cedula_profesional}
+                        onChange={e => handleFormChange('cedula_profesional', e.target.value.replace(/\D/g, ''))}
                     />
-                    <button type="button" className="esp-password-toggle-sm" onClick={() => setShowPassword(s => !s)}>
-                        {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
+                    <button type="button" className="esp-btn-verificar-compact" onClick={handleVerificarCedula}>
+                        {cedulaStatus === 'checking' ? <Loader2 size={10} className="spin" /> : 'Verificar'}
                     </button>
+                    {cedulaStatus === 'ok' && <span className="esp-badge-xs ok"><BadgeCheck size={10} /></span>}
                 </div>
-                {formErrors.password && <span className="tico-field-error">{formErrors.password}</span>}
+                {cedulaMensaje && <span className={`esp-cedula-msg ${cedulaStatus === 'ok' ? 'ok' : 'error'}`}>{cedulaMensaje}</span>}
             </label>
-        ) : null}
+        )}
 
-        <label className="esp-label-compact">Especialidad
-            <select
-                className="tico-edit-input"
-                value={formData.especialidad_principal}
-                onChange={e => handleFormChange('especialidad_principal', e.target.value)}
-            >
-                {ESPECIALIDADES.map(esp => <option key={esp}>{esp}</option>)}
-            </select>
-        </label>
-
-        <label className="esp-label-compact">Biografía Profesional
+        <label className="esp-label-compact" style={{ marginBottom: 0 }}>Biografía Profesional
             <textarea
                 className="tico-edit-input"
-                rows={4}
-                placeholder="Describe brevemente la trayectoria, especialidad y enfoque del especialista..."
-                style={{ resize: 'vertical' }}
+                rows={2}
+                placeholder="Trayectoria, especialidad y enfoque..."
+                style={{ resize: 'none' }}
                 maxLength={300}
                 value={formData.biografia}
                 onChange={e => handleFormChange('biografia', e.target.value)}
             />
-        </label>
-
-        <label className="esp-label-compact">Cédula profesional
-            <div className="esp-cedula-row-sm">
-                <input
-                    className="tico-edit-input"
-                    placeholder="Cédula"
-                    value={formData.cedula_profesional}
-                    onChange={e => handleFormChange('cedula_profesional', e.target.value.replace(/\D/g, ''))}
-                />
-                <button type="button" className="esp-btn-verificar-compact" onClick={handleVerificarCedula}>
-                    {cedulaStatus === 'checking' ? <Loader2 size={10} className="spin" /> : 'Verificar'}
-                </button>
-                {cedulaStatus === 'ok' && <span className="esp-badge-xs ok"><BadgeCheck size={10} /></span>}
-            </div>
-            {cedulaMensaje && <span className={`esp-cedula-msg ${cedulaStatus === 'ok' ? 'ok' : 'error'}`}>{cedulaMensaje}</span>}
         </label>
     </div>
 );

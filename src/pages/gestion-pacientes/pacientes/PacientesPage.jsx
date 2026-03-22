@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import './Pacientes.css';
-import { 
-    ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck, 
+import {
+    ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck,
     X, Plus, SlidersHorizontal, FilterX, HelpCircle,
     Mail, Phone, Calendar, User, UserPlus, Info, Check, MapPin, Hash, Trash2,
     Activity, ShieldCheck, ClipboardList, Filter, ChevronRight, FileText
@@ -10,6 +10,10 @@ import {
 import { useNotifications } from '../../../context/NotificationContext';
 import { createPaciente, getPacientes, updatePaciente, createCita } from '../../../services/api';
 import PageLoader from '../../../components/PageLoader';
+import { normalizeDateInput } from '../../../utils/dateHelper';
+import TicoDateInput from '../../../components/TicoDateInput';
+
+
 
 const EMPTY_NUEVO = {
     nombre: '',
@@ -320,19 +324,19 @@ const PacientesPage = () => {
 
     // ── Restricciones por campo ──────────────────────────────────────────────
     const FIELD_RULES = {
-        nombre:                 { maxLen: 30, onlyLetters: true, label: 'nombre' },
-        apellido_paterno:       { maxLen: 30, onlyLetters: true, label: 'apellido paterno' },
-        apellido_materno:       { maxLen: 30, onlyLetters: true, label: 'apellido materno' },
-        tutor_nombre:           { maxLen: 30, onlyLetters: true, label: 'nombre del tutor' },
+        nombre: { maxLen: 30, onlyLetters: true, label: 'nombre' },
+        apellido_paterno: { maxLen: 30, onlyLetters: true, label: 'apellido paterno' },
+        apellido_materno: { maxLen: 30, onlyLetters: true, label: 'apellido materno' },
+        tutor_nombre: { maxLen: 30, onlyLetters: true, label: 'nombre del tutor' },
         tutor_apellido_paterno: { maxLen: 30, onlyLetters: true, label: 'apellido paterno del tutor' },
         tutor_apellido_materno: { maxLen: 30, onlyLetters: true, label: 'apellido materno del tutor' },
-        alergias:               { maxLen: 120 },
-        tutor_email:            { required: true, onlyEmail: true, maxLen: 80 },
-        tutor_telefono:         { required: true, maxLen: 10, onlyPhone: true },
-        tutor_password:         { maxLen: 40 },
-        monto_mensual:          { maxVal: 99999 },
-        peso_kg:                { maxVal: 300 },
-        altura_cm:              { maxVal: 250 },
+        alergias: { maxLen: 120 },
+        tutor_email: { required: true, onlyEmail: true, maxLen: 80 },
+        tutor_telefono: { required: true, maxLen: 10, onlyPhone: true },
+        tutor_password: { maxLen: 40 },
+        monto_mensual: { maxVal: 99999 },
+        peso_kg: { maxVal: 300 },
+        altura_cm: { maxVal: 250 },
     };
 
     // Validar un campo en tiempo real y devolver el error (o undefined)
@@ -373,7 +377,7 @@ const PacientesPage = () => {
             if (!value.includes('@')) return 'El correo debe incluir el símbolo @';
             const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             if (!emailRegex.test(value)) return 'Formato inválido (ej: jerry@gmail.com)';
-            
+
             // Email único (solo si es nuevo paciente)
             if (!editPaciente) {
                 const emailExiste = pacientes.some(
@@ -410,7 +414,8 @@ const PacientesPage = () => {
         if (field === 'tutor_email' && value.includes(' ')) return;
 
         setFormNuevo(prev => {
-            const updated = { ...prev, [field]: value };
+            const normalizedValue = field === 'fecha_nacimiento' ? normalizeDateInput(value) : value;
+            const updated = { ...prev, [field]: normalizedValue };
             if (field === 'peso_kg' || field === 'altura_cm') {
                 updated.imc = calcIMC(
                     field === 'peso_kg' ? value : prev.peso_kg,
@@ -557,7 +562,7 @@ const PacientesPage = () => {
 
 
     const labelSeleccion = selectedRows.length === 1
-        ? '1 seleccionado'
+        ? `1 seleccionado`
         : `${selectedRows.length} seleccionados`;
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -567,11 +572,11 @@ const PacientesPage = () => {
             {/* ── Header ── */}
             <header className="tico-header">
                 <div>
-                    <h1 className="tico-title">Listado de Pacientes</h1>
-                    <p className="tico-subtitle">Administra la información de los pacientes</p>
+                    <h1 className="tico-title">Gestión de Pacientes</h1>
+                    <p className="tico-subtitle">Administra tu base de datos de pacientes, expedientes y citas</p>
                 </div>
                 <button className="tico-btn-nuevo" onClick={() => { setFormNuevo(EMPTY_NUEVO); setFormErrors({}); setModalNuevo(true); setActiveTabNuevo('personal'); }}>
-                    <Plus size={16} /> Nuevo paciente
+                    <Plus size={16} /> Nuevo Paciente
                 </button>
             </header>
 
@@ -580,7 +585,7 @@ const PacientesPage = () => {
                 <div className="tico-toolbar-left">
                     <input
                         type="text"
-                        placeholder="Buscar por nombre..."
+                        placeholder="Buscar paciente..."
                         className="tico-search"
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
@@ -591,7 +596,7 @@ const PacientesPage = () => {
                             onClick={() => setShowFilterMenu(!showFilterMenu)}
                         >
                             <SlidersHorizontal size={14} />
-                            Filtro
+                            Filtrar
                             {(filterEstado || filterObservacion || filterGenero) && (
                                 <span className="tico-filter-dot" />
                             )}
@@ -600,14 +605,14 @@ const PacientesPage = () => {
                         {showFilterMenu && (
                             <div className="tico-filter-menu">
                                 <div className="tico-filter-menu-header">
-                                    <span>Filtros avanzados</span>
+                                    <span>Filtros Avanzados</span>
                                     <button className="tico-btn-limpiar" onClick={handleClearFilters}>
                                         <FilterX size={13} />
                                         Limpiar
                                     </button>
                                 </div>
                                 <div className="tico-filter-group">
-                                    <label>Estado</label>
+                                    <label>Estado Clínico</label>
                                     <select value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
                                         <option value="">Todos</option>
                                         <option value="Estable">Estable</option>
@@ -685,14 +690,14 @@ const PacientesPage = () => {
                                 onChange={toggleAll}
                             />
                         </th>
-                        <th>PACIENTE</th>
-                        <th>TUTOR</th>
-                        <th>EDAD</th>
+                        <th>Paciente</th>
+                        <th>Tutor / Responsable</th>
+                        <th>Edad</th>
                         <th className="sortable" onClick={() => handleSort('cita')}>
-                            FECHA {getSortIcon('cita')}
+                            Próxima Cita {getSortIcon('cita')}
                         </th>
-                        <th>OBSERVACION</th>
-                        <th>ESTADO</th>
+                        <th>Observación</th>
+                        <th>Estado Clínico</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -722,7 +727,11 @@ const PacientesPage = () => {
                                     {p.observacion}
                                 </span>
                             </td>
-                            <td>{p.estado}</td>
+                            <td>
+                                {p.active
+                                    ? p.estado
+                                    : 'Inhabilitado'}
+                            </td>
                         </tr>
                     ))}
                     {loading ? (
@@ -734,7 +743,7 @@ const PacientesPage = () => {
                     ) : filteredData.length === 0 ? (
                         <tr>
                             <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
-                                No se encontraron pacientes.
+                                No se encontraron pacientes
                             </td>
                         </tr>
                     ) : null}
@@ -745,37 +754,40 @@ const PacientesPage = () => {
             {modalNuevo && (
                 <div className="tico-modal-overlay" onClick={() => setModalNuevo(false)}>
                     <div className="tico-modal tico-modal-wide" onClick={(e) => e.stopPropagation()}>
-                        <button className="tico-modal-close" onClick={() => setModalNuevo(false)}>
-                            <X size={18} />
-                        </button>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Registro de Nuevo Paciente</h2>
+                            <button className="tico-modal-close" onClick={() => setModalNuevo(false)}>
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                        <h2 className="tico-modal-title" style={{ marginBottom: '0.5rem' }}>Nuevo Paciente</h2>
-                        <p className="tico-form-hint" style={{ textAlign: 'left', marginBottom: '1rem' }}>* Campos obligatorios</p>
+                        <div className="tico-modal-content">
+                            <p className="tico-form-hint" style={{ textAlign: 'left', marginBottom: '1rem' }}>* Los campos marcados con asterisco son obligatorios</p>
 
                         {/* ── Tabs Navigation ── */}
                         <div className="tico-modal-tabs">
-                            <button 
+                            <button
                                 className={`tico-tab-btn ${activeTabNuevo === 'personal' ? 'active' : ''}`}
                                 onClick={() => setActiveTabNuevo('personal')}
                             >
-                                <Plus size={16} className="tico-tab-icon" /> 
+                                <Plus size={16} className="tico-tab-icon" />
                                 Datos Personales
                                 {(formErrors.nombre || formErrors.apellido_paterno || formErrors.fecha_nacimiento) && <span className="tico-tab-badge">Faltan datos</span>}
                             </button>
-                            <button 
+                            <button
                                 className={`tico-tab-btn ${activeTabNuevo === 'expediente' ? 'active' : ''}`}
                                 onClick={() => setActiveTabNuevo('expediente')}
                             >
-                                <ClipboardList size={16} className="tico-tab-icon" /> 
+                                <ClipboardList size={16} className="tico-tab-icon" />
                                 Expediente
                                 {(formErrors.monto_mensual) && <span className="tico-tab-badge">Faltan datos</span>}
                             </button>
-                            <button 
+                            <button
                                 className={`tico-tab-btn ${activeTabNuevo === 'tutor' ? 'active' : ''}`}
                                 onClick={() => setActiveTabNuevo('tutor')}
                             >
-                                <ChevronRight size={16} className="tico-tab-icon" /> 
-                                Datos del Tutor
+                                <ChevronRight size={16} className="tico-tab-icon" />
+                                Tutor / Responsable
                                 {(formErrors.tutor_nombre || formErrors.tutor_apellido_paterno || formErrors.tutor_password) && <span className="tico-tab-badge">Faltan datos</span>}
                             </button>
                         </div>
@@ -795,7 +807,7 @@ const PacientesPage = () => {
                                         </label>
                                         <div className="tico-form-row2">
                                             <label>Apellido Paterno *
-                                                <input className={`tico-edit-input${formErrors.apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Paterno"
+                                                <input className={`tico-edit-input${formErrors.apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Apellido Paterno"
                                                     maxLength={30}
                                                     value={formNuevo.apellido_paterno}
                                                     onChange={(e) => handleFormNuevoChange('apellido_paterno', e.target.value)}
@@ -803,24 +815,25 @@ const PacientesPage = () => {
                                                 {formErrors.apellido_paterno && <span className="tico-field-error">{formErrors.apellido_paterno}</span>}
                                             </label>
                                             <label>Apellido Materno
-                                                <input className="tico-edit-input" placeholder="Materno"
+                                                <input className="tico-edit-input" placeholder="Apellido Materno"
                                                     maxLength={30}
                                                     value={formNuevo.apellido_materno}
                                                     onChange={(e) => handleFormNuevoChange('apellido_materno', e.target.value)} />
                                             </label>
                                         </div>
-                                        <label>Fecha de nacimiento *
-                                            <input className={`tico-edit-input${formErrors.fecha_nacimiento ? ' tico-input-error' : ''}`} type="date"
+                                        <label>Fecha de Nacimiento *
+                                            <TicoDateInput
+                                                className={`tico-edit-input${formErrors.fecha_nacimiento ? ' tico-input-error' : ''}`}
                                                 value={formNuevo.fecha_nacimiento}
-                                                onChange={(e) => handleFormNuevoChange('fecha_nacimiento', e.target.value)}
+                                                onChange={(val) => handleFormNuevoChange('fecha_nacimiento', val)}
                                                 onBlur={() => handleBlur('fecha_nacimiento')} />
                                             {formErrors.fecha_nacimiento && <span className="tico-field-error">{formErrors.fecha_nacimiento}</span>}
                                         </label>
                                         <label>Género
                                             <select className="tico-edit-input" value={formNuevo.genero}
                                                 onChange={(e) => handleFormNuevoChange('genero', e.target.value)}>
-                                                <option>Masculino</option>
-                                                <option>Femenino</option>
+                                                <option value="Masculino">Masculino</option>
+                                                <option value="Femenino">Femenino</option>
                                             </select>
                                         </label>
                                     </div>
@@ -840,7 +853,7 @@ const PacientesPage = () => {
                                                 {formErrors.peso_kg && <span className="tico-field-error">{formErrors.peso_kg}</span>}
                                             </label>
                                             <label>Altura (cm)
-                                                <input className={`tico-edit-input${formErrors.altura_cm ? ' tico-input-error' : ''}`} type="number" placeholder="altura en cm" min="0" max="250"
+                                                <input className={`tico-edit-input${formErrors.altura_cm ? ' tico-input-error' : ''}`} type="number" placeholder="0" min="0" max="250"
                                                     value={formNuevo.altura_cm}
                                                     onChange={(e) => handleFormNuevoChange('altura_cm', e.target.value)}
                                                     onBlur={() => handleBlur('altura_cm')} />
@@ -852,7 +865,7 @@ const PacientesPage = () => {
                                                 value={formNuevo.imc ? `${formNuevo.imc} kg/m²` : '—'} />
                                         </label>
                                         <label>Alergias
-                                            <input className={`tico-edit-input${formErrors.alergias ? ' tico-input-error' : ''}`} placeholder="(vacío si ninguna)"
+                                            <input className={`tico-edit-input${formErrors.alergias ? ' tico-input-error' : ''}`} placeholder=""
                                                 maxLength={120}
                                                 value={formNuevo.alergias}
                                                 onChange={(e) => handleFormNuevoChange('alergias', e.target.value)}
@@ -860,23 +873,23 @@ const PacientesPage = () => {
                                             {formErrors.alergias && <span className="tico-field-error">{formErrors.alergias}</span>}
                                         </label>
                                         <div className="tico-form-row2">
-                                            <label>Observación
+                                            <label>Observación (Prioridad)
                                                 <select className="tico-edit-input" value={formNuevo.observacion}
                                                     onChange={(e) => handleFormNuevoChange('observacion', e.target.value)}>
-                                                    <option>Bajo</option>
-                                                    <option>Medio</option>
-                                                    <option>Alto</option>
+                                                    <option value="Bajo">Bajo</option>
+                                                    <option value="Medio">Medio</option>
+                                                    <option value="Alto">Alto</option>
                                                 </select>
                                             </label>
-                                            <label>Estado
+                                            <label>Estado Clínico
                                                 <select className="tico-edit-input" value={formNuevo.estado}
                                                     onChange={(e) => handleFormNuevoChange('estado', e.target.value)}>
-                                                    <option>Estable</option>
-                                                    <option>Inestable</option>
+                                                    <option value="Estable">Estable</option>
+                                                    <option value="Inestable">Inestable</option>
                                                 </select>
                                             </label>
                                         </div>
-                                        <label>Monto mensual ($)
+                                        <label>Monto Mensual ($)
                                             <input className={`tico-edit-input${formErrors.monto_mensual ? ' tico-input-error' : ''}`} type="number" placeholder="500.00" min="0" max="99999"
                                                 value={formNuevo.monto_mensual}
                                                 onChange={(e) => handleFormNuevoChange('monto_mensual', e.target.value)}
@@ -889,10 +902,10 @@ const PacientesPage = () => {
 
                             {activeTabNuevo === 'tutor' && (
                                 <div className="tico-form-anim-in">
-                                    <p className="tico-form-section-label">Información del Tutor</p>
+                                    <p className="tico-form-section-label">Tutor / Responsable</p>
                                     <div className="tico-form-stack">
-                                        <label>Nombre(s) del tutor *
-                                            <input className={`tico-edit-input${formErrors.tutor_nombre ? ' tico-input-error' : ''}`} placeholder="Nombres del tutor"
+                                        <label>Nombre(s) del Tutor *
+                                            <input className={`tico-edit-input${formErrors.tutor_nombre ? ' tico-input-error' : ''}`} placeholder="Nombre del tutor"
                                                 maxLength={30}
                                                 value={formNuevo.tutor_nombre}
                                                 onChange={(e) => handleFormNuevoChange('tutor_nombre', e.target.value)}
@@ -901,7 +914,7 @@ const PacientesPage = () => {
                                         </label>
                                         <div className="tico-form-row2">
                                             <label>Apellido Paterno *
-                                                <input className={`tico-edit-input${formErrors.tutor_apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Paterno"
+                                                <input className={`tico-edit-input${formErrors.tutor_apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Apellido Paterno"
                                                     maxLength={30}
                                                     value={formNuevo.tutor_apellido_paterno}
                                                     onChange={(e) => handleFormNuevoChange('tutor_apellido_paterno', e.target.value)}
@@ -909,7 +922,7 @@ const PacientesPage = () => {
                                                 {formErrors.tutor_apellido_paterno && <span className="tico-field-error">{formErrors.tutor_apellido_paterno}</span>}
                                             </label>
                                             <label>Apellido Materno
-                                                <input className="tico-edit-input" placeholder="Materno"
+                                                <input className="tico-edit-input" placeholder="Apellido Materno"
                                                     maxLength={30}
                                                     value={formNuevo.tutor_apellido_materno}
                                                     onChange={(e) => handleFormNuevoChange('tutor_apellido_materno', e.target.value)} />
@@ -918,14 +931,14 @@ const PacientesPage = () => {
                                         <label>Parentesco
                                             <select className="tico-edit-input" value={formNuevo.tutor_parentesco}
                                                 onChange={(e) => handleFormNuevoChange('tutor_parentesco', e.target.value)}>
-                                                <option value="">— Seleccionar —</option>
-                                                <option>Padre</option>
-                                                <option>Madre</option>
-                                                <option>Abuelo/a</option>
-                                                <option>Tío/a</option>
-                                                <option>Hermano/a</option>
-                                                <option>Tutor legal</option>
-                                                <option>Otro</option>
+                                                <option value="">— Cualquiera —</option>
+                                                <option value="Padre">Padre</option>
+                                                <option value="Madre">Madre</option>
+                                                <option value="Abuelo/a">Abuelo/a</option>
+                                                <option value="Tío/a">Tío/a</option>
+                                                <option value="Hermano/a">Hermano/a</option>
+                                                <option value="Tutor legal">Tutor legal</option>
+                                                <option value="Otro">Otro</option>
                                             </select>
                                         </label>
                                         <div className="tico-form-row2">
@@ -940,7 +953,7 @@ const PacientesPage = () => {
                                                     onBlur={() => handleBlur('tutor_telefono')} />
                                                 {formErrors.tutor_telefono && <span className="tico-field-error">{formErrors.tutor_telefono}</span>}
                                             </label>
-                                            <label>Correo electrónico
+                                            <label>Email
                                                 <input
                                                     className={`tico-edit-input${formErrors.tutor_email ? ' tico-input-error' : ''}`}
                                                     type="email"
@@ -956,7 +969,7 @@ const PacientesPage = () => {
                                             <input
                                                 className={`tico-edit-input${formErrors.tutor_password ? ' tico-input-error' : ''}`}
                                                 type="password"
-                                                placeholder="Contraseña del tutor"
+                                                placeholder="Contraseña para el tutor"
                                                 maxLength={40}
                                                 value={formNuevo.tutor_password}
                                                 onChange={(e) => handleFormNuevoChange('tutor_password', e.target.value)}
@@ -964,14 +977,13 @@ const PacientesPage = () => {
                                             {formErrors.tutor_password && <span className="tico-field-error">{formErrors.tutor_password}</span>}
                                         </label>
 
-                                        <p className="tico-form-section-label" style={{ marginTop: '1rem' }}>Primera Cita (Opcional)</p>
+                                        <p className="tico-form-section-label" style={{ marginTop: '1rem' }}>Programar Primera Cita</p>
                                         <div className="tico-form-row2">
                                             <label>Fecha sugerida
-                                                <input
+                                                <TicoDateInput
                                                     className="tico-edit-input"
-                                                    type="date"
                                                     value={formNuevo.fecha_cita || ''}
-                                                    onChange={(e) => handleFormNuevoChange('fecha_cita', e.target.value)} />
+                                                    onChange={(val) => handleFormNuevoChange('fecha_cita', val)} />
                                             </label>
                                             <label>Hora
                                                 <input
@@ -990,337 +1002,7 @@ const PacientesPage = () => {
                         {(saving || saveSuccess) && (
                             <div className="tico-save-overlay">
                                 {saving ? (
-                                    <PageLoader message="Registrando paciente..." />
-                                ) : (
-                                    <div className="tico-save-success">
-                                        <div className="tico-save-success__icon"><Check size={32} /></div>
-                                        <span>{saveSuccess}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="tico-edit-actions" style={{ marginTop: '1.25rem', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                            <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
-                                <button 
-                                    className="tico-btn tico-btn-primary" 
-                                    disabled={saving || !formNuevo.nombre || !formNuevo.apellido_paterno || !formNuevo.tutor_nombre || !formNuevo.tutor_apellido_paterno || !formNuevo.tutor_password} 
-                                    onClick={handleAgregarPaciente}
-                                >
-                                    {saving ? 'Guardando...' : 'Agregar paciente'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Modal: Ver Detalle Premium ── */}
-            {modalPaciente && (
-                <div className="tico-modal-overlay" onClick={() => setModalPaciente(null)}>
-                    <div className="tico-profile-card" onClick={e => e.stopPropagation()} style={{ width: 'min(650px, 95vw)' }}>
-                        <button className="tico-modal-close-v2" onClick={() => setModalPaciente(null)}>
-                            <X size={20} />
-                        </button>
-
-                        <div className="tico-profile-hero">
-                            <div className="esp-foto-initials-lg" style={{ background: 'linear-gradient(135deg, #4c7bc7 0%, #7da0d9 100%)' }}>
-                                {(modalPaciente.paciente || 'P').charAt(0).toUpperCase()}
-                            </div>
-                            <div className="tico-profile-hero-info">
-                                <h2 className="tico-profile-hero-name">{modalPaciente.paciente || 'Paciente'}</h2>
-                                <p className="tico-profile-hero-subtitle">Paciente del Centro</p>
-                            </div>
-                        </div>
-
-                        <div className="tico-profile-grid">
-                            {/* Datos Personales */}
-                            <div className="tico-field-box">
-                                <span className="tico-field-box-label"><Calendar size={12} /> Nacimiento</span>
-                                <span className="tico-field-box-value">{modalPaciente.fecha_nacimiento || '—'}</span>
-                            </div>
-                            <div className="tico-field-box">
-                                <span className="tico-field-box-label"><User size={12} /> Edad y Género</span>
-                                <span className="tico-field-box-value">{modalPaciente.edad || '—'} años, {modalPaciente.genero || '—'}</span>
-                            </div>
-
-                            {/* Datos Clínicos */}
-                            <div className="tico-field-box">
-                                <span className="tico-field-box-label"><Activity size={12} /> Prioridad y Estado</span>
-                                <div className="tico-field-box-value">
-                                    <span className={`tico-badge tico-badge-${(modalPaciente.prioridad || 'bajo').toLowerCase()}`} style={{ marginRight: '8px' }}>
-                                        {modalPaciente.prioridad || 'Bajo'}
-                                    </span>
-                                    <span style={{ fontSize: '0.9rem', color: '#64748b' }}>{modalPaciente.estado || '—'}</span>
-                                </div>
-                            </div>
-                            <div className="tico-field-box">
-                                <span className="tico-field-box-label"><Info size={12} /> IMC</span>
-                                <span className="tico-field-box-value">{modalPaciente.imc || '—'} kg/m²</span>
-                            </div>
-
-                            {/* Tutor Info */}
-                            <div className="tico-field-box full-width" style={{ background: 'rgba(76, 123, 199, 0.05)', border: '1px solid rgba(76, 123, 199, 0.1)' }}>
-                                <span className="tico-field-box-label"><ShieldCheck size={12} /> Tutor Responsable</span>
-                                <div className="tico-field-box-value" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginTop: '0.5rem' }}>
-                                    <div>
-                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Nombre</div>
-                                        <div>{modalPaciente.tutor || modalPaciente.tutor_nombre || '—'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Parentesco</div>
-                                        <div>{modalPaciente.tutor_parentesco || '—'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Teléfono</div>
-                                        <div>{modalPaciente.tutor_telefono || '—'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Email</div>
-                                        <div>{modalPaciente.tutor_email || '—'}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Observaciones extra si las hay */}
-                            <div className="tico-field-box full-width">
-                                <span className="tico-field-box-label"><FileText size={12} /> Observaciones</span>
-                                <span className="tico-field-box-value text-small">{modalPaciente.observacion || 'Sin observaciones registradas.'}</span>
-                            </div>
-                        </div>
-
-                        <div className="tico-profile-footer-v2">
-                            <button className="tico-btn tico-btn-outline" onClick={() => setModalPaciente(null)} style={{ borderRadius: '12px', padding: '0.6rem 2.5rem' }}>Cerrar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Modal: Editar ── */}
-            {editPaciente && (
-                <div className="tico-modal-overlay" onClick={() => setEditPaciente(null)}>
-                    <div className="tico-modal tico-modal-wide" onClick={(e) => e.stopPropagation()}>
-                        <button className="tico-modal-close" onClick={() => setEditPaciente(null)}>
-                            <X size={18} />
-                        </button>
-
-                        <h2 className="tico-modal-title" style={{ marginBottom: '0.5rem' }}>Editar Paciente</h2>
-                        <p className="tico-form-hint" style={{ textAlign: 'left', marginBottom: '1rem' }}>Modifica los datos del paciente</p>
-
-                        {/* ── Tabs Navigation ── */}
-                        <div className="tico-modal-tabs">
-                            <button
-                                className={`tico-tab-btn ${activeTabEdit === 'personal' ? 'active' : ''}`}
-                                onClick={() => setActiveTabEdit('personal')}
-                            >
-                                <ClipboardList size={16} className="tico-tab-icon" /> Datos Personales
-                                {(formEditErrors.nombre || formEditErrors.apellido_paterno) && <span className="tico-tab-badge">Faltan datos</span>}
-                            </button>
-                            <button
-                                className={`tico-tab-btn ${activeTabEdit === 'expediente' ? 'active' : ''}`}
-                                onClick={() => setActiveTabEdit('expediente')}
-                            >
-                                <ClipboardList size={16} className="tico-tab-icon" /> Expediente
-                                {(formEditErrors.monto_mensual) && <span className="tico-tab-badge">Faltan datos</span>}
-                            </button>
-                            <button
-                                className={`tico-tab-btn ${activeTabEdit === 'tutor' ? 'active' : ''}`}
-                                onClick={() => setActiveTabEdit('tutor')}
-                            >
-                                <ChevronRight size={16} className="tico-tab-icon" /> Datos del Tutor
-                                {(formEditErrors.tutor_nombre || formEditErrors.tutor_apellido_paterno || formEditErrors.tutor_telefono || formEditErrors.tutor_email) && <span className="tico-tab-badge">Faltan datos</span>}
-                            </button>
-                        </div>
-
-                        <div className="tico-form-one-col" style={{ minHeight: '380px' }}>
-                            {activeTabEdit === 'personal' && (
-                                <div className="tico-form-anim-in">
-                                    <p className="tico-form-section-label">Información Básica del Paciente</p>
-                                    <div className="tico-form-stack">
-                                        <label>Nombre(s)
-                                            <input className={`tico-edit-input${formEditErrors.nombre ? ' tico-input-error' : ''}`} placeholder="Nombre(s)"
-                                                maxLength={30}
-                                                value={editPaciente.nombre || ''}
-                                                onChange={(e) => setEditPaciente({ ...editPaciente, nombre: e.target.value })}
-                                                onBlur={() => handleEditBlur('nombre')} />
-                                            {formEditErrors.nombre && <span className="tico-field-error">{formEditErrors.nombre}</span>}
-                                        </label>
-                                        <div className="tico-form-row2">
-                                            <label>Apellido Paterno
-                                                <input className={`tico-edit-input${formEditErrors.apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Paterno"
-                                                    maxLength={30}
-                                                    value={editPaciente.apellido_paterno || ''}
-                                                    onChange={(e) => setEditPaciente({ ...editPaciente, apellido_paterno: e.target.value })}
-                                                    onBlur={() => handleEditBlur('apellido_paterno')} />
-                                                {formEditErrors.apellido_paterno && <span className="tico-field-error">{formEditErrors.apellido_paterno}</span>}
-                                            </label>
-                                            <label>Apellido Materno
-                                                <input className="tico-edit-input" placeholder="Materno"
-                                                    maxLength={30}
-                                                    value={editPaciente.apellido_materno || ''}
-                                                    onChange={(e) => setEditPaciente({ ...editPaciente, apellido_materno: e.target.value })} />
-                                            </label>
-                                        </div>
-                                        <label>Fecha de nacimiento
-                                            <input className="tico-edit-input" type="date"
-                                                value={editPaciente.fecha_nacimiento || ''}
-                                                onChange={(e) => setEditPaciente({ ...editPaciente, fecha_nacimiento: e.target.value })} />
-                                        </label>
-                                        <label>Género
-                                            <select className="tico-edit-input" value={editPaciente.genero || 'Masculino'}
-                                                onChange={(e) => setEditPaciente({ ...editPaciente, genero: e.target.value })}>
-                                                <option>Masculino</option>
-                                                <option>Femenino</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTabEdit === 'expediente' && (
-                                <div className="tico-form-anim-in">
-                                    <p className="tico-form-section-label">Expediente Clínico</p>
-                                    <div className="tico-form-stack">
-                                        <div className="tico-form-row2">
-                                            <label>Peso (kg)
-                                                <input className="tico-edit-input" type="number" placeholder="peso en kg" min="0" max="300"
-                                                    value={editPaciente.peso_kg || ''}
-                                                    onChange={(e) => {
-                                                        const peso = e.target.value;
-                                                        if (parseFloat(peso) > 300) return;
-                                                        const h = parseFloat(editPaciente.altura_cm) / 100;
-                                                        const imc = peso && h ? (parseFloat(peso) / (h * h)).toFixed(2) : '';
-                                                        setEditPaciente({ ...editPaciente, peso_kg: peso, imc });
-                                                    }} />
-                                            </label>
-                                            <label>Altura (cm)
-                                                <input className="tico-edit-input" type="number" placeholder="altura en cm" min="0" max="250"
-                                                    value={editPaciente.altura_cm || ''}
-                                                    onChange={(e) => {
-                                                        const altura = e.target.value;
-                                                        if (parseFloat(altura) > 250) return;
-                                                        const h = parseFloat(altura) / 100;
-                                                        const imc = editPaciente.peso_kg && h ? (parseFloat(editPaciente.peso_kg) / (h * h)).toFixed(2) : '';
-                                                        setEditPaciente({ ...editPaciente, altura_cm: altura, imc });
-                                                    }} />
-                                            </label>
-                                        </div>
-                                        <label>IMC (auto-calculado)
-                                            <input className="tico-edit-input tico-input-readonly" readOnly
-                                                value={editPaciente.imc ? `${editPaciente.imc} kg/m²` : '—'} />
-                                        </label>
-                                        <label>Alergias
-                                            <input className="tico-edit-input" placeholder="(vacío si ninguna)"
-                                                maxLength={120}
-                                                value={editPaciente.alergias || ''}
-                                                onChange={(e) => setEditPaciente({ ...editPaciente, alergias: e.target.value })} />
-                                        </label>
-                                        <div className="tico-form-row2">
-                                            <label>Observación
-                                                <select className="tico-edit-input" value={editPaciente.observacion || 'Bajo'}
-                                                    onChange={(e) => setEditPaciente({ ...editPaciente, observacion: e.target.value })}>
-                                                    <option>Bajo</option>
-                                                    <option>Medio</option>
-                                                    <option>Alto</option>
-                                                </select>
-                                            </label>
-                                            <label>Estado
-                                                <select className="tico-edit-input" value={editPaciente.estado || 'Estable'}
-                                                    onChange={(e) => setEditPaciente({ ...editPaciente, estado: e.target.value })}>
-                                                    <option>Estable</option>
-                                                    <option>Inestable</option>
-                                                </select>
-                                            </label>
-                                        </div>
-                                        <label>Monto mensual ($)
-                                            <input className={`tico-edit-input${formEditErrors.monto_mensual ? ' tico-input-error' : ''}`} type="number" placeholder="500.00" min="0" max="99999"
-                                                value={editPaciente.monto_mensual || ''}
-                                                onChange={(e) => {
-                                                    if (parseFloat(e.target.value) > 99999) return;
-                                                    setEditPaciente({ ...editPaciente, monto_mensual: e.target.value });
-                                                }}
-                                                onBlur={() => handleEditBlur('monto_mensual')} />
-                                            {formEditErrors.monto_mensual && <span className="tico-field-error">{formEditErrors.monto_mensual}</span>}
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTabEdit === 'tutor' && (
-                                <div className="tico-form-anim-in">
-                                    <p className="tico-form-section-label">Información del Tutor</p>
-                                    <div className="tico-form-stack">
-                                        <label>Nombre(s) del tutor
-                                            <input className={`tico-edit-input${formEditErrors.tutor_nombre ? ' tico-input-error' : ''}`} placeholder="Nombre del tutor"
-                                                maxLength={30}
-                                                value={editPaciente.tutor_nombre || ''}
-                                                onChange={(e) => setEditPaciente({ ...editPaciente, tutor_nombre: e.target.value })}
-                                                onBlur={() => handleEditBlur('tutor_nombre')} />
-                                            {formEditErrors.tutor_nombre && <span className="tico-field-error">{formEditErrors.tutor_nombre}</span>}
-                                        </label>
-                                        <div className="tico-form-row2">
-                                            <label>Apellido Paterno
-                                                <input className={`tico-edit-input${formEditErrors.tutor_apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Paterno"
-                                                    maxLength={30}
-                                                    value={editPaciente.tutor_apellido_paterno || ''}
-                                                    onChange={(e) => setEditPaciente({ ...editPaciente, tutor_apellido_paterno: e.target.value })}
-                                                    onBlur={() => handleEditBlur('tutor_apellido_paterno')} />
-                                                {formEditErrors.tutor_apellido_paterno && <span className="tico-field-error">{formEditErrors.tutor_apellido_paterno}</span>}
-                                            </label>
-                                            <label>Apellido Materno
-                                                <input className="tico-edit-input" placeholder="Materno"
-                                                    maxLength={30}
-                                                    value={editPaciente.tutor_apellido_materno || ''}
-                                                    onChange={(e) => setEditPaciente({ ...editPaciente, tutor_apellido_materno: e.target.value })} />
-                                            </label>
-                                        </div>
-                                        <label>Parentesco
-                                            <select className="tico-edit-input" value={editPaciente.tutor_parentesco || ''}
-                                                onChange={(e) => setEditPaciente({ ...editPaciente, tutor_parentesco: e.target.value })}>
-                                                <option value="">— Seleccionar —</option>
-                                                <option>Padre</option>
-                                                <option>Madre</option>
-                                                <option>Abuelo/a</option>
-                                                <option>Tío/a</option>
-                                                <option>Hermano/a</option>
-                                                <option>Tutor legal</option>
-                                                <option>Otro</option>
-                                            </select>
-                                        </label>
-                                        <div className="tico-form-row2">
-                                            <label>Teléfono celular
-                                                <input className={`tico-edit-input${formEditErrors.tutor_telefono ? ' tico-input-error' : ''}`} placeholder="10 dígitos"
-                                                    maxLength={10}
-                                                    value={editPaciente.tutor_telefono || ''}
-                                                    onChange={(e) => {
-                                                        const v = e.target.value.replace(/\D/g, '');
-                                                        setEditPaciente({ ...editPaciente, tutor_telefono: v });
-                                                    }}
-                                                    onBlur={() => handleEditBlur('tutor_telefono')} />
-                                                {formEditErrors.tutor_telefono && <span className="tico-field-error">{formEditErrors.tutor_telefono}</span>}
-                                            </label>
-                                            <label>Correo electrónico
-                                                <input className={`tico-edit-input${formEditErrors.tutor_email ? ' tico-input-error' : ''}`} type="email" placeholder="ejemplo@dominio.com"
-                                                    value={editPaciente.tutor_email || ''}
-                                                    onChange={(e) => {
-                                                        const v = e.target.value.trim();
-                                                        setEditPaciente({ ...editPaciente, tutor_email: v });
-                                                    }}
-                                                    onBlur={() => handleEditBlur('tutor_email')} />
-                                                {formEditErrors.tutor_email && <span className="tico-field-error">{formEditErrors.tutor_email}</span>}
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Overlay de carga / éxito */}
-                        {(saving || saveSuccess) && (
-                            <div className="tico-save-overlay">
-                                {saving ? (
-                                    <PageLoader message="Actualizando paciente..." />
+                                    <PageLoader message="Guardando..." />
                                 ) : (
                                     <div className="tico-save-success">
                                         <div className="tico-save-success__icon"><Check size={32} /></div>
@@ -1331,15 +1013,353 @@ const PacientesPage = () => {
                         )}
 
                         <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
-                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => setEditPaciente(null)}>Cancelar</button>
-                            <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarEdicion}>
-                                {saving ? 'Guardando...' : 'Guardar Cambios'}
+                            <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => { setModalNuevo(false); setFormErrors({}); }}>Cancelar</button>
+                            <button
+                                className="tico-btn tico-btn-primary"
+                                disabled={saving}
+                                onClick={handleAgregarPaciente}
+                            >
+                                {saving ? 'Guardando...' : 'Registrar Paciente'}
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
             )}
-        </div>
+
+            {/* ── Modal: Ver Detalle Premium ── */}
+            {
+                modalPaciente && (
+                    <div className="tico-modal-overlay" onClick={() => setModalPaciente(null)}>
+                        <div className="tico-profile-card" onClick={e => e.stopPropagation()} style={{ width: 'min(650px, 95vw)' }}>
+                            <button className="tico-modal-close-v2" onClick={() => setModalPaciente(null)}>
+                                <X size={20} />
+                            </button>
+
+                            <div className="tico-profile-hero">
+                                <div className="esp-foto-initials-lg" style={{ background: 'linear-gradient(135deg, #4c7bc7 0%, #7da0d9 100%)' }}>
+                                    {(modalPaciente.paciente || 'P').charAt(0).toUpperCase()}
+                                </div>
+                                <div className="tico-profile-hero-info">
+                                    <h2 className="tico-profile-hero-name">{modalPaciente.paciente || 'Paciente'}</h2>
+                                    <p className="tico-profile-hero-subtitle">Paciente del Centro</p>
+                                </div>
+                            </div>
+
+                            <div className="tico-profile-grid">
+                                {/* Datos Personales */}
+                                <div className="tico-field-box">
+                                    <span className="tico-field-box-label"><Calendar size={12} /> Nacimiento</span>
+                                    <span className="tico-field-box-value">{modalPaciente.fecha_nacimiento || '—'}</span>
+                                </div>
+                                <div className="tico-field-box">
+                                    <span className="tico-field-box-label"><User size={12} /> Edad y Género</span>
+                                    <span className="tico-field-box-value">{modalPaciente.edad || '—'} años, {modalPaciente.genero || '—'}</span>
+                                </div>
+
+                                {/* Datos Clínicos */}
+                                <div className="tico-field-box">
+                                    <span className="tico-field-box-label"><Activity size={12} /> Prioridad y Estado</span>
+                                    <div className="tico-field-box-value">
+                                        <span className={`tico-badge tico-badge-${(modalPaciente.prioridad || 'bajo').toLowerCase()}`} style={{ marginRight: '8px' }}>
+                                            {modalPaciente.prioridad || 'Bajo'}
+                                        </span>
+                                        <span style={{ fontSize: '0.9rem', color: '#64748b' }}>{modalPaciente.estado || '—'}</span>
+                                    </div>
+                                </div>
+                                <div className="tico-field-box">
+                                    <span className="tico-field-box-label"><Info size={12} /> IMC</span>
+                                    <span className="tico-field-box-value">{modalPaciente.imc || '—'} kg/m²</span>
+                                </div>
+
+                                {/* Tutor Info */}
+                                <div className="tico-field-box full-width" style={{ background: 'rgba(76, 123, 199, 0.05)', border: '1px solid rgba(76, 123, 199, 0.1)' }}>
+                                    <span className="tico-field-box-label"><ShieldCheck size={12} /> Tutor Responsable</span>
+                                    <div className="tico-field-box-value" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginTop: '0.5rem' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Nombre</div>
+                                            <div>{modalPaciente.tutor || modalPaciente.tutor_nombre || '—'}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Parentesco</div>
+                                            <div>{modalPaciente.tutor_parentesco || '—'}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Teléfono</div>
+                                            <div>{modalPaciente.tutor_telefono || '—'}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Email</div>
+                                            <div>{modalPaciente.tutor_email || '—'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Observaciones extra si las hay */}
+                                <div className="tico-field-box full-width">
+                                    <span className="tico-field-box-label"><FileText size={12} /> Observaciones</span>
+                                    <span className="tico-field-box-value text-small">{modalPaciente.observacion || 'Sin observaciones registradas.'}</span>
+                                </div>
+                            </div>
+
+                            <div className="tico-profile-footer-v2">
+                                <button className="tico-btn tico-btn-outline" onClick={() => setModalPaciente(null)} style={{ borderRadius: '12px', padding: '0.6rem 2.5rem' }}>Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ── Modal: Editar ── */}
+            {
+                editPaciente && (
+                    <div className="tico-modal-overlay" onClick={() => setEditPaciente(null)}>
+                    <div className="tico-modal tico-modal-wide" onClick={(e) => e.stopPropagation()}>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Editar Paciente</h2>
+                            <button className="tico-modal-close" onClick={() => setEditPaciente(null)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="tico-modal-content">
+                            <p className="tico-form-hint" style={{ textAlign: 'left', marginBottom: '1rem' }}>Modifica los datos del paciente</p>
+
+                            {/* ── Tabs Navigation ── */}
+                            <div className="tico-modal-tabs">
+                                <button
+                                    className={`tico-tab-btn ${activeTabEdit === 'personal' ? 'active' : ''}`}
+                                    onClick={() => setActiveTabEdit('personal')}
+                                >
+                                    <ClipboardList size={16} className="tico-tab-icon" /> Datos Personales
+                                    {(formEditErrors.nombre || formEditErrors.apellido_paterno) && <span className="tico-tab-badge">Faltan datos</span>}
+                                </button>
+                                <button
+                                    className={`tico-tab-btn ${activeTabEdit === 'expediente' ? 'active' : ''}`}
+                                    onClick={() => setActiveTabEdit('expediente')}
+                                >
+                                    <ClipboardList size={16} className="tico-tab-icon" /> Expediente
+                                    {(formEditErrors.monto_mensual) && <span className="tico-tab-badge">Faltan datos</span>}
+                                </button>
+                                <button
+                                    className={`tico-tab-btn ${activeTabEdit === 'tutor' ? 'active' : ''}`}
+                                    onClick={() => setActiveTabEdit('tutor')}
+                                >
+                                    <ChevronRight size={16} className="tico-tab-icon" /> Datos del Tutor
+                                    {(formEditErrors.tutor_nombre || formEditErrors.tutor_apellido_paterno || formEditErrors.tutor_telefono || formEditErrors.tutor_email) && <span className="tico-tab-badge">Faltan datos</span>}
+                                </button>
+                            </div>
+
+                            <div className="tico-form-one-col" style={{ minHeight: '380px' }}>
+                                {activeTabEdit === 'personal' && (
+                                    <div className="tico-form-anim-in">
+                                        <p className="tico-form-section-label">Información Básica del Paciente</p>
+                                        <div className="tico-form-stack">
+                                            <label>Nombre(s)
+                                                <input className={`tico-edit-input${formEditErrors.nombre ? ' tico-input-error' : ''}`} placeholder="Nombre(s)"
+                                                    maxLength={30}
+                                                    value={editPaciente.nombre || ''}
+                                                    onChange={(e) => setEditPaciente({ ...editPaciente, nombre: e.target.value })}
+                                                    onBlur={() => handleEditBlur('nombre')} />
+                                                {formEditErrors.nombre && <span className="tico-field-error">{formEditErrors.nombre}</span>}
+                                            </label>
+                                            <div className="tico-form-row2">
+                                                <label>Apellido Paterno
+                                                    <input className={`tico-edit-input${formEditErrors.apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Paterno"
+                                                        maxLength={30}
+                                                        value={editPaciente.apellido_paterno || ''}
+                                                        onChange={(e) => setEditPaciente({ ...editPaciente, apellido_paterno: e.target.value })}
+                                                        onBlur={() => handleEditBlur('apellido_paterno')} />
+                                                    {formEditErrors.apellido_paterno && <span className="tico-field-error">{formEditErrors.apellido_paterno}</span>}
+                                                </label>
+                                                <label>Apellido Materno
+                                                    <input className="tico-edit-input" placeholder="Materno"
+                                                        maxLength={30}
+                                                        value={editPaciente.apellido_materno || ''}
+                                                        onChange={(e) => setEditPaciente({ ...editPaciente, apellido_materno: e.target.value })} />
+                                                </label>
+                                            </div>
+                                            <label>Fecha de nacimiento
+                                                <TicoDateInput
+                                                    className="tico-edit-input"
+                                                    value={editPaciente.fecha_nacimiento || ''}
+                                                    onChange={(val) => setEditPaciente({ ...editPaciente, fecha_nacimiento: val })} />
+                                            </label>
+                                            <label>Género
+                                                <select className="tico-edit-input" value={editPaciente.genero || 'Masculino'}
+                                                    onChange={(e) => setEditPaciente({ ...editPaciente, genero: e.target.value })}>
+                                                    <option>Masculino</option>
+                                                    <option>Femenino</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTabEdit === 'expediente' && (
+                                    <div className="tico-form-anim-in">
+                                        <p className="tico-form-section-label">Expediente Clínico</p>
+                                        <div className="tico-form-stack">
+                                            <div className="tico-form-row2">
+                                                <label>Peso (kg)
+                                                    <input className="tico-edit-input" type="number" placeholder="peso en kg" min="0" max="300"
+                                                        value={editPaciente.peso_kg || ''}
+                                                        onChange={(e) => {
+                                                            const peso = e.target.value;
+                                                            if (parseFloat(peso) > 300) return;
+                                                            const h = parseFloat(editPaciente.altura_cm) / 100;
+                                                            const imc = peso && h ? (parseFloat(peso) / (h * h)).toFixed(2) : '';
+                                                            setEditPaciente({ ...editPaciente, peso_kg: peso, imc });
+                                                        }} />
+                                                </label>
+                                                <label>Altura (cm)
+                                                    <input className="tico-edit-input" type="number" placeholder="altura en cm" min="0" max="250"
+                                                        value={editPaciente.altura_cm || ''}
+                                                        onChange={(e) => {
+                                                            const altura = e.target.value;
+                                                            if (parseFloat(altura) > 250) return;
+                                                            const h = parseFloat(altura) / 100;
+                                                            const imc = editPaciente.peso_kg && h ? (parseFloat(editPaciente.peso_kg) / (h * h)).toFixed(2) : '';
+                                                            setEditPaciente({ ...editPaciente, altura_cm: altura, imc });
+                                                        }} />
+                                                </label>
+                                            </div>
+                                            <label>IMC (auto-calculado)
+                                                <input className="tico-edit-input tico-input-readonly" readOnly
+                                                    value={editPaciente.imc ? `${editPaciente.imc} kg/m²` : '—'} />
+                                            </label>
+                                            <label>Alergias
+                                                <input className="tico-edit-input" placeholder="(vacío si ninguna)"
+                                                    maxLength={120}
+                                                    value={editPaciente.alergias || ''}
+                                                    onChange={(e) => setEditPaciente({ ...editPaciente, alergias: e.target.value })} />
+                                            </label>
+                                            <div className="tico-form-row2">
+                                                <label>Observación
+                                                    <select className="tico-edit-input" value={editPaciente.observacion || 'Bajo'}
+                                                        onChange={(e) => setEditPaciente({ ...editPaciente, observacion: e.target.value })}>
+                                                        <option>Bajo</option>
+                                                        <option>Medio</option>
+                                                        <option>Alto</option>
+                                                    </select>
+                                                </label>
+                                                <label>Estado
+                                                    <select className="tico-edit-input" value={editPaciente.estado || 'Estable'}
+                                                        onChange={(e) => setEditPaciente({ ...editPaciente, estado: e.target.value })}>
+                                                        <option>Estable</option>
+                                                        <option>Inestable</option>
+                                                    </select>
+                                                </label>
+                                            </div>
+                                            <label>Monto mensual ($)
+                                                <input className={`tico-edit-input${formEditErrors.monto_mensual ? ' tico-input-error' : ''}`} type="number" placeholder="500.00" min="0" max="99999"
+                                                    value={editPaciente.monto_mensual || ''}
+                                                    onChange={(e) => {
+                                                        if (parseFloat(e.target.value) > 99999) return;
+                                                        setEditPaciente({ ...editPaciente, monto_mensual: e.target.value });
+                                                    }}
+                                                    onBlur={() => handleEditBlur('monto_mensual')} />
+                                                {formEditErrors.monto_mensual && <span className="tico-field-error">{formEditErrors.monto_mensual}</span>}
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTabEdit === 'tutor' && (
+                                    <div className="tico-form-anim-in">
+                                        <p className="tico-form-section-label">Información del Tutor</p>
+                                        <div className="tico-form-stack">
+                                            <label>Nombre(s) del tutor
+                                                <input className={`tico-edit-input${formEditErrors.tutor_nombre ? ' tico-input-error' : ''}`} placeholder="Nombre del tutor"
+                                                    maxLength={30}
+                                                    value={editPaciente.tutor_nombre || ''}
+                                                    onChange={(e) => setEditPaciente({ ...editPaciente, tutor_nombre: e.target.value })}
+                                                    onBlur={() => handleEditBlur('tutor_nombre')} />
+                                                {formEditErrors.tutor_nombre && <span className="tico-field-error">{formEditErrors.tutor_nombre}</span>}
+                                            </label>
+                                            <div className="tico-form-row2">
+                                                <label>Apellido Paterno
+                                                    <input className={`tico-edit-input${formEditErrors.tutor_apellido_paterno ? ' tico-input-error' : ''}`} placeholder="Paterno"
+                                                        maxLength={30}
+                                                        value={editPaciente.tutor_apellido_paterno || ''}
+                                                        onChange={(e) => setEditPaciente({ ...editPaciente, tutor_apellido_paterno: e.target.value })}
+                                                        onBlur={() => handleEditBlur('tutor_apellido_paterno')} />
+                                                    {formEditErrors.tutor_apellido_paterno && <span className="tico-field-error">{formEditErrors.tutor_apellido_paterno}</span>}
+                                                </label>
+                                                <label>Apellido Materno
+                                                    <input className="tico-edit-input" placeholder="Materno"
+                                                        maxLength={30}
+                                                        value={editPaciente.tutor_apellido_materno || ''}
+                                                        onChange={(e) => setEditPaciente({ ...editPaciente, tutor_apellido_materno: e.target.value })} />
+                                                </label>
+                                            </div>
+                                            <label>Parentesco
+                                                <select className="tico-edit-input" value={editPaciente.tutor_parentesco || ''}
+                                                    onChange={(e) => setEditPaciente({ ...editPaciente, tutor_parentesco: e.target.value })}>
+                                                    <option value="">— Seleccionar —</option>
+                                                    <option>Padre</option>
+                                                    <option>Madre</option>
+                                                    <option>Abuelo/a</option>
+                                                    <option>Tío/a</option>
+                                                    <option>Hermano/a</option>
+                                                    <option>Tutor legal</option>
+                                                    <option>Otro</option>
+                                                </select>
+                                            </label>
+                                            <div className="tico-form-row2">
+                                                <label>Teléfono celular
+                                                    <input className={`tico-edit-input${formEditErrors.tutor_telefono ? ' tico-input-error' : ''}`} placeholder="10 dígitos"
+                                                        maxLength={10}
+                                                        value={editPaciente.tutor_telefono || ''}
+                                                        onChange={(e) => {
+                                                            const v = e.target.value.replace(/\D/g, '');
+                                                            setEditPaciente({ ...editPaciente, tutor_telefono: v });
+                                                        }}
+                                                        onBlur={() => handleEditBlur('tutor_telefono')} />
+                                                    {formEditErrors.tutor_telefono && <span className="tico-field-error">{formEditErrors.tutor_telefono}</span>}
+                                                </label>
+                                                <label>Correo electrónico
+                                                    <input className={`tico-edit-input${formEditErrors.tutor_email ? ' tico-input-error' : ''}`} type="email" placeholder="ejemplo@dominio.com"
+                                                        value={editPaciente.tutor_email || ''}
+                                                        onChange={(e) => {
+                                                            const v = e.target.value.trim();
+                                                            setEditPaciente({ ...editPaciente, tutor_email: v });
+                                                        }}
+                                                        onBlur={() => handleEditBlur('tutor_email')} />
+                                                    {formEditErrors.tutor_email && <span className="tico-field-error">{formEditErrors.tutor_email}</span>}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Overlay de carga / éxito */}
+                            {(saving || saveSuccess) && (
+                                <div className="tico-save-overlay">
+                                    {saving ? (
+                                        <PageLoader message="Actualizando paciente..." />
+                                    ) : (
+                                        <div className="tico-save-success">
+                                            <div className="tico-save-success__icon"><Check size={32} /></div>
+                                            <span>{saveSuccess}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
+                                <button className="tico-btn tico-btn-outline" disabled={saving} onClick={() => setEditPaciente(null)}>Cancelar</button>
+                                <button className="tico-btn tico-btn-primary" disabled={saving} onClick={handleGuardarEdicion}>
+                                    {saving ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+        </div >
     );
 };
 

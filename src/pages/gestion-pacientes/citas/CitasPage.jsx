@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import '../pacientes/Pacientes.css';
-import { 
+import {
     ChevronUp, ChevronDown, Eye, Pencil, X, Plus, XCircle, CheckCircle, Calendar, List,
     Clock, Activity, FileText, User, ShieldCheck, Mail, Phone
 } from 'lucide-react';
 import { useNotifications } from '../../../context/NotificationContext';
 import { getPacientes, getCitas, createCita, updateCita } from '../../../services/api';
 import CalendarioCitas from './CalendarioCitas';
+import { normalizeDateInput } from '../../../utils/dateHelper';
+import TicoDateInput from '../../../components/TicoDateInput';
 
 const EMPTY_CITA = {
     paciente_nombre: '',
@@ -407,79 +409,81 @@ const CitasPage = () => {
             {modalNueva && (
                 <div className="tico-modal-overlay" onClick={() => setModalNueva(false)}>
                     <div className="tico-modal tico-modal-wide" onClick={(e) => e.stopPropagation()} style={{ width: 'min(560px, 95vw)' }}>
-                        <button className="tico-modal-close" onClick={() => setModalNueva(false)}>
-                            <X size={18} />
-                        </button>
-
-                        <h2 className="tico-modal-title">Nueva Cita</h2>
-                        <p className="tico-form-hint" style={{ textAlign: 'left' }}>* Campos obligatorios</p>
-
-                        <p className="tico-form-section-label">Datos de la Cita</p>
-                        <div className="tico-form-stack">
-                            <label>Paciente *
-                                <select
-                                    className={`tico-edit-input${formErrors.paciente_nombre ? ' tico-input-error' : ''}`}
-                                    value={formNueva.paciente_nombre}
-                                    onChange={(e) => handleFormChange('paciente_nombre', e.target.value)}
-                                >
-                                    <option value="">— Seleccionar paciente —</option>
-                                    {pacientesList.map(p => (
-                                        <option key={p.id} value={p.nombre}>{p.nombre}</option>
-                                    ))}
-                                </select>
-                                {formErrors.paciente_nombre && <span className="tico-field-error">{formErrors.paciente_nombre}</span>}
-                            </label>
-                            <label>Tutor *
-                                <input
-                                    className={`tico-edit-input${formErrors.tutor ? ' tico-input-error' : ''}`}
-                                    placeholder="Nombre del tutor"
-                                    value={formNueva.tutor}
-                                    onChange={(e) => handleFormChange('tutor', e.target.value)} />
-                                {formErrors.tutor && <span className="tico-field-error">{formErrors.tutor}</span>}
-                            </label>
-                            <div className="tico-form-row2">
-                                <label>Fecha de cita *
-                                    <input
-                                        className={`tico-edit-input${formErrors.fecha_cita ? ' tico-input-error' : ''}`}
-                                        type="date"
-                                        value={formNueva.fecha_cita}
-                                        onChange={(e) => handleFormChange('fecha_cita', e.target.value)} />
-                                    {formErrors.fecha_cita && <span className="tico-field-error">{formErrors.fecha_cita}</span>}
-                                </label>
-                                <label>Hora *
-                                    <input
-                                        className={`tico-edit-input${formErrors.hora_cita ? ' tico-input-error' : ''}`}
-                                        type="time"
-                                        value={formNueva.hora_cita}
-                                        onChange={(e) => handleFormChange('hora_cita', e.target.value)} />
-                                    {formErrors.hora_cita && <span className="tico-field-error">{formErrors.hora_cita}</span>}
-                                </label>
-                            </div>
-                            <label>Observación clínica
-                                <textarea
-                                    className="tico-edit-input"
-                                    rows={3}
-                                    placeholder="Notas sobre la cita (opcional)"
-                                    value={formNueva.observacion_clinica}
-                                    onChange={(e) => handleFormChange('observacion_clinica', e.target.value)}
-                                    style={{ resize: 'vertical', fontFamily: 'inherit' }} />
-                            </label>
-                            <div className="tico-form-row2">
-                                <label>Estado
-                                    <select className="tico-edit-input" value={formNueva.estado_cita}
-                                        onChange={(e) => handleFormChange('estado_cita', e.target.value)}>
-                                        <option>Programada</option>
-                                        <option>Confirmada</option>
-                                    </select>
-                                </label>
-                                <label>Progreso terapia (%)
-                                    <input className="tico-edit-input" type="number" min="0" max="100" placeholder="0"
-                                        value={formNueva.progreso_terapia_pct}
-                                        onChange={(e) => handleFormChange('progreso_terapia_pct', e.target.value)} />
-                                </label>
-                            </div>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Nueva Cita</h2>
+                            <button className="tico-modal-close" onClick={() => setModalNueva(false)}>
+                                <X size={20} />
+                            </button>
                         </div>
 
+                        <div className="tico-modal-content">
+                            <p className="tico-form-hint" style={{ textAlign: 'left' }}>* Campos obligatorios</p>
+
+                            <p className="tico-form-section-label">Datos de la Cita</p>
+                            <div className="tico-form-stack">
+                                <label>Paciente *
+                                    <select
+                                        className={`tico-edit-input${formErrors.paciente_nombre ? ' tico-input-error' : ''}`}
+                                        value={formNueva.paciente_nombre}
+                                        onChange={(e) => handleFormChange('paciente_nombre', e.target.value)}
+                                    >
+                                        <option value="">— Seleccionar paciente —</option>
+                                        {pacientesList.map(p => (
+                                            <option key={p.id} value={p.nombre}>{p.nombre}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.paciente_nombre && <span className="tico-field-error">{formErrors.paciente_nombre}</span>}
+                                </label>
+                                <label>Tutor *
+                                    <input
+                                        className={`tico-edit-input${formErrors.tutor ? ' tico-input-error' : ''}`}
+                                        placeholder="Nombre del tutor"
+                                        value={formNueva.tutor}
+                                        onChange={(e) => handleFormChange('tutor', e.target.value)} />
+                                    {formErrors.tutor && <span className="tico-field-error">{formErrors.tutor}</span>}
+                                </label>
+                                <div className="tico-form-row2">
+                                    <label>Fecha de cita *
+                                        <TicoDateInput
+                                            className={`tico-edit-input${formErrors.fecha_cita ? ' tico-input-error' : ''}`}
+                                            value={formNueva.fecha_cita}
+                                            onChange={(val) => handleFormChange('fecha_cita', val)} />
+                                        {formErrors.fecha_cita && <span className="tico-field-error">{formErrors.fecha_cita}</span>}
+                                    </label>
+                                    <label>Hora *
+                                        <input
+                                            className={`tico-edit-input${formErrors.hora_cita ? ' tico-input-error' : ''}`}
+                                            type="time"
+                                            value={formNueva.hora_cita}
+                                            onChange={(e) => handleFormChange('hora_cita', e.target.value)} />
+                                        {formErrors.hora_cita && <span className="tico-field-error">{formErrors.hora_cita}</span>}
+                                    </label>
+                                </div>
+                                <label>Observación clínica
+                                    <textarea
+                                        className="tico-edit-input"
+                                        rows={3}
+                                        placeholder="Notas sobre la cita (opcional)"
+                                        value={formNueva.observacion_clinica}
+                                        onChange={(e) => handleFormChange('observacion_clinica', e.target.value)}
+                                        style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+                                </label>
+                                <div className="tico-form-row2">
+                                    <label>Estado
+                                        <select className="tico-edit-input" value={formNueva.estado_cita}
+                                            onChange={(e) => handleFormChange('estado_cita', e.target.value)}>
+                                            <option>Programada</option>
+                                            <option>Confirmada</option>
+                                        </select>
+                                    </label>
+                                    <label>Progreso terapia (%)
+                                        <input className="tico-edit-input" type="number" min="0" max="100" placeholder="0"
+                                            value={formNueva.progreso_terapia_pct}
+                                            onChange={(e) => handleFormChange('progreso_terapia_pct', e.target.value)} />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                         <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
                             <button className="tico-btn tico-btn-outline" onClick={() => { setModalNueva(false); setFormErrors({}); }}>Cancelar</button>
                             <button className="tico-btn tico-btn-primary" onClick={handleAgregarCita}>
@@ -531,10 +535,10 @@ const CitasPage = () => {
                                 <div className="tico-field-box-value">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '100px', overflow: 'hidden' }}>
-                                            <div style={{ 
-                                                height: '100%', 
-                                                width: `${modalCita.progreso_terapia_pct}%`, 
-                                                background: 'var(--tico-primary)', 
+                                            <div style={{
+                                                height: '100%',
+                                                width: `${modalCita.progreso_terapia_pct}%`,
+                                                background: 'var(--tico-primary)',
                                                 borderRadius: '100px',
                                                 transition: 'width 0.4s ease'
                                             }} />
@@ -581,54 +585,58 @@ const CitasPage = () => {
             {editCita && (
                 <div className="tico-modal-overlay" onClick={() => setEditCita(null)}>
                     <div className="tico-modal tico-modal-wide" onClick={(e) => e.stopPropagation()} style={{ width: 'min(560px, 95vw)' }}>
-                        <button className="tico-modal-close" onClick={() => setEditCita(null)}>
-                            <X size={18} />
-                        </button>
-                        <h2 className="tico-modal-title">Editar Cita</h2>
-
-                        <p className="tico-form-section-label">Datos de la Cita</p>
-                        <div className="tico-form-stack">
-                            <label>Paciente
-                                <input className="tico-edit-input" value={editCita.paciente_nombre}
-                                    onChange={(e) => setEditCita({ ...editCita, paciente_nombre: e.target.value })} />
-                            </label>
-                            <label>Tutor
-                                <input className="tico-edit-input" value={editCita.tutor}
-                                    onChange={(e) => setEditCita({ ...editCita, tutor: e.target.value })} />
-                            </label>
-                            <div className="tico-form-row2">
-                                <label>Fecha
-                                    <input className="tico-edit-input" value={editCita.fecha_cita}
-                                        onChange={(e) => setEditCita({ ...editCita, fecha_cita: e.target.value })} />
-                                </label>
-                                <label>Hora
-                                    <input className="tico-edit-input" type="time" value={editCita.hora_cita}
-                                        onChange={(e) => setEditCita({ ...editCita, hora_cita: e.target.value })} />
-                                </label>
-                            </div>
-                            <label>Observación clínica
-                                <textarea className="tico-edit-input" rows={3} value={editCita.observacion_clinica}
-                                    onChange={(e) => setEditCita({ ...editCita, observacion_clinica: e.target.value })}
-                                    style={{ resize: 'vertical', fontFamily: 'inherit' }} />
-                            </label>
-                            <div className="tico-form-row2">
-                                <label>Estado
-                                    <select className="tico-edit-input" value={editCita.estado_cita}
-                                        onChange={(e) => setEditCita({ ...editCita, estado_cita: e.target.value })}>
-                                        <option>Programada</option>
-                                        <option>Confirmada</option>
-                                        <option>Cancelada</option>
-                                        <option>Completada</option>
-                                    </select>
-                                </label>
-                                <label>Progreso (%)
-                                    <input className="tico-edit-input" type="number" min="0" max="100"
-                                        value={editCita.progreso_terapia_pct}
-                                        onChange={(e) => setEditCita({ ...editCita, progreso_terapia_pct: Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0)) })} />
-                                </label>
-                            </div>
+                        <div className="tico-modal-header">
+                            <h2 className="tico-modal-title">Editar Cita</h2>
+                            <button className="tico-modal-close" onClick={() => setEditCita(null)}>
+                                <X size={20} />
+                            </button>
                         </div>
 
+                        <div className="tico-modal-content">
+                            <p className="tico-form-section-label">Datos de la Cita</p>
+                            <div className="tico-form-stack">
+                                <label>Paciente
+                                    <input className="tico-edit-input" value={editCita.paciente_nombre}
+                                        onChange={(e) => setEditCita({ ...editCita, paciente_nombre: e.target.value })} />
+                                </label>
+                                <label>Tutor
+                                    <input className="tico-edit-input" value={editCita.tutor}
+                                        onChange={(e) => setEditCita({ ...editCita, tutor: e.target.value })} />
+                                </label>
+                                <div className="tico-form-row2">
+                                    <label>Fecha
+                                        <TicoDateInput className="tico-edit-input"
+                                            value={editCita.fecha_cita}
+                                            onChange={(val) => setEditCita({ ...editCita, fecha_cita: val })} />
+                                    </label>
+                                    <label>Hora
+                                        <input className="tico-edit-input" type="time" value={editCita.hora_cita}
+                                            onChange={(e) => setEditCita({ ...editCita, hora_cita: e.target.value })} />
+                                    </label>
+                                </div>
+                                <label>Observación clínica
+                                    <textarea className="tico-edit-input" rows={3} value={editCita.observacion_clinica}
+                                        onChange={(e) => setEditCita({ ...editCita, observacion_clinica: e.target.value })}
+                                        style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+                                </label>
+                                <div className="tico-form-row2">
+                                    <label>Estado
+                                        <select className="tico-edit-input" value={editCita.estado_cita}
+                                            onChange={(e) => setEditCita({ ...editCita, estado_cita: e.target.value })}>
+                                            <option>Programada</option>
+                                            <option>Confirmada</option>
+                                            <option>Cancelada</option>
+                                            <option>Completada</option>
+                                        </select>
+                                    </label>
+                                    <label>Progreso (%)
+                                        <input className="tico-edit-input" type="number" min="0" max="100"
+                                            value={editCita.progreso_terapia_pct}
+                                            onChange={(e) => setEditCita({ ...editCita, progreso_terapia_pct: Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0)) })} />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                         <div className="tico-edit-actions" style={{ marginTop: '1.25rem' }}>
                             <button className="tico-btn tico-btn-outline" onClick={() => setEditCita(null)}>Cancelar</button>
                             <button className="tico-btn tico-btn-primary" onClick={handleGuardarEdicion}>

@@ -333,7 +333,10 @@
 .tico-modal-scrollable {
     display: flex;
     flex-direction: column;
-    max-height: 92vh;
+    max-height: 98vh;
+    /* Más alto para evitar scroll */
+    width: 650px;
+    /* Un poco más ancho para las columnas */
     border-radius: 24px !important;
     box-shadow: 0 25px 50px -12px rgba(57, 113, 184, 0.25);
     position: relative;
@@ -552,6 +555,7 @@
         grid-template-columns: 1fr;
         padding: 1.5rem;
     }
+
     .esp-profile-hero {
         padding: 2.5rem 1.5rem 1.25rem;
     }
@@ -592,7 +596,7 @@
     flex-shrink: 0;
 }
 
-.esp-foto-preview-xxs, 
+.esp-foto-preview-xxs,
 .esp-foto-initials-xxs {
     width: 44px;
     height: 44px;
@@ -633,29 +637,38 @@
 .esp-label-compact {
     display: flex;
     flex-direction: column;
-    margin-bottom: 0.75rem !important;
-    font-size: 0.78rem !important;
+    margin-bottom: 0.5rem !important;
+    /* Reducido de 0.75rem */
+    font-size: 0.72rem !important;
+    /* Un poco más pequeño */
     font-weight: 700;
     color: #475569;
     flex: 1;
 }
 
-.esp-label-compact input, 
+.esp-align-center {
+    align-items: center;
+}
+
+.esp-label-compact input,
 .esp-label-compact select,
 .esp-label-compact textarea {
-    font-size: 0.95rem !important;
-    padding: 0.6rem 0.85rem !important;
-    margin-top: 4px !important;
-    border-radius: 12px !important;
+    font-size: 0.85rem !important;
+    /* Reducido de 0.95rem */
+    padding: 0.5rem 0.75rem !important;
+    /* Más compacto */
+    margin-top: 2px !important;
+    border-radius: 15px !important;
     width: 100%;
     box-sizing: border-box;
-    border: 1.5px solid #e2e8f0 !important;
+    border: 1px solid rgb(185 185 185 / 90%) !important;
     background-color: #fbfcfd !important;
+    padding: 0.6rem 0.85rem !important;
     transition: all 0.2s ease !important;
     color: #1e293b !important;
 }
 
-.esp-label-compact input:focus, 
+.esp-label-compact input:focus,
 .esp-label-compact select:focus,
 .esp-label-compact textarea:focus {
     border-color: var(--tico-primary) !important;
@@ -755,14 +768,24 @@
     padding: 1px 4px;
     border-radius: 4px;
 }
-.esp-badge-xs.ok { background: #f0fdf4; color: #16a34a; }
+
+.esp-badge-xs.ok {
+    background: #f0fdf4;
+    color: #16a34a;
+}
 
 .esp-cedula-msg {
     font-size: 0.65rem;
     margin-top: 2px;
 }
-.esp-cedula-msg.ok { color: #16a34a; }
-.esp-cedula-msg.error { color: #ef4444; }
+
+.esp-cedula-msg.ok {
+    color: #16a34a;
+}
+
+.esp-cedula-msg.error {
+    color: #ef4444;
+}
 
 /* Overlay de guardado */
 .tico-modal-scrollable .tico-save-overlay {

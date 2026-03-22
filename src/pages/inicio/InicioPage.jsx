@@ -71,7 +71,7 @@ const InicioPage = () => {
 
             // Procesamiento de Métricas Básicas (Simulado contra mes anterior para UI)
             const ingresosTotal = pagos.reduce((sum, p) => sum + Number(p.monto_pagado || 0), 0);
-            
+
             // Filtros corregidos usando 'estado_cita' y normalizando a minúsculas
             const confirmadas = citas.filter(c => {
                 const e = (c.estado_cita || '').toLowerCase();
@@ -180,8 +180,8 @@ const InicioPage = () => {
             {/* HEADER PRINCIPAL */}
             <div className="dash-header-section">
                 <div className="dash-header-text">
-                    <h1>Dashboard</h1>
-                    <p>Hola {user?.nombre?.split(' ')[0] || 'Doc'}, un resumen de tu clínica hoy.</p>
+                    <h1>Inicio</h1>
+                    <p>Bienvenido al Centro Tico</p>
                 </div>
 
                 {/* Banner Upgrade / Call to Action */}
@@ -190,8 +190,8 @@ const InicioPage = () => {
                     <div className="dash-banner-bg2"></div>
 
                     <div className="dash-banner-content">
-                        <h3>Registra a<br />un paciente</h3>
-                        <p>Crea expedientes rápido</p>
+                        <h3>Registrar Nuevo Paciente</h3>
+                        <p>Crea expedientes de forma rápida</p>
                     </div>
 
                     <div className="dash-banner-icon">
@@ -260,8 +260,8 @@ const InicioPage = () => {
                 <div className="dash-panel dash-panel-white dash-chart-panel">
                     <div className="dash-panel-header">
                         <div>
-                            <h3 className="dash-panel-title">Actividad</h3>
-                            <p className="dash-panel-subtitle">Interacciones de pacientes y citas</p>
+                            <h3 className="dash-panel-title">Actividad de la Plataforma</h3>
+                            <p className="dash-panel-subtitle">Interacciones de los últimos días</p>
                         </div>
                         <select
                             className="dash-panel-select"
@@ -323,7 +323,7 @@ const InicioPage = () => {
                 {/* TOP PERFORMERS */}
                 <div className="dash-panel dash-panel-purple">
                     <div className="dash-panel-header with-margin">
-                        <h3 className="dash-panel-title">Especialistas</h3>
+                        <h3 className="dash-panel-title">Especialistas del Centro</h3>
                         <button
                             onClick={() => navigate('/especialistas')}
                             className="dash-panel-action"
@@ -356,7 +356,7 @@ const InicioPage = () => {
                                     />
                                     <div className="dash-list-item-info">
                                         <p className="dash-list-item-title hover-indigo">{esp.nombre}</p>
-                                        <p className="dash-list-item-subtitle">{esp.especialidad_principal || 'Especialista General'}</p>
+                                        <p className="dash-list-item-subtitle">{esp.especialidad_principal || "Especialista General"}</p>
                                     </div>
                                 </div>
                             ))
@@ -367,14 +367,14 @@ const InicioPage = () => {
                         onClick={() => navigate('/especialistas')}
                         className="dash-link-btn btn-indigo"
                     >
-                        Directorio <ArrowRight size={14} />
+                        Ver Directorio <ArrowRight size={14} />
                     </button>
                 </div>
 
                 {/* PRÓXIMAS CITAS */}
                 <div className="dash-panel dash-panel-rose">
                     <div className="dash-panel-header with-margin">
-                        <h3 className="dash-panel-title">Citas semana</h3>
+                        <h3 className="dash-panel-title">Citas de la Semana</h3>
                         <button
                             onClick={() => navigate('/citas')}
                             className="dash-panel-action"
@@ -392,7 +392,7 @@ const InicioPage = () => {
                                 </div>
                             ))
                         ) : citasDelDia.length === 0 ? (
-                            <p className="dash-list-empty">No hay citas próximas programadas</p>
+                            <p className="dash-list-empty">No hay citas próximas</p>
                         ) : (
                             citasDelDia.map((cita, i) => {
                                 const fecha = cita.fecha_cita || (cita.fecha_hora && cita.fecha_hora.split('T')[0]);
@@ -420,7 +420,7 @@ const InicioPage = () => {
                         onClick={() => navigate('/citas')}
                         className="dash-link-btn btn-rose"
                     >
-                        Ver agenda <ArrowRight size={14} />
+                        Ver Mi Agenda <ArrowRight size={14} />
                     </button>
                 </div>
 
@@ -431,8 +431,8 @@ const InicioPage = () => {
 
                 {/* Título de la fila bottom */}
                 <div className="dash-bottom-title">
-                    <h3>Estado de Citas</h3>
-                    <p>Histórico</p>
+                    <h3>Estatus de Citas</h3>
+                    <p>Resumen histórico total</p>
                 </div>
 
                 {/* Tarjetas de estado */}
@@ -474,7 +474,7 @@ const InicioPage = () => {
                                 onClick={() => navigate('/citas')}
                                 className="dash-report-btn"
                             >
-                                <p className="dash-report-label">Reporte</p>
+                                <p className="dash-report-label">Ver Reporte</p>
                                 <div className="dash-report-icon">
                                     <ArrowRight size={12} strokeWidth={3} />
                                 </div>

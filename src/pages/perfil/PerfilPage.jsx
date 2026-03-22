@@ -11,10 +11,15 @@ import {
     Save,
     Loader2
 } from 'lucide-react';
+import TicoDateInput from '../../components/TicoDateInput';
+import HorarioEditor, { parseHorario, serializeHorario } from '../../components/HorarioEditor';
 import './Perfil.css';
+
+
 
 const PerfilPage = () => {
     const { user, updateUser } = useAuth();
+
 
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -25,8 +30,6 @@ const PerfilPage = () => {
         telefono: '',
         rol_id: null,
         estado_activo: true,
-        preferencia_modo_oscuro: false,
-        preferencia_idioma: 'es',
         horario_atencion: '',
         especialidad_principal: '',
         cedula_profesional: '',
@@ -35,6 +38,9 @@ const PerfilPage = () => {
         foto_url: '',
         firma_url: ''
     });
+
+    // Estado separado para el horario estructurado (objeto)
+    const [horarioObj, setHorarioObj] = useState(() => parseHorario(null));
 
     const [activeTab, setActiveTab] = useState('perfil');
 
@@ -53,8 +59,6 @@ const PerfilPage = () => {
                 telefono: user.telefono || '',
                 rol_id: user.rol_id,
                 estado_activo: user.estado_activo ?? true,
-                preferencia_modo_oscuro: user.preferencia_modo_oscuro || false,
-                preferencia_idioma: user.preferencia_idioma || 'es',
                 horario_atencion: user.horario_atencion || '',
                 especialidad_principal: user.especialidad_principal || '',
                 cedula_profesional: user.cedula_profesional || '',
@@ -63,11 +67,13 @@ const PerfilPage = () => {
                 foto_url: user.foto_url || '',
                 firma_url: user.firma_url || ''
             });
+            // Parsear el horario estructurado desde el JSON guardado
+            setHorarioObj(parseHorario(user.horario_atencion || null));
         }
     }, [user]);
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        let { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
@@ -80,7 +86,12 @@ const PerfilPage = () => {
 
         setLoading(true);
         try {
-            const result = await updateEspecialista(user.id, formData);
+            // Serializar el horario estructurado a JSON antes de enviar
+            const dataToSend = {
+                ...formData,
+                horario_atencion: serializeHorario(horarioObj),
+            };
+            const result = await updateEspecialista(user.id, dataToSend);
             if (result && result.data) {
                 updateUser(result.data);
                 toast.success('Perfil actualizado correctamente', {
@@ -128,14 +139,11 @@ const PerfilPage = () => {
                     <button type="button" onClick={() => setActiveTab('perfil')} className={`perfil-nav-btn ${activeTab === 'perfil' ? 'active' : ''}`}>
                         <User size={16} /> Datos Personales
                     </button>
-                    <button type="button" onClick={() => setActiveTab('preferencias')} className={`perfil-nav-btn ${activeTab === 'preferencias' ? 'active' : ''}`}>
-                        <Settings size={16} /> Preferencias
-                    </button>
                     <button type="button" onClick={() => setActiveTab('disponibilidad')} className={`perfil-nav-btn ${activeTab === 'disponibilidad' ? 'active' : ''}`}>
                         <Clock size={16} /> Disponibilidad
                     </button>
                     <button type="button" onClick={() => setActiveTab('credenciales')} className={`perfil-nav-btn ${activeTab === 'credenciales' ? 'active' : ''}`}>
-                        <Award size={16} /> Especialidad y Registro
+                        <Award size={16} /> Especialidad e Registro
                     </button>
                     <button type="button" onClick={() => setActiveTab('multimedia')} className={`perfil-nav-btn ${activeTab === 'multimedia' ? 'active' : ''}`}>
                         <ImageIcon size={16} /> Multimedia
@@ -194,11 +202,10 @@ const PerfilPage = () => {
                                 </div>
                                 <div className="perfil-form-group">
                                     <label className="perfil-label">Fecha de Nacimiento</label>
-                                    <input
-                                        type="date"
+                                    <TicoDateInput
                                         name="fecha_nacimiento"
                                         value={formData.fecha_nacimiento}
-                                        onChange={handleChange}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, fecha_nacimiento: val }))}
                                         className="perfil-input"
                                     />
                                 </div>
@@ -233,54 +240,8 @@ const PerfilPage = () => {
                                         onChange={handleChange}
                                         className="perfil-input"
                                         style={{ minHeight: '80px', resize: 'vertical' }}
-                                        placeholder="Escribe un breve resumen sobre tu experiencia, enfoque profesional o certificaciones destacadas..."
+                                        placeholder="Escribe un breve resumen sobre tu experiencia..."
                                     />
-                                </div>
-                            </div>
-                        </section>
-                    )}
-
-                    {/* 2. Preferencias de Interfaz */}
-                    {activeTab === 'preferencias' && (
-                        <section className="perfil-section">
-                            <div className="perfil-section-header">
-                                <div className="perfil-section-icon"><Settings size={20} /></div>
-                                <div>
-                                    <h2 className="perfil-section-title">Preferencias de Interfaz</h2>
-                                    <p className="perfil-section-desc">Ajusta cómo visualizas la plataforma TICO.</p>
-                                </div>
-                            </div>
-
-                            <div className="perfil-form-grid">
-                                <div className="perfil-form-group perfil-form-grid-full">
-                                    <div className="perfil-toggle">
-                                        <div className="perfil-toggle-info">
-                                            <strong>Modo Oscuro</strong>
-                                            <span>Reduce la fatiga visual en ambientes con poca luz.</span>
-                                        </div>
-                                        <label className="tico-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="preferencia_modo_oscuro"
-                                                checked={formData.preferencia_modo_oscuro}
-                                                onChange={handleChange}
-                                            />
-                                            <span className="tico-slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div className="perfil-form-group perfil-form-grid-full">
-                                    <label className="perfil-label">Idioma Preferido</label>
-                                    <select
-                                        name="preferencia_idioma"
-                                        value={formData.preferencia_idioma}
-                                        onChange={handleChange}
-                                        className="perfil-input"
-                                    >
-                                        <option value="es">Español (México)</option>
-                                        <option value="en">English (US)</option>
-                                    </select>
                                 </div>
                             </div>
                         </section>
@@ -292,21 +253,20 @@ const PerfilPage = () => {
                             <div className="perfil-section-header">
                                 <div className="perfil-section-icon"><Clock size={20} /></div>
                                 <div>
-                                    <h2 className="perfil-section-title">Disponibilidad Personal</h2>
+                                    <h2 className="perfil-section-title">Disponibilidad</h2>
                                     <p className="perfil-section-desc">Indica tus días y horarios habituales de atención.</p>
                                 </div>
                             </div>
 
                             <div className="perfil-form-grid">
                                 <div className="perfil-form-group perfil-form-grid-full">
-                                    <label className="perfil-label">Descripción de Horarios</label>
-                                    <textarea
-                                        name="horario_atencion"
-                                        value={formData.horario_atencion}
-                                        onChange={handleChange}
-                                        className="perfil-input"
-                                        style={{ minHeight: '100px', resize: 'vertical' }}
-                                        placeholder="Ej. Lunes a Viernes de 09:00 a 14:00 y de 16:00 a 19:00 hrs. Sábados de 10:00 a 14:00 hrs."
+                                    <label className="perfil-label">Horario de Atención Semanal</label>
+                                    <p className="perfil-section-desc" style={{ marginBottom: '0.6rem' }}>
+                                        Define tus días y horarios de atención. Puedes agregar hasta 2 turnos por día.
+                                    </p>
+                                    <HorarioEditor
+                                        value={horarioObj}
+                                        onChange={setHorarioObj}
                                     />
                                 </div>
                             </div>
@@ -319,7 +279,7 @@ const PerfilPage = () => {
                             <div className="perfil-section-header">
                                 <div className="perfil-section-icon"><Award size={20} /></div>
                                 <div>
-                                    <h2 className="perfil-section-title">Especialidad y Registro</h2>
+                                    <h2 className="perfil-section-title">Especialidad e Registro</h2>
                                     <p className="perfil-section-desc">Datos oficiales de tu carrera médica.</p>
                                 </div>
                             </div>
@@ -357,7 +317,7 @@ const PerfilPage = () => {
                             <div className="perfil-section-header">
                                 <div className="perfil-section-icon"><ImageIcon size={20} /></div>
                                 <div>
-                                    <h2 className="perfil-section-title">Foto de Perfil y Firma</h2>
+                                    <h2 className="perfil-section-title">Multimedia</h2>
                                     <p className="perfil-section-desc">Sube tus imágenes desde tu computadora (máx. 5MB, solo imágenes).</p>
                                 </div>
                             </div>
@@ -442,7 +402,7 @@ const PerfilPage = () => {
                     <span className="text-sm text-gray-500 font-medium">Puedes navegar entre pestañas; los datos no se perderán.</span>
                     <button type="submit" className="perfil-btn-save" disabled={loading}>
                         {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                        {loading ? 'Guardando...' : 'Guardar Todos los Cambios'}
+                        {loading ? "Guardando..." : "Guardar Todos los Cambios"}
                     </button>
                 </div>
             </form>

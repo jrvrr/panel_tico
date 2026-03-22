@@ -204,7 +204,7 @@ const DashboardLayout = () => {
                     <div className="dl-nav-section">
                         {!isCollapsed && <span className="dl-nav-label">Canalización</span>}
 
-                        <SidebarSubmenu icon={Users} label="Gestión pacientes" isCollapsed={isCollapsed}>
+                        <SidebarSubmenu icon={Users} label="Pacientes" isCollapsed={isCollapsed}>
                             <NavLink to="/pacientes" className={({ isActive }) => `dl-submenu-link${isActive ? ' active' : ''}`}>Pacientes</NavLink>
                             <NavLink to="/citas" className={({ isActive }) => `dl-submenu-link${isActive ? ' active' : ''}`}>Citas</NavLink>
                             <NavLink to="/pagos" className={({ isActive }) => `dl-submenu-link${isActive ? ' active' : ''}`}>Pagos</NavLink>
@@ -256,8 +256,8 @@ const DashboardLayout = () => {
                                     <div className="dl-notif-header">
                                         <span className="dl-notif-title">
                                             {(unreadSistema + unreadGestion) > 0
-                                                ? `(${unreadGestion}) PACIENTES Y (${unreadSistema}) SISTEMA`
-                                                : 'SIN NOTIFICACIONES NUEVAS'}
+                                                ? `(${unreadGestion}) PACIENTES Y (${unreadSistema}) CANALIZACIÓN`
+                                                : "SIN NOTIFICACIONES NUEVAS"}
                                         </span>
                                         <div className="dl-notif-actions" onClick={e => e.stopPropagation()}>
                                             <button title="Marcar todas como leídas"><ListChecks size={15} /></button>
@@ -285,7 +285,7 @@ const DashboardLayout = () => {
                                     </p>
                                     <p className="dl-profile-role">
                                         {isSuperAdmin && <Star size={10} className="dl-profile-star" />}
-                                        {isSuperAdmin ? 'Super Admin' : 'Especialista'}
+                                        {isSuperAdmin ? "Super Admin" : "Especialista"}
                                     </p>
                                 </div>
 

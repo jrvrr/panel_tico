@@ -181,11 +181,11 @@
 
 /* Editing Style */
 .pago-card__edit-input {
-    width: 100px;
-    padding: 4px 8px;
-    border: 2px solid var(--tico-primary);
-    border-radius: 6px;
-    font-size: 1.1rem;
+    padding: 0.8rem 1.2rem;
+    background: white;
+    border: 1px solid rgb(185 185 185 / 70%);
+    border-radius: 20px;
+    font-size: 15px;
     font-weight: 800;
     text-align: right;
     outline: none;
@@ -229,4 +229,237 @@
     align-items: center;
     gap: 1rem;
     width: 100%;
+}
+
+/* ── MODERN MODAL BLUE HEADER DESIGN (Diseño Nueva Cita) ── */
+
+.tico-payment-modal-header {
+    background: linear-gradient(135deg, #3971b8 0%, #5c93c9 100%);
+    padding: 1.5rem 2rem;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}
+
+.tico-payment-modal-title {
+    color: #ffffff !important;
+    margin: 0 !important;
+    font-size: 1.6rem !important;
+    font-weight: 800 !important;
+    text-align: center;
+    letter-spacing: -0.01em;
+}
+
+.tico-payment-modal-close {
+    position: absolute;
+    top: 50%;
+    right: 1.5rem;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.tico-payment-modal-close:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.tico-payment-form-container {
+    padding: 1.25rem 2.25rem 1.75rem;
+    background: white;
+}
+
+/* ── Form Stacking and Grouping ── */
+.tico-payment-form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.tico-payment-form-row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+/* ── Special Form Elements ── */
+.tico-payment-form-hint {
+    color: #dc2626;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: left;
+    display: block;
+}
+
+.tico-payment-section-banner {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: white;
+    background: var(--tico-primary);
+    padding: 0.55rem 1rem;
+    margin: 0 0 1.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(57, 113, 184, 0.15);
+}
+
+.tico-payment-section-banner.centered {
+    text-align: center;
+}
+
+/* ── Modal Actions Row ── */
+.tico-payment-modal-actions {
+    margin-top: 2.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.tico-btn-pill-compact {
+    border-radius: 10px !important;
+    padding: 10px 24px !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+}
+
+.tico-btn-icon-spacer {
+    margin-left: 4px;
+}
+
+.tico-modal-badge-row {
+    margin-top: 8px;
+}
+
+/* Form Grid Symmetry */
+.tico-payment-form-container .tico-form-row2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem !important; /* Reduced gap */
+    width: 100%;
+}
+
+.tico-payment-form-container .tico-edit-input {
+    width: 100% !important;
+    height: 52px;
+    padding: 0 12px 0 38px; /* Extra padding for icon */
+    border: 1px solid rgb(185 185 185 / 70%);
+    border-radius: 20px;
+    font-size: 15px;
+    color: #1e293b;
+    background: #fcfcfc;
+    transition: all 0.2s ease;
+    box-sizing: border-box !important;
+}
+
+.tico-payment-form-container .tico-edit-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Pill-shaped Buttons */
+.tico-payment-form-container .tico-btn {
+    border-radius: 100px !important;
+    padding: 10px 28px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.tico-payment-form-container .tico-btn-primary:hover {
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+    transform: translateY(-1px);
+}
+
+.tico-payment-modal-width {
+    width: min(500px, 95vw) !important; /* Slightly narrower */
+    border-radius: 12px !important;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+}
+
+/* Iconic input styling */
+.tico-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.tico-input-icon {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.tico-edit-input:focus + .tico-input-icon {
+    color: #3b82f6;
+}
+
+.tico-payment-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.tico-payment-input-group label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    margin-left: 4px;
+}
+
+.tico-form-hint-subtle {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+    text-align: right;
+}
+
+.tico-visual-card {
+    margin-bottom: 2rem;
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
+}
+
+.tico-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.tico-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tico-modal-field span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tico-modal-field strong {
+    font-size: 1.05rem;
+    color: #1e293b;
+    font-weight: 600;
 }
