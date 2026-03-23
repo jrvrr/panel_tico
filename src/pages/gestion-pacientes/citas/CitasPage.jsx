@@ -9,6 +9,7 @@ import { getPacientes, getCitas, createCita, updateCita } from '../../../service
 import CalendarioCitas from './CalendarioCitas';
 import { normalizeDateInput } from '../../../utils/dateHelper';
 import TicoDateInput from '../../../components/TicoDateInput';
+import TicoConfirmModal from '../../../components/TicoConfirmModal';
 
 const EMPTY_CITA = {
     paciente_nombre: '',
@@ -27,6 +28,7 @@ const CitasPage = () => {
     const [modalCita, setModalCita] = useState(null);
     const [editCita, setEditCita] = useState(null);
     const [modalNueva, setModalNueva] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, data: null });
     const [formNueva, setFormNueva] = useState(EMPTY_CITA);
     const [formErrors, setFormErrors] = useState({});
     const [searchText, setSearchText] = useState('');
@@ -124,22 +126,39 @@ const CitasPage = () => {
     };
     const handleEditar = () => setEditCita({ ...selectedSingle });
 
-    const handleCancelar = async () => {
-        try {
-            const activas = selectedCitas.filter(c => c.estado_cita !== 'Cancelada' && c.estado_cita !== 'Completada');
-            await Promise.all(activas.map(c => updateCita(c.id, { ...c, estado_cita: 'Cancelada' })));
-            await loadCitas();
-            import('sonner').then(({ toast }) => toast.warning(`Se cancelaron ${activas.length} cita(s)`));
-            addNotification({
-                tipo: 'cita',
-                titulo: 'Citas canceladas',
-                mensaje: `Se cancelaron ${activas.length} cita(s) en el sistema.`,
-                nivel: 'warning'
-            });
-            setSelectedRows([]);
-        } catch (error) {
-            import('sonner').then(({ toast }) => toast.error(`Error al cancelar: ${error.message}`));
-        }
+    const handleCancelar = () => {
+        const activas = selectedCitas.filter(c => c.estado_cita !== 'Cancelada' && c.estado_cita !== 'Completada');
+        if (activas.length === 0) return;
+
+        const message = activas.length === 1 
+            ? `¿Estás seguro de que deseas cancelar la cita de ${activas[0].paciente_nombre}?`
+            : `¿Estás seguro de que deseas cancelar las ${activas.length} citas seleccionadas?`;
+
+        setConfirmModal({
+            isOpen: true,
+            data: {
+                title: 'Confirmar Cancelación',
+                message,
+                confirmText: 'Sí, cancelar',
+                onConfirm: async () => {
+                    try {
+                        await Promise.all(activas.map(c => updateCita(c.id, { ...c, estado_cita: 'Cancelada' })));
+                        await loadCitas();
+                        import('sonner').then(({ toast }) => toast.warning(`Se cancelaron ${activas.length} cita(s)`));
+                        addNotification({
+                            tipo: 'cita',
+                            titulo: 'Citas canceladas',
+                            mensaje: `Se cancelaron ${activas.length} cita(s) en el sistema.`,
+                            nivel: 'warning'
+                        });
+                        setSelectedRows([]);
+                    } catch (error) {
+                        import('sonner').then(({ toast }) => toast.error(`Error al cancelar: ${error.message}`));
+                    }
+                    setConfirmModal({ isOpen: false, data: null });
+                }
+            }
+        });
     };
 
     const handleConfirmar = async () => {
@@ -647,6 +666,15 @@ const CitasPage = () => {
                 </div>
             )}
 
+            <TicoConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.data?.title}
+                message={confirmModal.data?.message}
+                confirmText={confirmModal.data?.confirmText}
+                onConfirm={confirmModal.data?.onConfirm}
+                onCancel={() => setConfirmModal({ isOpen: false, data: null })}
+                type="danger"
+            />
         </div>
     );
 };

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import TicoDateInput from '../../components/TicoDateInput';
 import HorarioEditor, { parseHorario, serializeHorario } from '../../components/HorarioEditor';
+import TicoConfirmModal from '../../components/TicoConfirmModal';
 import './Perfil.css';
 
 
@@ -48,6 +49,7 @@ const PerfilPage = () => {
     const fotoInputRef = useRef(null);
     const firmaInputRef = useRef(null);
     const [uploadingField, setUploadingField] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false });
 
     useEffect(() => {
         if (user) {
@@ -80,8 +82,29 @@ const PerfilPage = () => {
         }));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSaveClick = (e) => {
         e.preventDefault();
+        
+        // Si estamos en la pestaña de disponibilidad, pedimos confirmación
+        if (activeTab === 'disponibilidad') {
+            setConfirmModal({
+                isOpen: true,
+                title: '¿Guardar disponibilidad?',
+                message: 'Se actualizarán tus horarios de atención semanal en el sistema.',
+                confirmText: 'Sí, guardar cambios',
+                onConfirm: () => {
+                    setConfirmModal({ isOpen: false });
+                    handleSubmit(e);
+                }
+            });
+        } else {
+            // En otras pestañas guardamos directo (o podrías pedir confirmación también)
+            handleSubmit(e);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         if (!user || !user.id) return;
 
         setLoading(true);
@@ -400,12 +423,22 @@ const PerfilPage = () => {
                 {/* Submit Bar Flotante (sigue abajo independiente de la pestaña) */}
                 <div className="perfil-actions-bar">
                     <span className="text-sm text-gray-500 font-medium">Puedes navegar entre pestañas; los datos no se perderán.</span>
-                    <button type="submit" className="perfil-btn-save" disabled={loading}>
+                    <button type="button" onClick={handleSaveClick} className="perfil-btn-save" disabled={loading}>
                         {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         {loading ? "Guardando..." : "Guardar Todos los Cambios"}
                     </button>
                 </div>
             </form>
+
+            <TicoConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal({ isOpen: false })}
+                type="info"
+            />
         </div>
     );
 };

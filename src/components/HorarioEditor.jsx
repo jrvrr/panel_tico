@@ -17,8 +17,23 @@ const HORARIO_VACIO = () =>
 export const parseHorario = (raw) => {
     const base = HORARIO_VACIO();
     if (!raw) return base;
+
     try {
-        const parsed = JSON.parse(raw);
+        let parsed = raw;
+        
+        // Si es un string, intentamos parsearlo
+        if (typeof raw === 'string') {
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                // Si no es JSON válido (texto libre), devolvemos el base
+                return base;
+            }
+        }
+
+        // Si no es un objeto válido tras el parseo, devolvemos el base
+        if (!parsed || typeof parsed !== 'object') return base;
+
         // Integrar solo las claves que reconocemos
         DIAS.forEach((dia) => {
             if (parsed[dia]) {
@@ -31,8 +46,8 @@ export const parseHorario = (raw) => {
             }
         });
         return base;
-    } catch {
-        // Si no es JSON válido (texto libre antiguo), devolver horario vacío
+    } catch (e) {
+        console.error("Error parsing horario:", e);
         return base;
     }
 };

@@ -1,0 +1,64 @@
+.tico-confirm-overlay {
+    background: rgba(15, 23, 42, 0.4) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.tico-confirm-modal {
+    width: min(440px, 95vw) !important;
+    padding: 2.5rem 2rem 2rem !important;
+    text-align: center !important;
+    border-radius: 24px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.tico-confirm-icon-wrapper {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.tico-confirm-icon-danger { color: #ef4444; }
+.tico-confirm-icon-warning { color: #f59e0b; }
+.tico-confirm-icon-success { color: #10b981; }
+.tico-confirm-icon-info { color: #3b82f6; }
+
+.tico-confirm-title {
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    margin-bottom: 0.75rem !important;
+    letter-spacing: -0.01em !important;
+}
+
+.tico-confirm-message {
+    font-size: 0.95rem !important;
+    color: #64748b !important;
+    line-height: 1.6 !important;
+    margin-bottom: 2rem !important;
+}
+
+.tico-confirm-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.tico-confirm-btn {
+    flex: 1;
+    min-height: 48px !important;
+    font-weight: 700 !important;
+    border-radius: 14px !important;
+}
+
+/* Override red for danger types */
+.tico-btn-danger {
+    background: #ef4444 !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+}
+
+.tico-btn-danger:hover {
+    background: #dc2626 !important;
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3) !important;
+    transform: none !important;
+}
