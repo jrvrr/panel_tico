@@ -4,14 +4,32 @@
 
 .tico-container {
     padding: 1.5rem;
-    background-color: #ffffff; /* Slightly darker slate for better contrast */
+    background-color: #ffffff;
     min-height: 100vh;
+}
+
+/* Layout de sección pegajosa */
+.metricas-layout {
+    padding: 0;
+}
+
+.metricas-top-section {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 1.5rem 1.5rem 1rem;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.metricas-scroll-area {
+    padding: 1rem 1.5rem 2rem;
 }
 
 /* ── Global Summary Cards ────────────────────────────────────────────────── */
 .metricas-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.25rem;
     margin-bottom: 2rem;
 }
@@ -46,7 +64,8 @@
 
 .metricas-card--azul { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: none; }
 .metricas-card--amarillo { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: none; }
-.metricas-card--rojo { background: linear-gradient(135deg, #fef2f2 0%, #eba0a0 100%); border: none; }
+.metricas-card--rojo { background: linear-gradient(135deg, #fef2f2 0%, #fed7d7 100%); border: none; }
+.metricas-card--morado { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border: none; }
 
 .metricas-card__value {
     font-size: 1.75rem;
@@ -58,6 +77,89 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: #475569;
+}
+
+/* ── Worst Record Alert ──────────────────────────────────────────────────── */
+.metricas-worst-record-alert {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    animation: slideDownIn 0.4s ease-out;
+}
+
+@keyframes slideDownIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.metricas-worst-record-alert:hover {
+    background: #fee2e2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+}
+
+.worst-record-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.worst-record-icon {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15);
+}
+
+.worst-record-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.worst-record-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #ef4444;
+    letter-spacing: 0.05em;
+}
+
+.worst-record-desc {
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.worst-record-desc strong {
+    color: #1e293b;
+}
+
+.worst-record-action {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+
+.worst-record-action:hover {
+    background: #dc2626;
 }
 
 /* ── Toolbar & Sorting ───────────────────────────────────────────────────── */
@@ -241,12 +343,25 @@
 .desglose-modal {
     width: min(900px, 95vw);
     max-height: 94vh;
-    padding: 2rem;
     background: white;
     border-radius: 28px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.desglose-modal-content {
+    padding: 2rem;
     overflow-y: auto;
+    flex: 1;
+}
+
+.desglose-modal .tico-modal-close {
+    top: 1.5rem !important;
+    right: 1.5rem !important;
+    z-index: 10 !important;
 }
 
 .desglose-header {
@@ -468,6 +583,73 @@
 }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ── Tooltips ── */
+.tico-tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    color: #94a3b8;
+    margin-left: 5px;
+    cursor: help;
+}
+
+.tico-tooltip:hover {
+    color: var(--tico-primary);
+}
+
+.tico-tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 140%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 220px;
+    background: #1e293b;
+    color: white;
+    text-align: center;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    line-height: 1.4;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.tico-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    margin-bottom: -1px; /* Overlap to remove tiny gap */
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.tico-tooltip:hover::before,
+.tico-tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tico-tooltip:hover::before {
+    transform: translateX(-50%) translateY(-2px);
+}
 
 @media (max-width: 768px) {
     .desglose-charts-grid { grid-template-columns: 1fr; }

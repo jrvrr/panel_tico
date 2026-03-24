@@ -82,6 +82,41 @@
     display: flex;
     align-items: center;
     gap: 0.65rem;
+    flex: 1;
+}
+
+/* ── View Toggle ── */
+.tico-view-toggle {
+    display: flex;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 12px;
+    gap: 2px;
+}
+
+.toggle-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+    color: var(--tico-primary);
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.toggle-btn.active {
+    background: white;
+    color: var(--tico-primary);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 /* Separador visual entre búsqueda y acciones */
@@ -302,6 +337,129 @@
     color: #445469;
     background-color: white;
     transition: background-color 0.2s ease;
+}
+
+/* ── Grid View ── */
+.tico-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.tico-grid-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.tico-grid-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+    border-color: var(--tico-primary);
+}
+
+.tico-grid-card.selected {
+    background-color: var(--tico-selected-bg);
+    border-color: var(--tico-primary);
+}
+
+.tico-grid-card.inhabilitado {
+    opacity: 0.5;
+}
+
+.card-selection {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.card-avatar {
+    width: 48px;
+    height: 48px;
+    background: #f1f5f9;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+}
+
+.tico-grid-card.selected .card-avatar {
+    background: white;
+    color: var(--tico-primary);
+}
+
+.card-title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.card-tagline {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.card-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.card-info-item svg {
+    color: #94a3b8;
+}
+
+.card-footer {
+    padding-top: 1rem;
+    border-top: 1px dashed #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-status-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.grid-loading, .grid-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+    background: #f8fafc;
+    border-radius: 20px;
+    border: 2px dashed #e2e8f0;
 }
 
 /* ── Badges ── */

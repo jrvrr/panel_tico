@@ -5,7 +5,8 @@ import {
     ChevronUp, ChevronDown, Eye, Pencil, UserX, UserCheck,
     X, Plus, SlidersHorizontal, FilterX, HelpCircle,
     Mail, Phone, Calendar, User, UserPlus, Info, Check, MapPin, Hash, Trash2,
-    Activity, ShieldCheck, ClipboardList, Filter, ChevronRight, FileText
+    Activity, ShieldCheck, ClipboardList, Filter, ChevronRight, FileText,
+    LayoutGrid, List
 } from 'lucide-react';
 import { useNotifications } from '../../../context/NotificationContext';
 import { createPaciente, getPacientes, updatePaciente, createCita } from '../../../services/api';
@@ -60,6 +61,7 @@ const PacientesPage = () => {
     const [editingId, setEditingId] = useState(null);
     const [activeTabNuevo, setActiveTabNuevo] = useState('personal');
     const [activeTabEdit, setActiveTabEdit] = useState('personal');
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
 
     const [pacientes, setPacientes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -640,6 +642,23 @@ const PacientesPage = () => {
                             </div>
                         )}
                     </div>
+
+                    <div className="tico-view-toggle">
+                        <button 
+                            className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                            onClick={() => setViewMode('list')}
+                            title="Vista de Lista"
+                        >
+                            <List size={18} />
+                        </button>
+                        <button 
+                            className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                            onClick={() => setViewMode('grid')}
+                            title="Vista de Cuadros"
+                        >
+                            <LayoutGrid size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Acciones contextuales */}
@@ -678,77 +697,134 @@ const PacientesPage = () => {
                 )}
             </div>
 
-            {/* ── Tabla ── */}
-            <table className="tico-table">
-                <thead>
-                    <tr>
-                        <th style={{ width: '40px' }}>
-                            <input
-                                type="checkbox"
-                                className="tico-checkbox"
-                                checked={selectedRows.length === filteredData.length && filteredData.length > 0}
-                                onChange={toggleAll}
-                            />
-                        </th>
-                        <th>Paciente</th>
-                        <th>Tutor / Responsable</th>
-                        <th>Edad</th>
-                        <th className="sortable" onClick={() => handleSort('cita')}>
-                            Próxima Cita {getSortIcon('cita')}
-                        </th>
-                        <th>Observación</th>
-                        <th>Estado Clínico</th>
-                    </tr>
-                </thead>
-                <tbody>
+            {/* ── Vista Condicional ── */}
+            {viewMode === 'list' ? (
+                <table className="tico-table">
+                    <thead>
+                        <tr>
+                            <th style={{ width: '40px' }}>
+                                <input
+                                    type="checkbox"
+                                    className="tico-checkbox"
+                                    checked={selectedRows.length === filteredData.length && filteredData.length > 0}
+                                    onChange={toggleAll}
+                                />
+                            </th>
+                            <th>Paciente</th>
+                            <th>Tutor / Responsable</th>
+                            <th>Edad</th>
+                            <th className="sortable" onClick={() => handleSort('cita')}>
+                                Próxima Cita {getSortIcon('cita')}
+                            </th>
+                            <th>Observación</th>
+                            <th>Estado Clínico</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredData.map((p) => (
+                            <tr
+                                key={p.id}
+                                className={[
+                                    selectedRows.includes(p.id) ? 'selected' : '',
+                                    !p.active ? 'inhabilitado' : '',
+                                ].join(' ').trim()}
+                                onClick={() => toggleRow(p.id)}
+                            >
+                                <td onClick={(e) => e.stopPropagation()}>
+                                    <input
+                                        type="checkbox"
+                                        className="tico-checkbox"
+                                        checked={selectedRows.includes(p.id)}
+                                        onChange={() => toggleRow(p.id)}
+                                    />
+                                </td>
+                                <td>{p.paciente}</td>
+                                <td>{p.tutor}</td>
+                                <td>{p.edad}</td>
+                                <td>{p.cita}</td>
+                                <td>
+                                    <span className={`tico-badge tico-badge-${p.observacion.toLowerCase()}`}>
+                                        {p.observacion}
+                                    </span>
+                                </td>
+                                <td>
+                                    {p.active
+                                        ? p.estado
+                                        : 'Inhabilitado'}
+                                </td>
+                            </tr>
+                        ))}
+                        {loading ? (
+                            <tr>
+                                <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+                                    Cargando pacientes...
+                                </td>
+                            </tr>
+                        ) : filteredData.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+                                    No se encontraron pacientes
+                                </td>
+                            </tr>
+                        ) : null}
+                    </tbody>
+                </table>
+            ) : (
+                <div className="tico-grid-view">
                     {filteredData.map((p) => (
-                        <tr
-                            key={p.id}
-                            className={[
-                                selectedRows.includes(p.id) ? 'selected' : '',
-                                !p.active ? 'inhabilitado' : '',
-                            ].join(' ').trim()}
+                        <div 
+                            key={p.id} 
+                            className={`tico-grid-card ${selectedRows.includes(p.id) ? 'selected' : ''} ${!p.active ? 'inhabilitado' : ''}`}
                             onClick={() => toggleRow(p.id)}
                         >
-                            <td onClick={(e) => e.stopPropagation()}>
+                            <div className="card-selection">
                                 <input
                                     type="checkbox"
                                     className="tico-checkbox"
                                     checked={selectedRows.includes(p.id)}
-                                    onChange={() => toggleRow(p.id)}
+                                    onChange={(e) => { e.stopPropagation(); toggleRow(p.id); }}
                                 />
-                            </td>
-                            <td>{p.paciente}</td>
-                            <td>{p.tutor}</td>
-                            <td>{p.edad}</td>
-                            <td>{p.cita}</td>
-                            <td>
+                            </div>
+                            
+                            <div className="card-header">
+                                <div className="card-avatar">
+                                    <User size={24} />
+                                </div>
+                                <div className="card-title-group">
+                                    <span className="card-name">{p.paciente}</span>
+                                    <span className="card-tagline">{p.edad} • {p.genero}</span>
+                                </div>
+                            </div>
+
+                            <div className="card-body">
+                                <div className="card-info-item">
+                                    <UserPlus size={14} />
+                                    <span>Tutor: {p.tutor}</span>
+                                </div>
+                                <div className="card-info-item">
+                                    <Calendar size={14} />
+                                    <span>Próxima: {p.cita || 'Sin cita'}</span>
+                                </div>
+                            </div>
+
+                            <div className="card-footer">
                                 <span className={`tico-badge tico-badge-${p.observacion.toLowerCase()}`}>
                                     {p.observacion}
                                 </span>
-                            </td>
-                            <td>
-                                {p.active
-                                    ? p.estado
-                                    : 'Inhabilitado'}
-                            </td>
-                        </tr>
+                                <span className="card-status-text">
+                                    {p.active ? p.estado : 'Inhabilitado'}
+                                </span>
+                            </div>
+                        </div>
                     ))}
-                    {loading ? (
-                        <tr>
-                            <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
-                                Cargando pacientes...
-                            </td>
-                        </tr>
-                    ) : filteredData.length === 0 ? (
-                        <tr>
-                            <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
-                                No se encontraron pacientes
-                            </td>
-                        </tr>
-                    ) : null}
-                </tbody>
-            </table>
+                    {loading && (
+                        <div className="grid-loading">Cargando pacientes...</div>
+                    )}
+                    {!loading && filteredData.length === 0 && (
+                        <div className="grid-empty">No se encontraron pacientes</div>
+                    )}
+                </div>
+            )}
 
             {/* ── Modal: Nuevo Paciente ── */}
             {modalNuevo && (

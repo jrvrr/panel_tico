@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Activity, Clock, Zap, AlertTriangle, Search, User, ChevronRight, BarChart3, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react';
+import { X, Activity, Clock, Zap, AlertTriangle, Search, User, ChevronRight, BarChart3, TrendingUp, TrendingDown, Minus, Target, Info, BookOpen } from 'lucide-react';
 import { getMetricasIA, getMetricasByPaciente } from '../../services/api';
 import { calculateStdDev, calculateTrend, classifyPatientState, detectFatigue, generateInsights } from '../../utils/metricsCalculations';
 import './Metricas.css';
@@ -67,6 +67,7 @@ const MetricasPage = () => {
     const [selectedPacienteId, setSelectedPacienteId] = useState(null);
     const [detailMetricas, setDetailMetricas] = useState([]);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [showGuiaModal, setShowGuiaModal] = useState(false);
 
     // Cargar todas las métricas
     useEffect(() => {
@@ -183,14 +184,29 @@ const MetricasPage = () => {
         return list;
     }, [pacientesAgrupados, searchText, sortOrder]);
 
+    const totalPacientes = pacientesAgrupados.length;
+    
+    // Identify the "Worst Record" (Highest Risk)
+    const worstRecordPaciente = useMemo(() => {
+        if (pacientesAgrupados.length === 0) return null;
+        // Sort by risk (level) and take the first one
+        const sorted = [...pacientesAgrupados].sort((a, b) => (b.estado.level || 0) - (a.estado.level || 0));
+        return sorted[0].estado.level > 0 ? sorted[0] : null;
+    }, [pacientesAgrupados]);
+
     // Cards de resumen global
     const totalIntentos = metricas.length;
-    const avgFrustGlobal = totalIntentos > 0
-        ? Math.round((metricas.reduce((s, m) => s + (m.frustracion || 0), 0) / totalIntentos) * 10) / 10
-        : 0;
-    const avgReaccionGlobal = totalIntentos > 0
-        ? Math.round(metricas.reduce((s, m) => s + (m.tiempo_reaccion_ms || 0), 0) / totalIntentos)
-        : 0;
+    
+    const pacientesEnRiesgo = useMemo(() => {
+        return pacientesAgrupados.filter(p => p.estado && p.estado.level > 0).length;
+    }, [pacientesAgrupados]);
+
+    const altaFrustracion = useMemo(() => {
+        return pacientesAgrupados.filter(p => {
+            const ultimo = p.ultimoIntento;
+            return ultimo && (ultimo.frustracion >= 4);
+        }).length;
+    }, [pacientesAgrupados]);
 
     // Abrir detalle de un paciente
     const openDetail = async (pacienteId) => {
@@ -245,48 +261,76 @@ const MetricasPage = () => {
     }
 
     return (
-        <div className="tico-container">
+        <div className="tico-container metricas-layout">
 
+            {/* ── Sección fija (header + cards + alerta + toolbar) ── */}
+            <div className="metricas-top-section">
             {/* Header */}
             <header className="tico-header">
                 <div>
                     <h1 className="tico-title">Métricas de Intentos</h1>
                     <p className="tico-subtitle">Registro de intentos del paciente durante las sesiones terapéuticas</p>
                 </div>
+                <button 
+                    className="tico-btn tico-btn-outline"
+                    onClick={() => setShowGuiaModal(true)}
+                >
+                    <BookOpen size={16} /> Guía Clínica
+                </button>
             </header>
 
             {/* Cards de resumen */}
             <div className="metricas-cards">
-                <div className="metricas-card metricas-card--azul">
+                <div className="metricas-card metricas-card--morado">
                     <div className="metricas-card__icon">
-                        <BarChart3 size={22} />
+                        <User size={22} />
                     </div>
                     <div className="metricas-card__info">
-                        <span className="metricas-card__value">{totalIntentos}</span>
-                        <span className="metricas-card__label">Total de intentos</span>
-                    </div>
-                </div>
-
-                <div className="metricas-card metricas-card--amarillo">
-                    <div className="metricas-card__icon">
-                        <AlertTriangle size={22} />
-                    </div>
-                    <div className="metricas-card__info">
-                        <span className="metricas-card__value">{avgFrustGlobal}</span>
-                        <span className="metricas-card__label">Frustración promedio</span>
+                        <span className="metricas-card__value">{totalPacientes}</span>
+                        <span className="metricas-card__label">Pacientes registrados</span>
                     </div>
                 </div>
 
                 <div className="metricas-card metricas-card--rojo">
                     <div className="metricas-card__icon">
-                        <Clock size={22} />
+                        <AlertTriangle size={22} />
                     </div>
                     <div className="metricas-card__info">
-                        <span className="metricas-card__value">{formatMs(avgReaccionGlobal)}</span>
-                        <span className="metricas-card__label">Tiempo de reacción prom.</span>
+                        <span className="metricas-card__value">{pacientesEnRiesgo}</span>
+                        <span className="metricas-card__label">Pacientes en atención</span>
+                    </div>
+                </div>
+
+                <div className="metricas-card metricas-card--amarillo">
+                    <div className="metricas-card__icon">
+                        <Zap size={22} />
+                    </div>
+                    <div className="metricas-card__info">
+                        <span className="metricas-card__value">{altaFrustracion}</span>
+                        <span className="metricas-card__label">Alta frustración (último intento)</span>
                     </div>
                 </div>
             </div>
+
+            {/* Alerta de Peor Récord */}
+            {worstRecordPaciente && (
+                <div className="metricas-worst-record-alert" onClick={() => openDetail(worstRecordPaciente.id)}>
+                    <div className="worst-record-content">
+                        <div className="worst-record-icon">
+                            <Zap size={20} fill="#ef4444" color="#ef4444" />
+                        </div>
+                        <div className="worst-record-text">
+                            <span className="worst-record-title">Atención Prioritaria</span>
+                            <span className="worst-record-desc">
+                                <strong>{worstRecordPaciente.nombre}</strong> presenta el nivel más alto de riesgo clínico actualmente.
+                            </span>
+                        </div>
+                    </div>
+                    <button className="worst-record-action">
+                        Revisar <ChevronRight size={16} />
+                    </button>
+                </div>
+            )}
 
             {/* Buscador y Filtros */}
             <div className="tico-toolbar" style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
@@ -307,7 +351,7 @@ const MetricasPage = () => {
                     <button 
                         className={`sort-btn ${sortOrder === 'risk' ? 'active' : ''}`} 
                         onClick={() => setSortOrder('risk')}
-                    >✨ Riesgo</button>
+                    >Riesgo</button>
                     <button 
                         className={`sort-btn ${sortOrder === 'date' ? 'active' : ''}`} 
                         onClick={() => setSortOrder('date')}
@@ -318,8 +362,11 @@ const MetricasPage = () => {
                     >Intentos</button>
                 </div>
             </div>
+            </div> {/* /metricas-top-section */}
 
-            {/* Lista de pacientes como tarjetas */}
+            {/* ── Área de scroll: lista de pacientes ── */}
+            <div className="metricas-scroll-area">
+
             {processedPacientes.length === 0 ? (
                 <div className="metricas-empty">
                     <Activity size={40} strokeWidth={1.5} />
@@ -357,7 +404,12 @@ const MetricasPage = () => {
 
                                 <div className="metricas-paciente-card__grid">
                                     <div className="metric-item">
-                                        <span className="metric-item__label">Prom. Reacción</span>
+                                        <span className="metric-item__label">
+                                            Prom. Reacción
+                                            <span className="tico-tooltip" data-tooltip="Tiempo promedio en milisegundos que tarda el paciente en responder.">
+                                                <Info size={11} />
+                                            </span>
+                                        </span>
                                         <div className="metric-item__value-row">
                                             <span className="metric-item__value">{formatMs(p.avgTiempoReaccion)}</span>
                                             {p.trendReaccion !== 0 && (
@@ -368,7 +420,12 @@ const MetricasPage = () => {
                                         </div>
                                     </div>
                                     <div className="metric-item">
-                                        <span className="metric-item__label">Frustración</span>
+                                        <span className="metric-item__label">
+                                            Frustración
+                                            <span className="tico-tooltip" data-tooltip="Nivel del 1 al 5 basado en precisión y presión de toque.">
+                                                <Info size={11} />
+                                            </span>
+                                        </span>
                                         <div className="metric-item__value-row">
                                             <span className="metric-item__value">{p.avgFrustracion}</span>
                                             {p.trendFrustracion !== 0 && (
@@ -396,8 +453,9 @@ const MetricasPage = () => {
                     })}
                 </div>
             )}
+            </div> {/* /metricas-scroll-area */}
 
-            {/* ══ Modal de Detalle del Paciente ══ */}
+
             {selectedPacienteId && (
                 <div className="tico-modal-overlay" onClick={() => setSelectedPacienteId(null)}>
                     <div className="desglose-modal" onClick={(e) => e.stopPropagation()}>
@@ -405,151 +463,212 @@ const MetricasPage = () => {
                             <X size={18} />
                         </button>
 
-                        {/* Header */}
-                        <div className="desglose-header">
-                            <div className="desglose-avatar">
-                                {selectedPaciente ? getInitials(selectedPaciente.nombre) : '?'}
+                        <div className="desglose-modal-content">
+                            {/* Header */}
+                            <div className="desglose-header">
+                                <div className="desglose-avatar">
+                                    {selectedPaciente ? getInitials(selectedPaciente.nombre) : '?'}
+                                </div>
+                                <div className="desglose-patient-info">
+                                    <h2>{selectedPaciente?.nombre || 'Paciente'}</h2>
+                                    <span>{selectedPaciente?.totalIntentos || 0} intentos registrados</span>
+                                </div>
                             </div>
-                            <div className="desglose-patient-info">
-                                <h2>{selectedPaciente?.nombre || 'Paciente'}</h2>
-                                <span>{selectedPaciente?.totalIntentos || 0} intentos registrados</span>
+
+                            {detailLoading ? (
+                                <div className="metricas-loading" style={{ padding: '3rem 0' }}>
+                                    <div className="metricas-loading__spinner" />
+                                    <p>Cargando intentos...</p>
+                                </div>
+                            ) : detailMetricas.length === 0 ? (
+                                <div className="metricas-empty" style={{ padding: '2rem 0' }}>
+                                    <p>No hay intentos registrados para este paciente.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Resumen de KPIs */}
+                                    <div className="desglose-kpis">
+                                        <div className="desglose-kpi">
+                                            <span className="desglose-kpi__label">
+                                                Prom. Reacción
+                                                <span className="tico-tooltip" data-tooltip="Tiempo promedio en responder al estímulo visual.">
+                                                    <Info size={11} />
+                                                </span>
+                                            </span>
+                                            <span className="desglose-kpi__value">{formatMs(selectedPaciente?.avgTiempoReaccion)}</span>
+                                        </div>
+                                        <div className="desglose-kpi">
+                                            <span className="desglose-kpi__label">
+                                                Consistencia
+                                                <span className="tico-tooltip" data-tooltip="Estabilidad de reacción. Baja consistencia sugiere fatiga o inatención.">
+                                                    <Info size={11} />
+                                                </span>
+                                            </span>
+                                            <span className="desglose-kpi__value" style={{ color: selectedPaciente?.consistencia > 500 ? '#f59e0b' : '#22c55e' }}>
+                                                {selectedPaciente?.consistencia > 500 ? 'Baja' : 'Alta'}
+                                            </span>
+                                        </div>
+                                        <div className="desglose-kpi">
+                                            <span className="desglose-kpi__label">
+                                                Frustración
+                                                <span className="tico-tooltip" data-tooltip="Nivel IA del 1 al 5 en base a tiempo, errores y presión.">
+                                                    <Info size={11} />
+                                                </span>
+                                            </span>
+                                            <span className="desglose-kpi__value">{selectedPaciente?.avgFrustracion} / 5</span>
+                                        </div>
+                                        <div className="desglose-kpi">
+                                            <span className="desglose-kpi__label">Estado Actual</span>
+                                            <span className="desglose-kpi__badge" style={{ backgroundColor: selectedPaciente?.estado.color }}>
+                                                {selectedPaciente?.estado.label}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Recomendaciones / Insights */}
+                                    {selectedPaciente?.insights.length > 0 && (
+                                        <div className="desglose-insights">
+                                            {selectedPaciente.insights.map((insight, idx) => (
+                                                <div key={idx} className={`desglose-insight desglose-insight--${insight.type}`}>
+                                                    {insight.type === 'success' ? <Activity size={14} /> : <AlertTriangle size={14} />}
+                                                    <span>{insight.text}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Gráficas Separadas */}
+                                    <div className="desglose-charts-grid">
+                                        <div className="desglose-chart-container">
+                                            <div className="detail-section-title">Tiempo de Reacción (ms)</div>
+                                            <div className="detail-chart-wrapper">
+                                                <div className="detail-chart detail-chart--reaccion">
+                                                    {chartData.map((m, i) => (
+                                                        <div key={m.id} className="detail-chart__bar-group">
+                                                            <div
+                                                                className="detail-chart__bar detail-chart__bar--reaccion"
+                                                                style={{ height: `${m.reaccionPct}%` }}
+                                                                title={`Reacción: ${formatMs(m.tiempo_reaccion_ms)}`}
+                                                            />
+                                                            <span className="detail-chart__label">#{i + 1}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="desglose-chart-container">
+                                            <div className="detail-section-title">Nivel de Frustración</div>
+                                            <div className="detail-chart-wrapper">
+                                                <div className="detail-chart detail-chart--frust">
+                                                    {chartData.map((m, i) => (
+                                                        <div key={m.id} className="detail-chart__bar-group">
+                                                            <div
+                                                                className="detail-chart__bar detail-chart__bar--frust"
+                                                                style={{ height: `${m.frustPct}%`, backgroundColor: getFrustColor(m.frustracion) }}
+                                                                title={`Frustración: ${m.frustracion}`}
+                                                            />
+                                                            <span className="detail-chart__label">#{i + 1}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Tabla de intentos */}
+                                    <div className="detail-section-title">Historial Detallado</div>
+                                    <div className="detail-table-container">
+                                        <table className="detail-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Intento</th>
+                                                    <th>Fecha / Hora</th>
+                                                    <th>Frust.</th>
+                                                    <th>Presión</th>
+                                                    <th>T. Reacción</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {detailMetricas.map((m, i) => {
+                                                    const isCritical = m.frustracion >= 4 || (m.tiempo_reaccion_ms > 2000);
+                                                    return (
+                                                        <tr key={m.id} className={isCritical ? 'row-critical' : ''}>
+                                                            <td className="detail-table__num">#{i + 1}</td>
+                                                            <td>{formatDate(m.fecha_registro)}</td>
+                                                            <td>
+                                                                <span
+                                                                    className="detail-frust-badge"
+                                                                    style={{
+                                                                        backgroundColor: getFrustColor(m.frustracion) + '20',
+                                                                        color: getFrustColor(m.frustracion),
+                                                                    }}
+                                                                >
+                                                                    {m.frustracion}
+                                                                </span>
+                                                            </td>
+                                                            <td>{m.presion_toque != null ? Number(m.presion_toque).toFixed(2) : '—'}</td>
+                                                            <td className="detail-reaccion-value">{formatMs(m.tiempo_reaccion_ms)}</td>
+                                                            <td>
+                                                                {isCritical ? (
+                                                                    <span className="critico-badge">Atención</span>
+                                                                ) : (
+                                                                    <span className="normal-badge">Normal</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══ Modal de Guía Clínica ══ */}
+            {showGuiaModal && (
+                <div className="tico-modal-overlay" onClick={() => setShowGuiaModal(false)}>
+                    <div className="desglose-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', padding: 0 }}>
+                        <button className="tico-modal-close" onClick={() => setShowGuiaModal(false)}>
+                            <X size={18} />
+                        </button>
+                        <div className="desglose-modal-content" style={{ padding: '2.5rem 2.5rem 2rem' }}>
+                            <h2 style={{ color: '#1e293b', marginBottom: '0.5rem', fontSize: '1.4rem' }}>Guía de Análisis Clínico</h2>
+                            <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                Esta pantalla te ayuda a monitorear el desempeño de los pacientes para identificar mejoras o señales de alerta durante sus sesiones con TICO.
+                            </p>
+
+                            <div style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px' }}>
+                                <h4 style={{ color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Clock size={16} /> Promedio de Reacción
+                                </h4>
+                                <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                                    Es el tiempo (en milisegundos o segundos) que toma el paciente en interactuar con el estímulo desde que aparece. Una <strong>disminución</strong> indica agilidad y mejor procesamiento cognitivo.
+                                </p>
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px' }}>
+                                <h4 style={{ color: '#10b981', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Target size={16} /> Consistencia
+                                </h4>
+                                <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                                    Analiza qué tan estables son los tiempos de respuesta. Una consistencia <strong>alta</strong> es ideal. Una consistencia <strong>baja</strong> (gran variación entre tiempos) alerta sobre episodios de fatiga o episodios de inatención.
+                                </p>
+                            </div>
+
+                            <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px' }}>
+                                <h4 style={{ color: '#f59e0b', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Zap size={16} /> Nivel de Frustración
+                                </h4>
+                                <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                                    Índice estimado (1 al 5). La IA lo calcula sumando los tiempos prolongados inesperados, cantidad de equivocaciones y la <strong>presión del toque</strong>. Ante niveles de 4 o 5, considera pausar la sesión.
+                                </p>
                             </div>
                         </div>
-
-                        {detailLoading ? (
-                            <div className="metricas-loading" style={{ padding: '3rem 0' }}>
-                                <div className="metricas-loading__spinner" />
-                                <p>Cargando intentos...</p>
-                            </div>
-                        ) : detailMetricas.length === 0 ? (
-                            <div className="metricas-empty" style={{ padding: '2rem 0' }}>
-                                <p>No hay intentos registrados para este paciente.</p>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Resumen de KPIs */}
-                                <div className="desglose-kpis">
-                                    <div className="desglose-kpi">
-                                        <span className="desglose-kpi__label">Prom. Reacción</span>
-                                        <span className="desglose-kpi__value">{formatMs(selectedPaciente?.avgTiempoReaccion)}</span>
-                                    </div>
-                                    <div className="desglose-kpi">
-                                        <span className="desglose-kpi__label">Consistencia</span>
-                                        <span className="desglose-kpi__value" style={{ color: selectedPaciente?.consistencia > 500 ? '#f59e0b' : '#22c55e' }}>
-                                            {selectedPaciente?.consistencia > 500 ? 'Baja' : 'Alta'}
-                                        </span>
-                                    </div>
-                                    <div className="desglose-kpi">
-                                        <span className="desglose-kpi__label">Frustración</span>
-                                        <span className="desglose-kpi__value">{selectedPaciente?.avgFrustracion} / 5</span>
-                                    </div>
-                                    <div className="desglose-kpi">
-                                        <span className="desglose-kpi__label">Estado Actual</span>
-                                        <span className="desglose-kpi__badge" style={{ backgroundColor: selectedPaciente?.estado.color }}>
-                                            {selectedPaciente?.estado.label}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Recomendaciones / Insights */}
-                                {selectedPaciente?.insights.length > 0 && (
-                                    <div className="desglose-insights">
-                                        {selectedPaciente.insights.map((insight, idx) => (
-                                            <div key={idx} className={`desglose-insight desglose-insight--${insight.type}`}>
-                                                {insight.type === 'success' ? <Activity size={14} /> : <AlertTriangle size={14} />}
-                                                <span>{insight.text}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Gráficas Separadas */}
-                                <div className="desglose-charts-grid">
-                                    <div className="desglose-chart-container">
-                                        <div className="detail-section-title">Tiempo de Reacción (ms)</div>
-                                        <div className="detail-chart-wrapper">
-                                            <div className="detail-chart detail-chart--reaccion">
-                                                {chartData.map((m, i) => (
-                                                    <div key={m.id} className="detail-chart__bar-group">
-                                                        <div
-                                                            className="detail-chart__bar detail-chart__bar--reaccion"
-                                                            style={{ height: `${m.reaccionPct}%` }}
-                                                            title={`Reacción: ${formatMs(m.tiempo_reaccion_ms)}`}
-                                                        />
-                                                        <span className="detail-chart__label">#{i + 1}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="desglose-chart-container">
-                                        <div className="detail-section-title">Nivel de Frustración</div>
-                                        <div className="detail-chart-wrapper">
-                                            <div className="detail-chart detail-chart--frust">
-                                                {chartData.map((m, i) => (
-                                                    <div key={m.id} className="detail-chart__bar-group">
-                                                        <div
-                                                            className="detail-chart__bar detail-chart__bar--frust"
-                                                            style={{ height: `${m.frustPct}%`, backgroundColor: getFrustColor(m.frustracion) }}
-                                                            title={`Frustración: ${m.frustracion}`}
-                                                        />
-                                                        <span className="detail-chart__label">#{i + 1}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Tabla de intentos */}
-                                <div className="detail-section-title">Historial Detallado</div>
-                                <div className="detail-table-container">
-                                    <table className="detail-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Intento</th>
-                                                <th>Fecha / Hora</th>
-                                                <th>Frust.</th>
-                                                <th>Presión</th>
-                                                <th>T. Reacción</th>
-                                                <th>Estado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {detailMetricas.map((m, i) => {
-                                                const isCritical = m.frustracion >= 4 || (m.tiempo_reaccion_ms > 2000);
-                                                return (
-                                                    <tr key={m.id} className={isCritical ? 'row-critical' : ''}>
-                                                        <td className="detail-table__num">#{i + 1}</td>
-                                                        <td>{formatDate(m.fecha_registro)}</td>
-                                                        <td>
-                                                            <span
-                                                                className="detail-frust-badge"
-                                                                style={{
-                                                                    backgroundColor: getFrustColor(m.frustracion) + '20',
-                                                                    color: getFrustColor(m.frustracion),
-                                                                }}
-                                                            >
-                                                                {m.frustracion}
-                                                            </span>
-                                                        </td>
-                                                        <td>{m.presion_toque != null ? Number(m.presion_toque).toFixed(2) : '—'}</td>
-                                                        <td className="detail-reaccion-value">{formatMs(m.tiempo_reaccion_ms)}</td>
-                                                        <td>
-                                                            {isCritical ? (
-                                                                <span className="critico-badge">Atención</span>
-                                                            ) : (
-                                                                <span className="normal-badge">Normal</span>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </>
-                        )}
                     </div>
                 </div>
             )}
