@@ -237,8 +237,8 @@
 
 
 .tico-payment-form-container {
-    padding: 1.25rem 2.25rem 1.75rem;
     background: white;
+    overflow: hidden; /* Required for multi-step slider to work */
 }
 
 /* ── Form Stacking and Grouping ── */
@@ -422,4 +422,154 @@
     font-size: 1.05rem;
     color: #1e293b;
     font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAYMENT CONFIRMATION SCREEN — Premium success state
+   ═══════════════════════════════════════════════════════════════════ */
+
+.tico-pay-confirm-screen {
+    position: absolute;
+    inset: 0;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 2rem;
+    z-index: 20;
+    border-radius: inherit;
+    animation: payConfirmIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes payConfirmIn {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* Ripple + Check badge */
+.tico-pay-confirm__ripple {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+.tico-pay-confirm__ripple::before,
+.tico-pay-confirm__ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.15);
+    animation: ripplePulse 1.6s ease-out infinite;
+}
+
+.tico-pay-confirm__ripple::after {
+    animation-delay: 0.55s;
+}
+
+@keyframes ripplePulse {
+    0%   { transform: scale(0.7); opacity: 0.7; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+.tico-pay-confirm__check {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.45);
+    animation: checkPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes checkPop {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+}
+
+/* Text: "¡Pago confirmado!" */
+.tico-pay-confirm__label {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #15803d;
+    letter-spacing: -0.01em;
+    animation: fadeSlideUp 0.4s ease 0.25s both;
+}
+
+/* Big amount */
+.tico-pay-confirm__amount {
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    animation: fadeSlideUp 0.4s ease 0.35s both;
+}
+
+/* Detail rows block */
+.tico-pay-confirm__details {
+    width: 100%;
+    max-width: 320px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 0.75rem;
+    animation: fadeSlideUp 0.4s ease 0.45s both;
+}
+
+.tico-pay-confirm__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.72rem 1.1rem;
+    font-size: 0.88rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.tico-pay-confirm__row:last-child {
+    border-bottom: none;
+}
+
+.tico-pay-confirm__row span {
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+}
+
+.tico-pay-confirm__row strong {
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+/* "Cerrando..." indicator */
+.tico-pay-confirm__closing {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.75rem;
+    animation: fadeSlideUp 0.4s ease 0.6s both, blink 1.2s ease-in-out 0.6s infinite;
+}
+
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
 }

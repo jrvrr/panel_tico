@@ -60,6 +60,7 @@ const PagosPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState('');
+    const [paySuccess, setPaySuccess] = useState(null); // { monto, paciente, metodo, fecha }
     const [menuOpenId, setMenuOpenId] = useState(null);
     const [editingId, setEditingId] = useState(null);
     const [tempMonto, setTempMonto] = useState('');
@@ -393,14 +394,26 @@ const PagosPage = () => {
             });
 
             setSaving(false);
-            setSaveSuccess('Pago registrado correctamente');
+            // Mostrar pantalla de confirmación premium
+            setPaySuccess({
+                monto: nuevo.monto,
+                paciente: getNombrePaciente(nuevo.paciente_id),
+                metodo: metodoFinal,
+                fecha: formNuevo.fecha_pago,
+                esTarjeta: formNuevo.metodo_pago === 'Tarjeta',
+                ultimosCuatro: formNuevo.metodo_pago === 'Tarjeta'
+                    ? formNuevo.num_tarjeta.replace(/\s/g, '').slice(-4)
+                    : null,
+            });
+
+            // Cerrar modal después de 3.5 s
             setTimeout(() => {
-                setSaveSuccess('');
+                setPaySuccess(null);
                 setFormNuevo(EMPTY_PAGO);
                 setFormErrors({});
                 setFormStep(1);
                 setModalNuevo(false);
-            }, 1200);
+            }, 3500);
         } catch (err) {
             setSaving(false);
             import('sonner').then(({ toast }) => toast.error(err.message || "Error al registrar pago"));
@@ -694,209 +707,238 @@ const PagosPage = () => {
                         <div className="tico-payment-form-container">
                             <div className={`tico-form-step-container ${formStep === 2 ? 'step-2-active' : ''}`}>
                                 
-                                {formStep === 1 ? (
-                                    <div className="tico-form-step step-1">
-                                        <span className="tico-payment-form-hint">* Campos obligatorios</span>
-                                        <div className="tico-payment-section-banner">DATOS DEL PAGO</div>
+                                {/* Step 1: Datos básicos — siempre en DOM para el slider CSS */}
+                                <div className="tico-form-step step-1" style={{ padding: '1.25rem 2.25rem 1.75rem' }}>
+                                    <span className="tico-payment-form-hint">* Campos obligatorios</span>
+                                    <div className="tico-payment-section-banner">DATOS DEL PAGO</div>
 
-                                        <div className="tico-payment-form-stack">
+                                    <div className="tico-payment-form-stack">
+                                        <div className="tico-payment-input-group">
+                                            <label>Paciente *</label>
+                                            <div className="tico-input-wrapper">
+                                                <select
+                                                    className={`tico-edit-input${formErrors.paciente_id ? ' tico-input-error' : ''}`}
+                                                    value={formNuevo.paciente_id}
+                                                    onChange={(e) => handleFormChange('paciente_id', e.target.value)}
+                                                >
+                                                    <option value="">— Seleccionar paciente —</option>
+                                                    {pacientesList.map(p => (
+                                                        <option key={p.id} value={p.id}>{p.nombre}</option>
+                                                    ))}
+                                                </select>
+                                                <User size={18} className="tico-input-icon" />
+                                            </div>
+                                            {formErrors.paciente_id && <span className="tico-field-error">{formErrors.paciente_id}</span>}
+                                        </div>
+
+                                        <div className="tico-form-row2">
                                             <div className="tico-payment-input-group">
-                                                <label>Paciente *</label>
+                                                <label>Monto ($) *</label>
                                                 <div className="tico-input-wrapper">
-                                                    <select
-                                                        className={`tico-edit-input${formErrors.paciente_id ? ' tico-input-error' : ''}`}
-                                                        value={formNuevo.paciente_id}
-                                                        onChange={(e) => handleFormChange('paciente_id', e.target.value)}
-                                                    >
-                                                        <option value="">— Seleccionar paciente —</option>
-                                                        {pacientesList.map(p => (
-                                                            <option key={p.id} value={p.id}>{p.nombre}</option>
-                                                        ))}
-                                                    </select>
-                                                    <User size={18} className="tico-input-icon" />
-                                                </div>
-                                                {formErrors.paciente_id && <span className="tico-field-error">{formErrors.paciente_id}</span>}
-                                            </div>
-
-                                            <div className="tico-form-row2">
-                                                <div className="tico-payment-input-group">
-                                                    <label>Monto ($) *</label>
-                                                    <div className="tico-input-wrapper">
-                                                        <input
-                                                            className={`tico-edit-input${formErrors.monto ? ' tico-input-error' : ''}`}
-                                                            type="text"
-                                                            inputMode="decimal"
-                                                            placeholder="0.00"
-                                                            value={formNuevo.monto}
-                                                            onChange={(e) => handleFormChange('monto', e.target.value)}
-                                                        />
-                                                        <DollarSign size={18} className="tico-input-icon" />
-                                                    </div>
-                                                    {formErrors.monto && <span className="tico-field-error">{formErrors.monto}</span>}
-                                                </div>
-
-                                                <div className="tico-payment-input-group">
-                                                    <label>Fecha de pago *</label>
-                                                    <div className="tico-input-wrapper">
-                                                        <TicoDateInput
-                                                            className={`tico-edit-input${formErrors.fecha_pago ? ' tico-input-error' : ''}`}
-                                                            value={formNuevo.fecha_pago}
-                                                            onChange={(val) => handleFormChange('fecha_pago', val)}
-                                                        />
-                                                        <Calendar size={18} className="tico-input-icon" />
-                                                    </div>
-                                                    {formErrors.fecha_pago && <span className="tico-field-error">{formErrors.fecha_pago}</span>}
-                                                </div>
-                                            </div>
-
-                                            <div className="tico-form-row2">
-                                                <div className="tico-payment-input-group">
-                                                    <label>Método de pago</label>
-                                                    <div className="tico-input-wrapper">
-                                                        <select className="tico-edit-input" value={formNuevo.metodo_pago}
-                                                            onChange={(e) => {
-                                                                const val = e.target.value;
-                                                                setFormNuevo(prev => ({ ...prev, metodo_pago: val, num_tarjeta: '', referencia: '' }));
-                                                            }}>
-                                                            <option>Efectivo</option>
-                                                            <option>Tarjeta</option>
-                                                            <option>Transferencia</option>
-                                                        </select>
-                                                        <Wallet size={18} className="tico-input-icon" />
-                                                    </div>
-                                                </div>
-
-                                                <div className="tico-payment-input-group">
-                                                    <label>Estado</label>
-                                                    <div className="tico-input-wrapper">
-                                                        <select className="tico-edit-input" value={formNuevo.estado_pago}
-                                                            onChange={(e) => handleFormChange('estado_pago', e.target.value)}>
-                                                            <option>Pendiente</option>
-                                                            <option>Pagado</option>
-                                                            <option>Vencido</option>
-                                                        </select>
-                                                        <Activity size={18} className="tico-input-icon" />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {formNuevo.metodo_pago === 'Transferencia' && (
-                                                <div className="tico-form-anim-in tico-payment-input-group">
-                                                    <label>Referencia o Clave de Rastreo *</label>
-                                                    <div className="tico-input-wrapper">
-                                                        <input
-                                                            className={`tico-edit-input${formErrors.referencia ? ' tico-input-error' : ''}`}
-                                                            type="text"
-                                                            placeholder="Ej: TR-998877"
-                                                            value={formNuevo.referencia}
-                                                            onChange={(e) => handleFormChange('referencia', e.target.value)}
-                                                        />
-                                                        <Receipt size={18} className="tico-input-icon" />
-                                                    </div>
-                                                    {formErrors.referencia && <span className="tico-field-error">{formErrors.referencia}</span>}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="tico-payment-modal-actions">
-                                            <button className="tico-btn tico-btn-outline tico-btn-pill-compact" onClick={() => setModalNuevo(false)}>Cancelar</button>
-                                            {formNuevo.metodo_pago === 'Tarjeta' ? (
-                                                <button className="tico-btn tico-btn-primary tico-btn-pill-compact" onClick={() => validateForm() && setFormStep(2)}>
-                                                    Continuar <ChevronRight size={14} className="tico-btn-icon-spacer" />
-                                                </button>
-                                            ) : (
-                                                <button className="tico-btn tico-btn-primary tico-btn-pill-compact" disabled={saving} onClick={handleRegistrarPago}>
-                                                    {saving ? 'Registrando...' : 'Registrar pago'}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="tico-form-step step-2">
-                                        <div className="tico-payment-section-banner centered">DETALLES DE TARJETA</div>
-                                        
-                                        <div className="tico-visual-card">
-                                            <div className="tico-card-chip" />
-                                            <div className="tico-card-number">{formNuevo.num_tarjeta || '•••• •••• •••• ••••'}</div>
-                                            <div className="tico-card-bottom">
-                                                <div className="tico-card-holder">
-                                                    <span>TITULAR</span>
-                                                    <div>{formNuevo.nombre_titular || 'NOMBRE APELLIDO'}</div>
-                                                </div>
-                                                <div className="tico-card-expiry">
-                                                    <span>EXPIRA</span>
-                                                    <div>{formNuevo.expira || 'MM/YY'}</div>
-                                                </div>
-                                            </div>
-                                            <div className="tico-card-type">VISA</div>
-                                        </div>
-
-                                        <div className="tico-payment-form-stack">
-                                            <label>Número de Tarjeta *
-                                                <input
-                                                    className={`tico-edit-input ${formErrors.num_tarjeta ? 'tico-input-error' : ''}`}
-                                                    type="text"
-                                                    placeholder="0000 0000 0000 0000"
-                                                    value={formNuevo.num_tarjeta}
-                                                    onChange={(e) => handleFormChange('num_tarjeta', e.target.value)}
-                                                />
-                                                {formErrors.num_tarjeta && <span className="tico-field-error">{formErrors.num_tarjeta}</span>}
-                                            </label>
-                                            <label>Nombre del Titular *
-                                                <input
-                                                    className={`tico-edit-input ${formErrors.nombre_titular ? 'tico-input-error' : ''}`}
-                                                    type="text"
-                                                    placeholder="COMO APARECE EN LA TARJETA"
-                                                    value={formNuevo.nombre_titular}
-                                                    onChange={(e) => handleFormChange('nombre_titular', e.target.value)}
-                                                />
-                                                {formErrors.nombre_titular && <span className="tico-field-error">{formErrors.nombre_titular}</span>}
-                                            </label>
-                                            <div className="tico-form-row2">
-                                                <label>Vencimiento (MM/YY) *
                                                     <input
-                                                        className={`tico-edit-input ${formErrors.expira ? 'tico-input-error' : ''}`}
+                                                        className={`tico-edit-input${formErrors.monto ? ' tico-input-error' : ''}`}
                                                         type="text"
-                                                        placeholder="MM/YY"
-                                                        value={formNuevo.expira}
-                                                        onChange={(e) => handleFormChange('expira', e.target.value)}
+                                                        inputMode="decimal"
+                                                        placeholder="0.00"
+                                                        value={formNuevo.monto}
+                                                        onChange={(e) => handleFormChange('monto', e.target.value)}
                                                     />
-                                                    {formErrors.expira && <span className="tico-field-error">{formErrors.expira}</span>}
-                                                </label>
-                                                <label>CVV *
-                                                    <input
-                                                        className={`tico-edit-input ${formErrors.cvv ? 'tico-input-error' : ''}`}
-                                                        type="password"
-                                                        placeholder="•••"
-                                                        value={formNuevo.cvv}
-                                                        onChange={(e) => handleFormChange('cvv', e.target.value)}
+                                                    <DollarSign size={18} className="tico-input-icon" />
+                                                </div>
+                                                {formErrors.monto && <span className="tico-field-error">{formErrors.monto}</span>}
+                                            </div>
+
+                                            <div className="tico-payment-input-group">
+                                                <label>Fecha de pago *</label>
+                                                <div className="tico-input-wrapper">
+                                                    <TicoDateInput
+                                                        className={`tico-edit-input${formErrors.fecha_pago ? ' tico-input-error' : ''}`}
+                                                        value={formNuevo.fecha_pago}
+                                                        onChange={(val) => handleFormChange('fecha_pago', val)}
                                                     />
-                                                    {formErrors.cvv && <span className="tico-field-error">{formErrors.cvv}</span>}
-                                                </label>
+                                                    <Calendar size={18} className="tico-input-icon" />
+                                                </div>
+                                                {formErrors.fecha_pago && <span className="tico-field-error">{formErrors.fecha_pago}</span>}
                                             </div>
                                         </div>
 
-                                        <div className="tico-payment-modal-actions">
-                                            <button className="tico-btn tico-btn-outline tico-btn-pill-compact" onClick={() => setFormStep(1)}>Atrás</button>
-                                            <button className="tico-btn tico-btn-primary tico-btn-pill-compact" disabled={saving} onClick={handleRegistrarPago}>
-                                                {saving ? 'Procesando...' : 'Confirmar y Pagar'}
+                                        <div className="tico-form-row2">
+                                            <div className="tico-payment-input-group">
+                                                <label>Método de pago</label>
+                                                <div className="tico-input-wrapper">
+                                                    <select className="tico-edit-input" value={formNuevo.metodo_pago}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setFormNuevo(prev => ({ ...prev, metodo_pago: val, num_tarjeta: '', referencia: '' }));
+                                                        }}>
+                                                        <option>Efectivo</option>
+                                                        <option>Tarjeta</option>
+                                                        <option>Transferencia</option>
+                                                    </select>
+                                                    <Wallet size={18} className="tico-input-icon" />
+                                                </div>
+                                            </div>
+
+                                            <div className="tico-payment-input-group">
+                                                <label>Estado</label>
+                                                <div className="tico-input-wrapper">
+                                                    <select className="tico-edit-input" value={formNuevo.estado_pago}
+                                                        onChange={(e) => handleFormChange('estado_pago', e.target.value)}>
+                                                        <option>Pendiente</option>
+                                                        <option>Pagado</option>
+                                                        <option>Vencido</option>
+                                                    </select>
+                                                    <Activity size={18} className="tico-input-icon" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {formNuevo.metodo_pago === 'Transferencia' && (
+                                            <div className="tico-form-anim-in tico-payment-input-group">
+                                                <label>Referencia o Clave de Rastreo *</label>
+                                                <div className="tico-input-wrapper">
+                                                    <input
+                                                        className={`tico-edit-input${formErrors.referencia ? ' tico-input-error' : ''}`}
+                                                        type="text"
+                                                        placeholder="Ej: TR-998877"
+                                                        value={formNuevo.referencia}
+                                                        onChange={(e) => handleFormChange('referencia', e.target.value)}
+                                                    />
+                                                    <Receipt size={18} className="tico-input-icon" />
+                                                </div>
+                                                {formErrors.referencia && <span className="tico-field-error">{formErrors.referencia}</span>}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="tico-payment-modal-actions">
+                                        <button className="tico-btn tico-btn-outline tico-btn-pill-compact" onClick={() => setModalNuevo(false)}>Cancelar</button>
+                                        {formNuevo.metodo_pago === 'Tarjeta' ? (
+                                            <button className="tico-btn tico-btn-primary tico-btn-pill-compact" onClick={() => validateForm() && setFormStep(2)}>
+                                                Continuar <ChevronRight size={14} className="tico-btn-icon-spacer" />
                                             </button>
+                                        ) : (
+                                            <button className="tico-btn tico-btn-primary tico-btn-pill-compact" disabled={saving} onClick={handleRegistrarPago}>
+                                                {saving ? 'Registrando...' : 'Registrar pago'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Step 2: Detalles de tarjeta — siempre en DOM para el slider CSS */}
+                                <div className="tico-form-step step-2" style={{ padding: '1.25rem 2.25rem 1.75rem' }}>
+                                    <div className="tico-payment-section-banner centered">DETALLES DE TARJETA</div>
+                                    
+                                    <div className="tico-visual-card">
+                                        <div className="tico-card-chip" />
+                                        <div className="tico-card-number">{formNuevo.num_tarjeta || '•••• •••• •••• ••••'}</div>
+                                        <div className="tico-card-bottom">
+                                            <div className="tico-card-holder">
+                                                <span>TITULAR</span>
+                                                <div>{formNuevo.nombre_titular || 'NOMBRE APELLIDO'}</div>
+                                            </div>
+                                            <div className="tico-card-expiry">
+                                                <span>EXPIRA</span>
+                                                <div>{formNuevo.expira || 'MM/YY'}</div>
+                                            </div>
+                                        </div>
+                                        <div className="tico-card-type">VISA</div>
+                                    </div>
+
+                                    <div className="tico-payment-form-stack">
+                                        <label>Número de Tarjeta *
+                                            <input
+                                                className={`tico-edit-input ${formErrors.num_tarjeta ? 'tico-input-error' : ''}`}
+                                                type="text"
+                                                placeholder="0000 0000 0000 0000"
+                                                value={formNuevo.num_tarjeta}
+                                                onChange={(e) => handleFormChange('num_tarjeta', e.target.value)}
+                                            />
+                                            {formErrors.num_tarjeta && <span className="tico-field-error">{formErrors.num_tarjeta}</span>}
+                                        </label>
+                                        <label>Nombre del Titular *
+                                            <input
+                                                className={`tico-edit-input ${formErrors.nombre_titular ? 'tico-input-error' : ''}`}
+                                                type="text"
+                                                placeholder="COMO APARECE EN LA TARJETA"
+                                                value={formNuevo.nombre_titular}
+                                                onChange={(e) => handleFormChange('nombre_titular', e.target.value)}
+                                            />
+                                            {formErrors.nombre_titular && <span className="tico-field-error">{formErrors.nombre_titular}</span>}
+                                        </label>
+                                        <div className="tico-form-row2">
+                                            <label>Vencimiento (MM/YY) *
+                                                <input
+                                                    className={`tico-edit-input ${formErrors.expira ? 'tico-input-error' : ''}`}
+                                                    type="text"
+                                                    placeholder="MM/YY"
+                                                    value={formNuevo.expira}
+                                                    onChange={(e) => handleFormChange('expira', e.target.value)}
+                                                />
+                                                {formErrors.expira && <span className="tico-field-error">{formErrors.expira}</span>}
+                                            </label>
+                                            <label>CVV *
+                                                <input
+                                                    className={`tico-edit-input ${formErrors.cvv ? 'tico-input-error' : ''}`}
+                                                    type="password"
+                                                    placeholder="•••"
+                                                    value={formNuevo.cvv}
+                                                    onChange={(e) => handleFormChange('cvv', e.target.value)}
+                                                />
+                                                {formErrors.cvv && <span className="tico-field-error">{formErrors.cvv}</span>}
+                                            </label>
                                         </div>
                                     </div>
-                                )}
+
+                                    <div className="tico-payment-modal-actions">
+                                        <button className="tico-btn tico-btn-outline tico-btn-pill-compact" onClick={() => setFormStep(1)}>Atrás</button>
+                                        <button className="tico-btn tico-btn-primary tico-btn-pill-compact" disabled={saving} onClick={handleRegistrarPago}>
+                                            {saving ? 'Procesando...' : 'Confirmar y Pagar'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {(saving || saveSuccess) && (
+                        {/* ── Overlay: Procesando ── */}
+                        {saving && !paySuccess && (
                             <div className="tico-save-overlay">
-                                {saving ? (
-                                    <PageLoader message={formStep === 2 ? "Validando tarjeta..." : "Registrando pago..."} />
-                                ) : (
-                                    <div className="tico-save-success">
-                                        <div className="tico-save-success__icon"><Check size={32} /></div>
-                                        <span>{saveSuccess}</span>
+                                <PageLoader message={formStep === 2 ? "Validando tarjeta..." : "Registrando pago..."} />
+                            </div>
+                        )}
+
+                        {/* ── Pantalla de Confirmación Premium ── */}
+                        {paySuccess && (
+                            <div className="tico-pay-confirm-screen">
+                                <div className="tico-pay-confirm__ripple">
+                                    <div className="tico-pay-confirm__check">
+                                        <Check size={38} strokeWidth={3} />
                                     </div>
-                                )}
+                                </div>
+                                <div className="tico-pay-confirm__label">¡Pago confirmado!</div>
+                                <div className="tico-pay-confirm__amount">
+                                    {formatMonto(paySuccess.monto)}
+                                </div>
+                                <div className="tico-pay-confirm__details">
+                                    <div className="tico-pay-confirm__row">
+                                        <span>Paciente</span>
+                                        <strong>{paySuccess.paciente}</strong>
+                                    </div>
+                                    <div className="tico-pay-confirm__row">
+                                        <span>Método</span>
+                                        <strong>
+                                            {paySuccess.esTarjeta
+                                                ? <><CreditCard size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />Tarjeta •••• {paySuccess.ultimosCuatro}</>
+                                                : paySuccess.metodo
+                                            }
+                                        </strong>
+                                    </div>
+                                    <div className="tico-pay-confirm__row">
+                                        <span>Fecha</span>
+                                        <strong>{formatFecha(paySuccess.fecha)}</strong>
+                                    </div>
+                                </div>
+                                <div className="tico-pay-confirm__closing">Cerrando automáticamente…</div>
                             </div>
                         )}
                     </div>
